@@ -400,7 +400,7 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
         long configLastChecked = preferences.getLong(Utils.CONFIGURATION_LAST_CHECKED, 0);
         Log.d(TAG, "config last checked: " + configLastChecked);
 
-        if (configLastChecked != 0 && (configLastChecked + REFRESH_INTERVAL) < System.currentTimeMillis()) {
+        if ((configLastChecked + REFRESH_INTERVAL) < System.currentTimeMillis()) {
             Log.d(TAG, "Go see if config has been updated.");
             updateCloudConfigIfNecessary(cloudConfigUrl, this);
             if (!TextUtils.isEmpty(mobileServerConfigUrl)) {
