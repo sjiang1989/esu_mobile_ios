@@ -14,6 +14,8 @@ import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
+import android.support.v7.widget.ShareActionProvider.OnShareTargetSelectedListener;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -22,18 +24,18 @@ import android.view.MenuItem;
 import android.webkit.ConsoleMessage;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import android.support.v7.widget.ShareActionProvider;
-import android.support.v7.widget.ShareActionProvider.OnShareTargetSelectedListener;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 public class WebframeActivity extends EllucianActivity {
 
@@ -42,7 +44,6 @@ public class WebframeActivity extends EllucianActivity {
 	private SslErrorHandler handler;
 	
 	@SuppressLint("SetJavaScriptEnabled")
-	@TargetApi(19)
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -76,25 +77,8 @@ public class WebframeActivity extends EllucianActivity {
 			}
 
 			);
-			webView.setWebViewClient(new WebViewClient() {
 
-				@Override
-				public void onReceivedSslError(WebView view,
-						SslErrorHandler handler, SslError error) {
-					handleError(handler);
-				}
-
-				@Override
-				public boolean shouldOverrideUrlLoading(WebView view, String url) {
-					if (url.startsWith("http:") || url.startsWith("https:")) {
-						return false;
-					}
-
-					// Otherwise allow the OS to handle it
-					sendToExternalBrowser(url);
-					return true;
-				}
-			});
+            setWebViewClient();
 
 			WebSettings webSettings = webView.getSettings();
 			webSettings.setJavaScriptEnabled(true);
@@ -106,7 +90,7 @@ public class WebframeActivity extends EllucianActivity {
 			String databasePath = webView.getContext()
 					.getDir("databases", Context.MODE_PRIVATE).getPath();
 			webSettings.setDatabaseEnabled(true);
-            Utils.setDatabasePath(webSettings, databasePath);
+            VersionSupportUtils.setDatabasePath(webSettings, databasePath);
 			webSettings.setDomStorageEnabled(true);
 
 			Log.d("WebframeActivity", "Making request at: " + requestUrl);
@@ -206,9 +190,62 @@ public class WebframeActivity extends EllucianActivity {
 		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
 	    startActivity( intent );
 	}
-	
+
+    private void sendToExternalBrowser(Uri uri) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        startActivity( intent );
+    }
+
 	WebView getWebView() {
 		return this.webView;
 	}
-	 
+
+    private void setWebViewClient() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            webView.setWebViewClient(new WebViewClient() {
+
+                @Override
+                public void onReceivedSslError(WebView view,
+                                               SslErrorHandler handler, SslError error) {
+                    handleError(handler);
+                }
+
+                @Override
+                @TargetApi(Build.VERSION_CODES.M)
+                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                    String urlScheme = request.getUrl().getScheme();
+                    if (urlScheme.startsWith("http")) {
+                        return false;
+                    }
+
+                    // Otherwise allow the OS to handle it
+                    sendToExternalBrowser(request.getUrl());
+                    return true;
+
+                }
+            });
+
+        } else {
+            webView.setWebViewClient(new WebViewClient() {
+
+                @Override
+                public void onReceivedSslError(WebView view,
+                                               SslErrorHandler handler, SslError error) {
+                    handleError(handler);
+                }
+
+                @Override
+                @SuppressWarnings("deprecation")
+                public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                    if (url.startsWith("http:") || url.startsWith("https:")) {
+                        return false;
+                    }
+
+                    // Otherwise allow the OS to handle it
+                    sendToExternalBrowser(url);
+                    return true;
+                }
+            });
+        }
+    }
 }

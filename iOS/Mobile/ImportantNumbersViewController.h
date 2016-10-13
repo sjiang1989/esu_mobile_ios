@@ -7,11 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "Module+Attributes.h"
 #import "ImportantNumbersDirectoryEntry.h"
 #import "EllucianSectionedUITableViewController.h"
+#import "Module.h"
+#import "Ellucian_GO-Swift.h"
 
-@interface ImportantNumbersViewController : EllucianSectionedUITableViewController<NSFetchedResultsControllerDelegate, UISearchBarDelegate, UISearchDisplayDelegate>
+@interface ImportantNumbersViewController : EllucianSectionedUITableViewController<NSFetchedResultsControllerDelegate, UISearchBarDelegate, EllucianMobileLaunchableControllerProtocol, UISearchResultsUpdating>
 
 @property (strong, nonatomic) Module *module;
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;

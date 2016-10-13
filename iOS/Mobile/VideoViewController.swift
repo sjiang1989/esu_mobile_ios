@@ -10,9 +10,9 @@ import Foundation
 import AVKit
 import AVFoundation
 
-class VideoViewController : UIViewController, UIGestureRecognizerDelegate {
+class VideoViewController : UIViewController, UIGestureRecognizerDelegate, EllucianMobileLaunchableControllerProtocol {
     
-    var module : Module?
+    var module : Module!
     
     @IBOutlet var imageView: UIImageView!
     @IBOutlet var textBackgroundView: UIView!
@@ -20,41 +20,40 @@ class VideoViewController : UIViewController, UIGestureRecognizerDelegate {
     @IBOutlet var videoView: UIView!
     @IBOutlet var mediaPlayButton: UIView!
     
-    var assetUrl : NSURL?
+    var assetUrl : URL?
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        self.sendView("Video", forModuleNamed: module!.name)
+        self.sendView( "Video", moduleName: module!.name)
     }
     
     override func viewDidLoad() {
         
-        let hud = MBProgressHUD.showHUDAddedTo(self.view, animated: true)
-        hud.labelText = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+        let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+        hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
         
         
         self.title = module!.name
-        if let labelText = self.module?.propertyForKey("description") where labelText.characters.count > 0 {
+        if let labelText = self.module?.property(forKey: "description") , labelText.characters.count > 0 {
             label.text = labelText
         } else {
-            textBackgroundView.hidden = true
-            label.hidden = true
+            textBackgroundView.isHidden = true
+            label.isHidden = true
         }
         
-        if let urlString = module?.propertyForKey("video") {
-            assetUrl = NSURL(string: urlString)
+        if let urlString = module?.property(forKey: "video") {
+            assetUrl = URL(string: urlString)
             copyImageToBackground()
         }
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue,
-        sender: AnyObject?) {
-            sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionButton_Press, withLabel: "Play button pressed", withValue: nil, forModuleNamed: module!.name)
-            let destination = segue.destinationViewController as!
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+            sendEventToTracker1(category: .ui_Action, action: .button_Press, label: "Play button pressed", moduleName: module?.name)
+            let destination = segue.destination as!
             AVPlayerViewController
             if let url = self.assetUrl {
                 do {
-                    let player = AVPlayer(URL: url)
+                    let player = AVPlayer(url: url)
                     let audioSession = AVAudioSession.sharedInstance()
                     try audioSession.setCategory(AVAudioSessionCategoryPlayback)
                     destination.player = player
@@ -66,30 +65,30 @@ class VideoViewController : UIViewController, UIGestureRecognizerDelegate {
     }
     
     private func copyImageToBackground() {
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)) {
-            let asset: AVAsset = AVAsset(URL: self.assetUrl!)
+        DispatchQueue.global(qos: .utility).async {
+            let asset: AVAsset = AVAsset(url: self.assetUrl!)
             let imageGenerator = AVAssetImageGenerator(asset: asset);
             let time = CMTimeMake(0, 600)
             do {
-                let imageRef = try imageGenerator.copyCGImageAtTime(time, actualTime: nil)
-                let image = UIImage(CGImage: imageRef)
-                dispatch_async(dispatch_get_main_queue()) {
-                    self.mediaPlayButton.hidden = false
-                    MBProgressHUD.hideHUDForView(self.view, animated: true)
+                let imageRef = try imageGenerator.copyCGImage(at: time, actualTime: nil)
+                let image = UIImage(cgImage: imageRef)
+                DispatchQueue.main.async {
+                    self.mediaPlayButton.isHidden = false
+                    MBProgressHUD.hide(for: self.view, animated: true)
                     self.imageView.image = image
                     
                     self.addGestureRecognizer()
                 }
             } catch let error as NSError {
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.async {
                     
-                    MBProgressHUD.hideHUDForView(self.view, animated: true)
-                    let alertController = UIAlertController(title: NSLocalizedString("Error Loading Video", comment: "title when error loading video"), message: error.localizedDescription, preferredStyle: .Alert)
+                    MBProgressHUD.hide(for: self.view, animated: true)
+                    let alertController = UIAlertController(title: NSLocalizedString("Error Loading Video", comment: "title when error loading video"), message: error.localizedDescription, preferredStyle: .alert)
                     
-                    let OKAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+                    let OKAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
                     alertController.addAction(OKAction)
                     
-                    self.presentViewController(alertController, animated: true, completion: nil)
+                    self.present(alertController, animated: true, completion: nil)
                 }
             } catch {
                 
@@ -98,12 +97,12 @@ class VideoViewController : UIViewController, UIGestureRecognizerDelegate {
     }
     
     func addGestureRecognizer() {
-        let recognizer = UITapGestureRecognizer(target: self, action:Selector("play:"))
+        let recognizer = UITapGestureRecognizer(target: self, action:#selector(VideoViewController.play(_:)))
         recognizer.delegate = self
         self.videoView.addGestureRecognizer(recognizer)
     }
     
-    func play(recognizer: UITapGestureRecognizer) {
-        self.performSegueWithIdentifier("play", sender: nil)
+    func play(_ recognizer: UITapGestureRecognizer) {
+        self.performSegue(withIdentifier: "play", sender: nil)
     }
 }

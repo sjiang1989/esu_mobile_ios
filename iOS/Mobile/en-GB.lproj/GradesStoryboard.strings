@@ -16,9 +16,6 @@
 /* Class = "UILabel"; text = "No Grades Recorded"; ObjectID = "KqY-iF-mie"; */
 "KqY-iF-mie.text" = "No Grades Recorded";
 
-/* Class = "UILabel"; text = "Loading"; ObjectID = "NNK-D3-ucv"; */
-"NNK-D3-ucv.text" = "Loading";
-
 /* Class = "UINavigationItem"; title = "Root View Controller"; ObjectID = "Qk7-HK-Uqh"; */
 "Qk7-HK-Uqh.title" = "Root View Controller";
 

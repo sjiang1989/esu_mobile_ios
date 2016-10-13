@@ -115,10 +115,6 @@ public class EventsDetailFragment extends EllucianDefaultDetailFragment {
         if (args.containsKey(Extra.CONTENT)) {
             String content = args.getString(Extra.CONTENT).replace("\n", "<br/>");
 
-//	        URLImageParser parser = new URLImageParser(contentView, activity);
-//	        Spanned formattedHtml = Html.fromHtml(content, parser, null);
-//	        contentView.setText(formattedHtml, TextView.BufferType.SPANNABLE );
-//	        contentView.setMovementMethod(LinkMovementMethod.getInstance());
             contentView.loadDataWithBaseURL(null, "<style>html,body{margin:0px;padding:0px;} img{display: inline;height: auto;max-width: 100%;}</style>" + content, "text/html", "UTF-8", null);
             contentView.setBackgroundColor(Color.TRANSPARENT);
         }else {

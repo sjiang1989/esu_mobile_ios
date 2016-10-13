@@ -8,24 +8,24 @@
 
 import Foundation
 
-class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFetchedResultsControllerDelegate, FeedFilterDelegate {
+class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFetchedResultsControllerDelegate, FeedFilterDelegate, EllucianMobileLaunchableControllerProtocol {
     
     
     @IBOutlet var filterButton: UIBarButtonItem!
     
     let searchController = UISearchController(searchResultsController: nil)
-    var module : Module?
+    var module : Module!
     
-    let datetimeOutputFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    let datetimeOutputFormatter : DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
         
     }()
-    let dateFormatterSectionHeader : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .ShortStyle
-        formatter.timeStyle = .NoStyle
+    let dateFormatterSectionHeader : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
         formatter.doesRelativeDateFormatting = true
         return formatter
     }()
@@ -42,24 +42,44 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
         tableView.rowHeight = UITableViewAutomaticDimension
         buildSearchBar()
         
-        if UIScreen.mainScreen().traitCollection.userInterfaceIdiom == .Pad {
-            self.splitViewController?.preferredDisplayMode = .AllVisible;
+        if UIScreen.main.traitCollection.userInterfaceIdiom == .pad {
+            self.splitViewController?.preferredDisplayMode = .allVisible;
         } else {
-            self.splitViewController?.preferredDisplayMode = .Automatic;
+            self.splitViewController?.preferredDisplayMode = .automatic;
         }
+        
+        // Recieve notification to ensure that FeedViewController searchController resets
+        NotificationCenter.default.addObserver(self, selector: #selector(FeedViewController.detailViewWillAppear(_:)), name: FeedDetailViewController.feedDetailNotification, object: nil)
         
         fetchFeeds()
         reloadData()
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        sendView("News List", forModuleNamed: self.module?.name)
+        sendView("News List", moduleName: self.module?.name)
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        
+        // Make sure iPhone Plus behaves appropriately
+        if UIScreen.main.traitCollection.userInterfaceIdiom != .pad {
+            if self.splitViewController?.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClass.regular {
+                self.searchController.isActive = false
+                self.searchController.searchBar.setShowsCancelButton(false, animated: true)
+            }
+        }
+    }
+    
+    func detailViewWillAppear(_ notif: Notification) {
+        self.searchController.isActive = false
+        self.searchController.searchBar.setShowsCancelButton(false, animated: true)
     }
     
     // MARK: UISearchResultsUpdating delegate
-    func updateSearchResultsForSearchController(searchController: UISearchController) {
-        self.sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction:kAnalyticsActionSearch, withLabel:"Search", withValue:nil, forModuleNamed:self.module!.name);
+    func updateSearchResults(for searchController: UISearchController) {
+        self.sendEventToTracker1(category: .ui_Action, action: .search, label:"Search", moduleName:self.module?.name);
         _fetchedResultsController = nil
         self.tableView.reloadData()
     }
@@ -69,83 +89,82 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
         self.searchController.searchResultsUpdater = self
         self.searchController.hidesNavigationBarDuringPresentation = false
         self.searchController.dimsBackgroundDuringPresentation = false
-        self.searchController.definesPresentationContext = true
         self.searchController.searchBar.sizeToFit()
         self.tableView.tableHeaderView = searchController.searchBar
+        
+        self.definesPresentationContext = true
     }
     
     // MARK: data retrieval
     func fetchFeeds() {
-        let privateContext = NSManagedObjectContext(concurrencyType: .PrivateQueueConcurrencyType)
-        privateContext.parentContext = self.module?.managedObjectContext
+        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        privateContext.parent = self.module?.managedObjectContext
         privateContext.undoManager = nil
         
-        let urlString = self.module?.propertyForKey("feed")
+        let urlString = self.module?.property(forKey: "feed")
         
         if self.fetchedResultsController.fetchedObjects!.count <= 0 {
-            let hud = MBProgressHUD.showHUDAddedTo(self.view, animated: true)
-            hud.labelText = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
         }
         
-        privateContext.performBlock { () -> Void in
+        privateContext.perform { () -> Void in
             
-            UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+            UIApplication.shared.isNetworkActivityIndicatorVisible = true
             
             defer {
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.async {
                     
-                    UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     
-                    MBProgressHUD.hideHUDForView(self.view, animated: true)
+                    MBProgressHUD.hide(for: self.view, animated: true)
                 }
             }
             
             do {
-                let url = NSURL(string: urlString!)
-                let responseData = try NSData(contentsOfURL: url!, options:NSDataReadingOptions())
+                let url = URL(string: urlString!)
+                let responseData = try Data(contentsOf: url!, options:NSData.ReadingOptions())
                 let json = JSON(data: responseData)
                 
                 var previousFeeds = [Feed]()
                 var existingFeeds = [Feed]()
                 var newKeys = [String]()
                 
-                let request = NSFetchRequest(entityName: "Feed")
+                let request = NSFetchRequest<Feed>(entityName: "Feed")
                 request.predicate = NSPredicate(format:"module.name = %@", self.module!.name)
                 let oldObjects = try privateContext
-                    .executeFetchRequest(request)
-                for oldObject in oldObjects {
-                    let feed = oldObject as! Feed
+                    .fetch(request)
+                for feed in oldObjects {
+
                     if feed.entryId.characters.count > 0 {
                         previousFeeds.append(feed)
                     } else {
-                        privateContext.deleteObject(feed)
+                        privateContext.delete(feed)
                     }
                 }
                 
-                let moduleRequest = NSFetchRequest(entityName: "FeedModule")
+                let moduleRequest = NSFetchRequest<FeedModule>(entityName: "FeedModule")
                 moduleRequest.predicate = NSPredicate(format: "name = %@", self.module!.name)
-                let feedModules = try privateContext.executeFetchRequest(moduleRequest)
+                let feedModules = try privateContext.fetch(moduleRequest)
                 let feedModule : FeedModule
                 if feedModules.count > 0 {
-                    feedModule = feedModules.last as! FeedModule
+                    feedModule = feedModules.last!
                 } else {
-                    feedModule = NSEntityDescription.insertNewObjectForEntityForName("FeedModule", inManagedObjectContext: privateContext) as! FeedModule
+                    feedModule = NSEntityDescription.insertNewObject(forEntityName: "FeedModule", into: privateContext) as! FeedModule
                     feedModule.name = self.module?.name
-                    
-                    
                 }
                 
-                let categoryRequest = NSFetchRequest(entityName: "FeedCategory")
+                let categoryRequest = NSFetchRequest<FeedCategory>(entityName: "FeedCategory")
                 categoryRequest.predicate = NSPredicate(format: "moduleName = %@", self.module!.name)
-                let categoryArray = try privateContext.executeFetchRequest(categoryRequest)
+                let categoryArray = try privateContext.fetch(categoryRequest)
                 var categoryMap = [String: FeedCategory]()
-                for feedCategory in categoryArray as! [FeedCategory]  {
+                for feedCategory in categoryArray {
                     categoryMap[feedCategory.name] = feedCategory
                 }
                 
-                let dateFormatter = NSDateFormatter()
+                let dateFormatter = DateFormatter()
                 dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-                dateFormatter.timeZone = NSTimeZone(forSecondsFromGMT: 0)
+                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
                 
                 for entry in json["entries"].array! {
                     let uid = entry["entryId"].string;
@@ -157,7 +176,7 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
                     if filteredArray.count > 0 {
                         existingFeeds.append(filteredArray[0])
                     } else {
-                        let feed = NSEntityDescription.insertNewObjectForEntityForName("Feed", inManagedObjectContext: privateContext) as! Feed
+                        let feed = NSEntityDescription.insertNewObject(forEntityName: "Feed", into: privateContext) as! Feed
                         feed.module = feedModule
                         feedModule.addFeedsObject(feed)
                         
@@ -165,25 +184,25 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
                         
                         feed.entryId = entry["entryId"].string
                         let postDate = entry["postDate"].string!
-                        feed.postDateTime = dateFormatter.dateFromString(postDate)
-                        feed.dateLabel = self.datetimeOutputFormatter.stringFromDate(feed.postDateTime)
+                        feed.postDateTime = dateFormatter.date(from: postDate)
+                        feed.dateLabel = self.datetimeOutputFormatter.string(from: feed.postDateTime)
                         if entry["link"] != nil {
-                            if let links = entry["link"].array where links.count > 0 {
+                            if let links = entry["link"].array , links.count > 0 {
                                 feed.link = links[0].string
                             }
                         }
                         if entry["title"] != nil {
-                            if let title = entry["title"].string where title != "" {
-                                feed.title = title.stringByConvertingHTMLToPlainText()
+                            if let title = entry["title"].string , title != "" {
+                                feed.title = title
                             }
                         }
                         if entry["content"] != nil {
-                            if let content = entry["content"].string where content != "" {
+                            if let content = entry["content"].string , content != "" {
                                 feed.content = content
                             }
                         }
                         if entry["logo"] != nil {
-                            if let logo = entry["logo"].string where logo != "" {
+                            if let logo = entry["logo"].string , logo != "" {
                                 feed.logo = logo
                             }
                         }
@@ -191,7 +210,7 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
                         let categoryLabel = entry["feedName"].string
                         var category = categoryMap[categoryLabel!]
                         if category == nil {
-                            category = NSEntityDescription.insertNewObjectForEntityForName("FeedCategory", inManagedObjectContext: privateContext) as? FeedCategory
+                            category = NSEntityDescription.insertNewObject(forEntityName: "FeedCategory", into: privateContext) as? FeedCategory
                             category!.name = categoryLabel
                             category!.moduleName = self.module?.name
                             categoryMap[categoryLabel!] = category
@@ -205,12 +224,12 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
                 try privateContext.save()
                 for oldObject in previousFeeds {
                     if !existingFeeds.contains(oldObject) {
-                        privateContext.deleteObject(oldObject)
+                        privateContext.delete(oldObject)
                     }
                 }
                 try privateContext.save()
                 
-                privateContext.parentContext?.performBlock({
+                privateContext.parent?.perform({
                     do {
                         try privateContext.save()
                     } catch let error {
@@ -220,9 +239,9 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
                 
                 
                 
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.async {
                     self.readFeedModule()
-                    self.filterButton.enabled = true
+                    self.filterButton.isEnabled = true
                     
                 }
                 
@@ -234,18 +253,18 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
     
     //MARK: segue
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "Show Feed Filter" {
-            self.sendEventWithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionList_Select, withLabel: "Select filter", withValue: nil, forModuleNamed: self.module?.name)
-            let navigationController = segue.destinationViewController as! UINavigationController
+            self.sendEvent(category: .ui_Action, action: .list_Select, label: "Select filter", moduleName: self.module?.name)
+            let navigationController = segue.destination as! UINavigationController
             let detailController = navigationController.viewControllers[0] as! FeedFilterViewController
             detailController.feedModule = self.feedModule
             detailController.hiddenCategories = self.hiddenCategories
             detailController.module = self.module
             detailController.delegate = self
         } else if segue.identifier == "Show Detail" || segue.identifier == "Show Detail with Image" {
-            let detailController = (segue.destinationViewController as! UINavigationController).topViewController as! FeedDetailViewController
-            let feed = fetchedResultsController.objectAtIndexPath(self.tableView.indexPathForSelectedRow!) as! Feed
+            let detailController = (segue.destination as! UINavigationController).topViewController as! FeedDetailViewController
+            let feed = fetchedResultsController.object(at: self.tableView.indexPathForSelectedRow!)
             detailController.feed = feed
             detailController.module = self.module
         }
@@ -253,16 +272,16 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
     
     //MARK read
     func readFeedModule() {
-        let request = NSFetchRequest(entityName: "FeedModule")
+        let request = NSFetchRequest<FeedModule>(entityName: "FeedModule")
         request.predicate = NSPredicate(format: "name = %@", self.module!.name)
         request.fetchLimit = 1
         do {
-            let results = try self.module?.managedObjectContext?.executeFetchRequest(request) as! [FeedModule]
+            let results = try self.module!.managedObjectContext!.fetch(request)
             if results.count > 0 {
                 self.feedModule = results[0]
                 let hiddenCategories = self.feedModule?.hiddenCategories
                 if let hiddenCategories = hiddenCategories {
-                    let array = hiddenCategories.componentsSeparatedByString(",")
+                    let array = hiddenCategories.components(separatedBy: ",")
                     self.hiddenCategories = NSMutableSet(array: array)
                     
                 } else {
@@ -286,22 +305,20 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
     }
     
     // MARK: fetch
-    var fetchedResultsController: NSFetchedResultsController {
+    var fetchedResultsController: NSFetchedResultsController<Feed> {
         // return if already initialized
         if self._fetchedResultsController != nil {
             return self._fetchedResultsController!
         }
-        let managedObjectContext = CoreDataManager.shared.managedObjectContext
+        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
         
-        let request = NSFetchRequest()
-        request.entity = NSEntityDescription.entityForName("Feed", inManagedObjectContext: managedObjectContext)
-        
+        let request = NSFetchRequest<Feed>(entityName: "Feed")
         
         var subPredicates = [NSPredicate]()
         
         subPredicates.append( NSPredicate(format: "module.name = %@", self.module!.name) )
         
-        if let searchString = self.searchController.searchBar.text where searchString.characters.count > 0 {
+        if let searchString = self.searchController.searchBar.text , searchString.characters.count > 0 {
             subPredicates.append( NSPredicate(format: "((title CONTAINS[cd] %@) OR (content CONTAINS[cd] %@))", searchString, searchString) )
         }
         
@@ -326,54 +343,54 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
         
         return self._fetchedResultsController!
     }
-    var _fetchedResultsController: NSFetchedResultsController?
+    var _fetchedResultsController: NSFetchedResultsController<Feed>?
     
     //MARK :UITable
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return (fetchedResultsController.sections?.count)!
     }
     
-    override func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
-        let view = UIView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.frame), 30))
-        let label = UILabel(frame: CGRectMake(8,0,CGRectGetWidth(tableView.frame), 30))
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 30))
+        let label = UILabel(frame: CGRect(x: 8,y: 0,width: tableView.frame.width, height: 30))
         label.translatesAutoresizingMaskIntoConstraints = false
         
         if let sections = fetchedResultsController.sections {
             let currentSection = sections[section] as NSFetchedResultsSectionInfo
             let header = currentSection.name
-            let date = datetimeOutputFormatter.dateFromString(header)
-            label.text = dateFormatterSectionHeader.stringFromDate(date!)
+            let date = datetimeOutputFormatter.date(from: header)
+            label.text = dateFormatterSectionHeader.string(from: date!)
         }
         
         label.textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)
         view.backgroundColor = UIColor(rgba: "#e6e6e6")
-        label.font = UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline)
+        label.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline)
         
         view.addSubview(label)
         
         let viewsDictionary = ["label": label, "view": view]
         
         // Create and add the vertical constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|-1-[label]-1-|",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-1-[label]-1-|",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         
         // Create and add the horizontal constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-[label]",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-[label]",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         return view;
         
     }
     
-    override func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 30
     }
     
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let sections = fetchedResultsController.sections {
             let currentSection = sections[section] as NSFetchedResultsSectionInfo
             return currentSection.numberOfObjects
@@ -382,13 +399,13 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
         return 0
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell : UITableViewCell
-        let feed = fetchedResultsController.objectAtIndexPath(indexPath) as! Feed
+        let feed = fetchedResultsController.object(at: indexPath)
         
         
-        if let logo = feed.logo where logo != "" {
-            cell  = tableView.dequeueReusableCellWithIdentifier("Feed Image Cell", forIndexPath: indexPath) as UITableViewCell
+        if let logo = feed.logo , logo != "" {
+            cell  = tableView.dequeueReusableCell(withIdentifier: "Feed Image Cell", for: indexPath) as UITableViewCell
             let imageView = cell.viewWithTag(5) as! UIImageView
             
             if let image = thumbnailCache[logo] {
@@ -397,16 +414,15 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
                 
             } else {
                 imageView.image = nil
-                let priority = DISPATCH_QUEUE_PRIORITY_DEFAULT
-                dispatch_async(dispatch_get_global_queue(priority, 0)) {
-                    
-                    let imageData = NSData(contentsOfURL: NSURL(string: logo)!)
+                
+                DispatchQueue.global(qos: .userInteractive).async {
+                    let imageData = try? Data(contentsOf: URL(string: logo)!)
                     
                     if let imageData = imageData {
                         if let image = UIImage(data: imageData) {
                             
                             self.thumbnailCache[logo] = image
-                            dispatch_async(dispatch_get_main_queue()) {
+                            DispatchQueue.main.async {
                                 imageView.image = image
                                 // imageView.convertToCircleImage()
                             }
@@ -417,7 +433,7 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
             
             
         } else {
-            cell  = tableView.dequeueReusableCellWithIdentifier("Feed Cell", forIndexPath: indexPath) as UITableViewCell
+            cell  = tableView.dequeueReusableCell(withIdentifier: "Feed Cell", for: indexPath) as UITableViewCell
             
         }
         
@@ -427,63 +443,60 @@ class FeedViewController : UITableViewController, UISearchResultsUpdating , NSFe
         let categoryLabel = cell.viewWithTag(3) as! UILabel
         let contentLabel = cell.viewWithTag(4) as! UILabel
         
-        titleLabel.preferredMaxLayoutWidth = CGRectGetWidth(titleLabel.frame)
-        dateLabel.preferredMaxLayoutWidth = CGRectGetWidth(dateLabel.frame)
-        categoryLabel.preferredMaxLayoutWidth = CGRectGetWidth(categoryLabel.frame)
-        contentLabel.preferredMaxLayoutWidth = CGRectGetWidth(contentLabel.frame)
-        
-        titleLabel.text = feed.title
+        titleLabel.preferredMaxLayoutWidth = titleLabel.frame.width
+        dateLabel.preferredMaxLayoutWidth = dateLabel.frame.width
+        categoryLabel.preferredMaxLayoutWidth = categoryLabel.frame.width
+        contentLabel.preferredMaxLayoutWidth = contentLabel.frame.width
+        titleLabel.text = feed.title.convertingHTMLToPlainText()
         dateLabel.text = feed.postDateTime.timeAgo
         let categoriesArray = feed.category.map{ m -> String in
             let category = m as! FeedCategory
             return category.name
         }
-        let categories = categoriesArray.joinWithSeparator(", ")
+        let categories = categoriesArray.joined(separator: ", ")
         
         categoryLabel.text = categories
-        contentLabel.text = feed.content.stringByConvertingHTMLToPlainText()
-        
+        contentLabel.text = feed.content.convertingHTMLToPlainText()
         cell.layoutIfNeeded()
         
         return cell
     }
     
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.beginUpdates()
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
-        
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {        
         switch type{
-        case NSFetchedResultsChangeType.Insert:
-            self.tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: UITableViewRowAnimation.Top)
+        case NSFetchedResultsChangeType.insert:
+            self.tableView.insertRows(at: [newIndexPath!], with: UITableViewRowAnimation.top)
             break
-        case NSFetchedResultsChangeType.Delete:
-            self.tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: UITableViewRowAnimation.Left)
+        case NSFetchedResultsChangeType.delete:
+            self.tableView.deleteRows(at: [indexPath!], with: UITableViewRowAnimation.left)
             break
-        case NSFetchedResultsChangeType.Update:
-            self.tableView.cellForRowAtIndexPath(indexPath!)?.setNeedsLayout()
+        case NSFetchedResultsChangeType.update:
+            self.tableView.cellForRow(at: indexPath!)?.setNeedsLayout()
             break
         default:
             return
         }
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeSection sectionInfo: NSFetchedResultsSectionInfo, atIndex sectionIndex: Int, forChangeType type: NSFetchedResultsChangeType) {
-        let indexSet = NSIndexSet(index: sectionIndex)
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
+        let indexSet = IndexSet(integer: sectionIndex)
         switch type {
-        case NSFetchedResultsChangeType.Insert:
-            self.tableView.insertSections(indexSet, withRowAnimation: UITableViewRowAnimation.Fade)
-        case NSFetchedResultsChangeType.Delete:
-            self.tableView.deleteSections(indexSet, withRowAnimation: UITableViewRowAnimation.Fade)
-        case NSFetchedResultsChangeType.Update:
+        case NSFetchedResultsChangeType.insert:
+            self.tableView.insertSections(indexSet, with: UITableViewRowAnimation.fade)
+        case NSFetchedResultsChangeType.delete:
+            self.tableView.deleteSections(indexSet, with: UITableViewRowAnimation.fade)
+        case NSFetchedResultsChangeType.update:
             break
-        case NSFetchedResultsChangeType.Move:
+        case NSFetchedResultsChangeType.move:
             break
         }
     }
     
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.endUpdates()
     }
 }

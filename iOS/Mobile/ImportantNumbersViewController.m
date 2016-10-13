@@ -8,9 +8,11 @@
 
 #import "ImportantNumbersViewController.h"
 #import "ImportantNumbersDetailViewController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
+#import "Ellucian_GO-Swift.h"
 
 @interface ImportantNumbersViewController ()
+
+@property (strong, nonatomic) UISearchController *searchController;
 
 @end
 
@@ -18,6 +20,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.tableView.accessibilityIdentifier = @"Important Numbers";
     
     self.navigationController.navigationBar.translucent = NO;
     self.searchBar.translucent = NO;
@@ -29,13 +33,25 @@
 	}
     
     self.title = self.module.name;
+    
+    self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+    self.searchController.searchResultsUpdater = self;
+    self.searchController.hidesNavigationBarDuringPresentation = NO;
+    self.searchController.dimsBackgroundDuringPresentation = NO;
+    self.searchController.searchBar.delegate = self;
+    self.searchController.definesPresentationContext = YES;
+    self.tableView.tableHeaderView = self.searchController.searchBar;
+    
     [self fetchImportantNumbers];
+    
+    // Ensure that searchController will not persist
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuOpened:) name:@"SlidingViewOpenMenuAppearsNotification" object:nil];
 }
 
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Important Number List" forModuleNamed:self.module.name];
+    [self sendView:@"Important Number List" moduleName:self.module.name];
 }
 
 - (NSFetchedResultsController *)fetchedResultsController
@@ -44,17 +60,21 @@
     {
         return _fetchedResultsController;
     }
-    _fetchedResultsController = [self newFetchedResultsControllerWithSearch:nil];
+    _fetchedResultsController = [self newFetchedResultsControllerWithSearch:self.searchController.searchBar.text];
     return _fetchedResultsController;
 }
 
+// Ensure that searchController will not persist
+-(void) menuOpened:(id)sender
+{
+    [self.searchController setActive:NO];
+    self.searchController.searchBar.showsCancelButton = NO;
+    self.searchController.searchBar.text = @"";
+}
 
 
 #pragma mark Fetch results controller management
-- (NSFetchedResultsController *)fetchedResultsControllerForTableView:(UITableView *)tableView
-{
-    return tableView == self.tableView ? self.fetchedResultsController : self.searchFetchedResultsController;
-}
+
 
 - (NSFetchedResultsController *)newFetchedResultsControllerWithSearch:(NSString *)searchString
 {
@@ -96,15 +116,13 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    NSFetchedResultsController *fetchController = [self fetchedResultsControllerForTableView:tableView];
-    return [[fetchController sections] count];
+    return [[self.fetchedResultsController sections] count];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     NSInteger numberOfRows = 0;
-    NSFetchedResultsController *fetchController = [self fetchedResultsControllerForTableView:tableView];
-    NSArray *sections = fetchController.sections;
+    NSArray *sections = self.fetchedResultsController.sections;
     if(sections.count > 0)
     {
         id <NSFetchedResultsSectionInfo> sectionInfo = [sections objectAtIndex:section];
@@ -118,7 +136,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionList_Select withLabel:@"Select Important Number" withValue:nil forModuleNamed:self.module.name];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.List_Select label:@"Select Important Number" moduleName:self.module.name];
     [self performSegueWithIdentifier:@"Show Important Numbers Detail" sender:tableView];
 }
 
@@ -129,46 +147,26 @@
     UITableViewCell *cell =
     [self.tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     
-    ImportantNumbersDirectoryEntry *entry = [[self fetchedResultsControllerForTableView:tableView] objectAtIndexPath:indexPath];
-    UILabel *textLabel = (UILabel*)[cell viewWithTag:1];
-    textLabel.text = entry.name;
+    ImportantNumbersDirectoryEntry *entry = [self.fetchedResultsController objectAtIndexPath:indexPath];
+    cell.textLabel.text = entry.name;
     
     return cell;
 }
 
-- (NSFetchedResultsController *)searchFetchedResultsController
-{
-    if (_searchFetchedResultsController != nil)
-    {
-        return _searchFetchedResultsController;
-    }
-    _searchFetchedResultsController = [self newFetchedResultsControllerWithSearch:self.searchDisplayController.searchBar.text];
-    return _searchFetchedResultsController;
-}
-
-- (UITableView *) tableViewForFetchedResultsController:(NSFetchedResultsController *)controller
-{
-    UITableView *tableView = controller == self.fetchedResultsController ? self.tableView : self.searchDisplayController.searchResultsTableView;
-    return tableView;
-    
-}
-
 - (void)controllerWillChangeContent:(NSFetchedResultsController *)controller {
-    UITableView *tableView = [self tableViewForFetchedResultsController:controller];
-    [tableView beginUpdates];
+    [self.tableView beginUpdates];
 }
 
 - (void)controller:(NSFetchedResultsController *)controller didChangeSection:(id <NSFetchedResultsSectionInfo>)sectionInfo atIndex:(NSUInteger)sectionIndex forChangeType:(NSFetchedResultsChangeType)type {
-    UITableView *tableView = controller == self.fetchedResultsController ? self.tableView : self.searchDisplayController.searchResultsTableView;
     
     switch(type) {
         case NSFetchedResultsChangeInsert:
             if (!(sectionIndex == 0 && [self.tableView numberOfSections] == 1))
-                [tableView insertSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
+                [self.tableView insertSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
             break;
         case NSFetchedResultsChangeDelete:
             if (!(sectionIndex == 0 && [self.tableView numberOfSections] == 1))
-                [tableView deleteSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
+                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
             break;
         case NSFetchedResultsChangeMove:
             break;
@@ -180,32 +178,30 @@
 }
 
 - (void)controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    UITableView *tableView = [self tableViewForFetchedResultsController:controller];
     
     switch(type) {
             
         case NSFetchedResultsChangeInsert:
-            [tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
             
         case NSFetchedResultsChangeDelete:
-            [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
             
         case NSFetchedResultsChangeUpdate:
-            [tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
             
         case NSFetchedResultsChangeMove:
-            [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
-            [tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
     }
 }
 
 - (void)controllerDidChangeContent:(NSFetchedResultsController *)controller {
-    UITableView *tableView = [self tableViewForFetchedResultsController:controller];
-    [tableView endUpdates];
+    [self.tableView endUpdates];
 }
 
 #pragma mark - fetch ImportantNumbers
@@ -294,7 +290,7 @@
     {
         UITableView *tableView = sender;
         NSIndexPath *indexPath = [tableView indexPathForSelectedRow];
-        ImportantNumbersDirectoryEntry *directory = [[self fetchedResultsControllerForTableView:tableView] objectAtIndexPath:indexPath];
+        ImportantNumbersDirectoryEntry *directory = [self.fetchedResultsController objectAtIndexPath:indexPath];
 
         ImportantNumbersDetailViewController *vc = (ImportantNumbersDetailViewController *)[segue destinationViewController];
         vc.name = directory.name;
@@ -309,36 +305,26 @@
         vc.phoneExtension = directory.phoneExtension;
         vc.address = directory.address;
         vc.module = self.module;
+
+        [self.searchController setActive:NO];
     }
 }
 
 -(NSString *)tableView:(UITableView *)tableView stringForTitleForHeaderInSection:(NSInteger)section
 {
-    NSFetchedResultsController *fetchController = [self fetchedResultsControllerForTableView:tableView];
+    NSFetchedResultsController *fetchController = self.fetchedResultsController;
     return [[[fetchController sections] objectAtIndex:section] name];
-}
-
-
-#pragma mark - Search Display Delegaten
-- (BOOL)searchDisplayController:(UISearchDisplayController *)controller shouldReloadTableForSearchString:(NSString *)searchString
-{
-    self.searchFetchedResultsController = nil;
-    return YES;
 }
 
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar
 {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionSearch withLabel:@"Search" withValue:nil forModuleNamed:nil];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Search label:@"Search" moduleName:nil];
 }
 
-//workaround for iOS 7 double tap on search bar, search disappears
--(void)searchDisplayControllerDidEndSearch:(UISearchDisplayController *)controller
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController
 {
-    self.searchFetchedResultsController = nil;
-    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1) {
-        [self.tableView insertSubview:self.searchDisplayController.searchBar aboveSubview:self.tableView];
-    }
-    return;
+    _fetchedResultsController = nil;
+    [self.tableView reloadData];
 }
 
 @end

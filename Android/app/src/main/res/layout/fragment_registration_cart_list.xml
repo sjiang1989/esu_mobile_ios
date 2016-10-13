@@ -63,13 +63,11 @@
 	        	android:id="@+id/messages"
 		    	android:layout_width="match_parent"
 		    	android:layout_height="wrap_content"
-		    	android:paddingLeft="8dp"
 		    	android:paddingStart="8dp"
 		    	android:paddingTop="4dp"
-		    	android:singleLine="false"
 		    	android:maxLines="4"
 		    	android:scrollbars="vertical"
-				tools:ignore="NewApi,RtlSymmetry" />
+				tools:ignore="RtlSymmetry" />
 		    
 		</LinearLayout>
 	
@@ -84,16 +82,24 @@
         android:layout_centerHorizontal="true"
         android:text="@string/nothing_to_display" />
 
+    <include layout="@layout/registration_auth_required_top_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        tools:visibility="visible"
+        android:layout_below="@+id/eligibility_error_message_layout" />
+
     <ListView
         android:id="@android:id/list"
         style="@style/listContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/eligibility_error_message_layout"
+        android:layout_below="@+id/registration_auth_req_top_header"
         android:layout_above="@+id/register" />
     
     <Button 
         android:id="@+id/register"
+        tools:visibility="visible"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"

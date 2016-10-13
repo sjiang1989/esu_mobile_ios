@@ -14,7 +14,7 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import com.ellucian.elluciango.R;
-import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -32,8 +32,8 @@ public class TimeRulerView extends View {
     private static final int mHourHeight = 180;
     private final int mLabelTextSize = 35;
     private final int mLabelPaddingLeft = 20;
-    private final int mHourTextColor = Utils.getColorHelper(getContext(), R.color.list_title_text_color);
-    private final int mDividerLineColor = Utils.getColorHelper(getContext(), R.color.list_title_text_color);
+    private final int mHourTextColor = VersionSupportUtils.getColorHelper(getContext(), R.color.list_title_text_color);
+    private final int mDividerLineColor = VersionSupportUtils.getColorHelper(getContext(), R.color.list_title_text_color);
     private final int mStartHour = 0;
     private final int mEndHour = 24;
     public static final int mHourPadding = 30;

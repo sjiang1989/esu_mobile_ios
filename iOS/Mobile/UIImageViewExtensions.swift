@@ -12,25 +12,25 @@ extension UIImageView {
     func convertToCircleImage() {
         layer.borderWidth = 1.0
         layer.masksToBounds = false
-        layer.borderColor = UIColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0).CGColor
+        layer.borderColor = UIColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0).cgColor
         layer.cornerRadius = frame.size.width/2
         clipsToBounds = true
     }
     
-    func loadImagefromURL(url: String, successHandler: (() -> Void)? = nil, failureHandler: (() -> Void)? = nil) {
-        NSURLSession.sharedSession().dataTaskWithURL(NSURL(string: url)!) { (data, response, error) in
+    func loadImagefromURL(_ url: String, successHandler: (() -> Void)? = nil, failureHandler: (() -> Void)? = nil) {
+        URLSession.shared.dataTask(with: URL(string: url)!) { (data, response, error) in
             if let _ = error {
                 if let failureHandler = failureHandler {
                     failureHandler()
                 }
             } else {
-                if let httpResponse = response as? NSHTTPURLResponse {
+                if let httpResponse = response as? HTTPURLResponse {
                     
                     switch httpResponse.statusCode {
                         
                     case 200:
                         
-                        dispatch_async(dispatch_get_main_queue()) {
+                        DispatchQueue.main.async {
                             self.image = UIImage(data: data!)
                         }
                         if let successHandler = successHandler {

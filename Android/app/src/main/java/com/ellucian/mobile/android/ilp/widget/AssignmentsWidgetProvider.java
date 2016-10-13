@@ -2,7 +2,6 @@
 
 package com.ellucian.mobile.android.ilp.widget;
 
-import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -195,7 +194,6 @@ public class AssignmentsWidgetProvider extends AppWidgetProvider {
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
         }
 
-	@SuppressLint("NewApi")
 	class DataProviderObserver extends ContentObserver {
 		private final AppWidgetManager mAppWidgetManager;
 		private final ComponentName mComponentName;

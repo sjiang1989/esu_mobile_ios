@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.app;
@@ -41,10 +41,11 @@ import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.ModuleType;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
-import com.ellucian.mobile.android.login.LoginDialogFragment;
 import com.ellucian.mobile.android.provider.EllucianContract.Modules;
 import com.ellucian.mobile.android.provider.EllucianContract.Notifications;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
+import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ import java.util.List;
 public class DrawerLayoutHelper {
 	
 	private static final String TAG = DrawerLayoutHelper.class.getSimpleName();
-	public static final long AUTH_REFRESH_TIME = 30 * 60 * 1000; // 30 Minutes
+	public static final long AUTH_REFRESH_TIME = 30 * Utils.ONE_MINUTE; // 30 Minutes
 
 	
 	private final AppCompatActivity activity;
@@ -92,7 +93,7 @@ public class DrawerLayoutHelper {
 			drawerList.setOnGroupClickListener(new MenuGroupClickListener());
 			
 			// Only expand groups that are not on the collapsed list
-			String headersString = Utils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
+			String headersString = PreferencesUtils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
 			if (!TextUtils.isEmpty(headersString)) {
 				String[] headerArray = headersString.split(",");
 				ArrayList<String> headerList = new ArrayList<String> (Arrays.asList(headerArray));
@@ -160,7 +161,7 @@ public class DrawerLayoutHelper {
 				}
 
 			};
-			drawerLayout.setDrawerListener(drawerToggle);
+			drawerLayout.addDrawerListener(drawerToggle);
 		}
 	}
 
@@ -187,15 +188,6 @@ public class DrawerLayoutHelper {
 
 	public void invalidateItems() {
 		((ModuleMenuAdapter) drawerList.getExpandableListAdapter()).notifyDataSetChanged();
-	}
-
-	
-
-	private static void showLoginDialog(AppCompatActivity activity) {
-		LoginDialogFragment loginFragment = new LoginDialogFragment();
-		loginFragment.show(activity.getSupportFragmentManager(),
-				LoginDialogFragment.LOGIN_DIALOG);
-
 	}
 
     private static void showInstallAppDialog(final String appStoreUrl, final AppCompatActivity activity) {
@@ -281,21 +273,21 @@ public class DrawerLayoutHelper {
 		private void addMenuHeaderToCollapsedList(String headerLabel) {
 			
 			if (!isMenuHeaderInCollapsedList(headerLabel)) {
-				String headersString = Utils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
+				String headersString = PreferencesUtils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
 				if (!TextUtils.isEmpty(headersString)) {
 					headersString += "," + headerLabel;					
 				} else {
 					headersString = headerLabel;
 				}
 				Log.d(TAG, "Updated collapsed headers string: " + headersString);
-				Utils.addStringToPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, headersString);	
+				PreferencesUtils.addStringToPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, headersString);
 			} 
 				
 		}
 		
 		private boolean removeMenuHeaderToCollapsedList(String headerLabel) {
 			
-			String headersString = Utils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
+			String headersString = PreferencesUtils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
 			if (!TextUtils.isEmpty(headersString)) {
 				String[] headerArray = headersString.split(",");
 				ArrayList<String> headerList = new ArrayList<String> (Arrays.asList(headerArray));
@@ -304,7 +296,7 @@ public class DrawerLayoutHelper {
 					headerList.remove(index);
 					String newHeadersString = TextUtils.join(",", headerList);
 					Log.d(TAG, "Updated collapsed headers string: " + newHeadersString);
-					Utils.addStringToPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, newHeadersString);
+					PreferencesUtils.addStringToPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, newHeadersString);
 					return true;
 				}
 			}		
@@ -313,7 +305,7 @@ public class DrawerLayoutHelper {
 		}
 		
 		private boolean isMenuHeaderInCollapsedList(String headerLabel) {
-			String headersString = Utils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
+			String headersString = PreferencesUtils.getStringFromPreferences(activity, Utils.MENU, Utils.MENU_HEADER_STATE, "");
 			if (!TextUtils.isEmpty(headersString)) {
 				String[] headerArray = headersString.split(",");
 				ArrayList<String> headerList = new ArrayList<String> (Arrays.asList(headerArray));
@@ -349,21 +341,18 @@ public class DrawerLayoutHelper {
         }
 
         if (secure) {
-
+			Log.v(TAG, "trying to open a secure module");
             Intent intent = ModuleMenuAdapter.getIntent(activity, type, subType,
                     label, moduleId);
 
             if (!ellucianApp.isUserAuthenticated()) {
-
-
-                LoginDialogFragment loginFragment = new LoginDialogFragment();
-                loginFragment.queueIntent(intent, roles);
-                loginFragment.show(activity.getSupportFragmentManager(),
-                        LoginDialogFragment.LOGIN_DIALOG);
+                Utils.showLoginDialog(activity, intent, roles);
+            } else if (UserUtils.getUseFingerprintEnabled(activity) && ellucianApp.isFingerprintUpdateNeeded()) {
+                Utils.showFingerprintDialog(activity, intent, roles);
             } else if (type.equals(ModuleType.WEB)) {
 
                 //do if basic authentication only; web login will be handled by cookies
-                String loginType = Utils.getStringFromPreferences(activity, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
+                String loginType = PreferencesUtils.getStringFromPreferences(activity, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
                 if (loginType.equals(Utils.NATIVE_LOGIN_TYPE) && System.currentTimeMillis() > (ellucianApp
                         .getLastAuthRefresh() + AUTH_REFRESH_TIME)) {
                     LocalBroadcastManager lbm = LocalBroadcastManager
@@ -401,6 +390,7 @@ public class DrawerLayoutHelper {
                 activity.startActivity(intent);
             }
         } else if (type.equals(ModuleType._SIGN_IN)) {
+			Log.v(TAG, "trying to open the logon module");
 
             if (ellucianApp.isUserAuthenticated()) {
                 ellucianApp.sendEventToTracker1(GoogleAnalyticsConstants.CATEGORY_UI_ACTION,
@@ -436,7 +426,7 @@ public class DrawerLayoutHelper {
 
             } else {
                 // Sign In
-                showLoginDialog(activity);
+                Utils.showLoginDialog(activity);
             }
 
         } else {

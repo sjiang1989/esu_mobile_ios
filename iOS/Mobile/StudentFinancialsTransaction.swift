@@ -11,6 +11,6 @@ import Foundation
 struct StudentFinancialsTransaction {
     var amount:Float
     var description:String
-    var entryDate:NSDate
+    var entryDate:Date
     var type:String
 }

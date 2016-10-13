@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -18,7 +18,6 @@
         android:gravity="center"
         android:paddingTop="10dp"
 		android:paddingEnd="6dp"
-		android:paddingRight="6dp"
         android:paddingBottom="10dp"
         android:focusable="false"
 		android:focusableInTouchMode="false"
@@ -29,7 +28,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical" 
-        android:paddingLeft="6sp"
         android:paddingStart="6sp"
 		tools:ignore="RtlSymmetry">
         
@@ -39,12 +37,11 @@
             
             <TextView
 		        android:id="@+id/course_name"
+                tools:text="MATH 101-12"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:layout_alignParentLeft="true"
 		        android:layout_alignParentStart="true"
 		        android:layout_alignParentTop="true"
-                android:layout_toLeftOf="@+id/academic_level_and_location"
                 android:layout_toStartOf="@+id/academic_level_and_location"
 		        android:maxLines="1"
 		        android:ellipsize="end"
@@ -52,26 +49,25 @@
             
             <TextView
                 android:id="@+id/academic_level_and_location"
+                tools:text="UG | M"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
 		        android:layout_alignParentTop="true"
 		        android:maxLines="1"
-                android:layout_toLeftOf="@+id/seats_available_box"
                 android:layout_toStartOf="@+id/seats_available_box"
 	            android:ellipsize="end"
-	            android:paddingLeft="3dp"
         		android:paddingStart="3dp"
-                android:paddingTop="3sp" />
+                android:paddingTop="3sp"
+                tools:ignore="UnknownIdInLayout" />
 
             <include layout="@layout/seats_meter_item"/>
 
         </RelativeLayout>
         
-        
-        
         <TextView
             android:id="@+id/section_title"
+            tools:text="College Algebra"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
@@ -82,10 +78,10 @@
 	        
 	        <TextView
 	            android:id="@+id/instructor"
+                tools:text="Bardel, Gregory"
 	            android:layout_width="0dip"
 	            android:layout_height="wrap_content"
 	            android:layout_weight="1"
-	            android:singleLine="true"
 	            android:ellipsize="end"
         		android:maxLines="1" />
 	        	        
@@ -100,11 +96,11 @@
 		        android:paddingLeft="4dp"
 	            android:paddingStart="4dp" 
 		        android:paddingRight="4dp"
-	            android:paddingEnd="4dp"
-				tools:ignore="NewApi" />
+	            android:paddingEnd="4dp" />
 	          
 	        <TextView
 		        android:id="@+id/credits"
+                tools:text="4.00 Credits"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
 		        android:layout_weight="0"
@@ -120,9 +116,9 @@
 	        
 	        <TextView
 	            android:id="@+id/meetings_and_type"
+                tools:text="Mon, Wed, Fri: 10:00 AM - 10:50 AM | TR"
 	            android:layout_width="wrap_content"
 	            android:layout_height="wrap_content"
-	            android:singleLine="true"
 	            android:ellipsize="end"
         		android:maxLines="1"  />
 			

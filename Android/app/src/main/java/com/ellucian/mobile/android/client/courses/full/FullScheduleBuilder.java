@@ -1,10 +1,8 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client.courses.full;
-
-import java.util.ArrayList;
 
 import android.content.ContentProviderOperation;
 import android.content.Context;
@@ -15,9 +13,10 @@ import com.ellucian.mobile.android.client.courses.Section;
 import com.ellucian.mobile.android.client.courses.Term;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseCourses;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseInstructors;
-import com.ellucian.mobile.android.provider.EllucianContract.CourseMeetings;
 import com.ellucian.mobile.android.provider.EllucianContract.CoursePatterns;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseTerms;
+
+import java.util.ArrayList;
 
 public class FullScheduleBuilder extends ContentProviderOperationBuilder<CoursesResponse>{
 
@@ -27,15 +26,14 @@ public class FullScheduleBuilder extends ContentProviderOperationBuilder<Courses
 		
 		@Override
 		public ArrayList<ContentProviderOperation> buildOperations(CoursesResponse model) {
-			final ArrayList<ContentProviderOperation> batch = new ArrayList<ContentProviderOperation>();
+			final ArrayList<ContentProviderOperation> batch = new ArrayList<>();
 			
 			
 			// delete current contents in database
-			batch.add(ContentProviderOperation.newDelete(CourseTerms.CONTENT_URI).build());
 			batch.add(ContentProviderOperation.newDelete(CourseCourses.CONTENT_URI).build());
-			batch.add(ContentProviderOperation.newDelete(CourseInstructors.CONTENT_URI).build());
-			batch.add(ContentProviderOperation.newDelete(CoursePatterns.CONTENT_URI).build());
-			batch.add(ContentProviderOperation.newDelete(CourseMeetings.CONTENT_URI).build());
+            batch.add(ContentProviderOperation.newDelete(CourseInstructors.CONTENT_URI).build());
+            batch.add(ContentProviderOperation.newDelete(CoursePatterns.CONTENT_URI).build());
+            batch.add(ContentProviderOperation.newDelete(CourseTerms.CONTENT_URI).build());
 			if(model.terms != null) {
 				for (Term term : model.terms) {
 					batch.add(ContentProviderOperation

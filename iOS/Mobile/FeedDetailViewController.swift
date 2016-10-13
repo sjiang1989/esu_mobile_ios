@@ -11,8 +11,11 @@ import WebKit
 
 class FeedDetailViewController: UIViewController, UIWebViewDelegate {
     
+    static let feedDetailNotification = Notification.Name("FeedDetail viewWillAppear")
+    
     var feed : Feed?
     var module : Module?
+    var htmlStringWithFont : String?
     
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var dateLabel: UILabel!
@@ -21,22 +24,22 @@ class FeedDetailViewController: UIViewController, UIWebViewDelegate {
  
     @IBOutlet var webView: UIWebView!
     
-    let dateFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .MediumStyle
-        formatter.timeStyle = .ShortStyle
+    let dateFormatter : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
         return formatter
         }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.navigationController!.topViewController!.navigationItem.leftBarButtonItem = splitViewController!.displayModeButtonItem()
+        self.navigationController!.topViewController!.navigationItem.leftBarButtonItem = splitViewController!.displayModeButtonItem
         self.navigationController!.topViewController!.navigationItem.leftItemsSupplementBackButton = true
         
         titleLabel.text = feed!.title
-        dateLabel.text = dateFormatter.stringFromDate(feed!.postDateTime)
+        dateLabel.text = dateFormatter.string(from: feed!.postDateTime)
 
-        if let logo = feed!.logo where logo != "" {
+        if let logo = feed!.logo , logo != "" {
 //            imageView.convertToCircleImage()
             imageView.loadImagefromURL(logo)
         }
@@ -45,64 +48,93 @@ class FeedDetailViewController: UIViewController, UIWebViewDelegate {
         loadWebView()
     }
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        sendView("News Detail", forModuleNamed: module?.name)
+        sendView("News Detail", moduleName: module?.name)
+        
+        // Send notification to ensure that FeedViewController searchController resets
+        NotificationCenter.default.post(name: FeedDetailViewController.feedDetailNotification, object: nil)
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        self.webView?.loadHTMLString(htmlStringWithFont!, baseURL: nil)
     }
     
     func loadWebView() {
-        var htmlStringWithFont : String
         let text : String
-        let link = feed?.link?.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-        if link != nil && link?.characters.count > 0 {
-            text = "\(feed!.content)<br><br>\(link!)"
+        let link = feed?.link?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        if let link = link, link.characters.count > 0 {
+            text = "\(feed!.content!)<br><br>\(link)"
         } else {
-            text = feed!.content
+            text = feed!.content!
         }
         
-        let pointSize = UIFont.preferredFontForTextStyle(UIFontTextStyleBody).pointSize
+        let pointSize = UIFont.preferredFont(forTextStyle: UIFontTextStyle.body).pointSize
         
-        if AppearanceChanger.isIOS8AndRTL() {
-            htmlStringWithFont = "<meta name=\"viewport\" content=\"initial-scale=1.0\" /><div style=\"font-family: -apple-system; color:black; font-size: \(pointSize); direction:rtl;\">\(text)</div>"
-        } else {
-            htmlStringWithFont = "<meta name=\"viewport\" content=\"initial-scale=1.0\" /><div style=\"font-family: -apple-system; color:black; font-size: \(pointSize);\">\(text)</div>"
-        }
+        
+        htmlStringWithFont = "<meta name=\"viewport\" content=\"initial-scale=1.0\" /><div style=\"font-family: -apple-system; color:black; font-size: \(pointSize);\">\(text)</div>"
+
         // Replace '\n' characters with <br /> for content that isn't html based to begin with...
         // One issue is if html text also has \n characters in it. In that case we'll be changing the spacing of the content.
-        htmlStringWithFont = htmlStringWithFont.stringByReplacingOccurrencesOfString("\n", withString: "<br/>")
-        self.webView?.loadHTMLString(htmlStringWithFont, baseURL: nil)
+        htmlStringWithFont = htmlStringWithFont!.replacingOccurrences(of: "\n", with: "<br/>")
+        self.webView?.loadHTMLString(htmlStringWithFont!, baseURL: nil)
     }
     
-    func webView(webView: UIWebView, shouldStartLoadWithRequest request: NSURLRequest, navigationType: UIWebViewNavigationType) -> Bool {
-        if navigationType == UIWebViewNavigationType.LinkClicked {
-            UIApplication.sharedApplication().openURL(request.URL!)
+    func webView(_ webView: UIWebView, shouldStartLoadWith request: URLRequest, navigationType: UIWebViewNavigationType) -> Bool {
+        if navigationType == UIWebViewNavigationType.linkClicked {
+            UIApplication.shared.openURL(request.url!)
             return false;
         }
         return true;
     }
     
-    @IBAction func share(sender: UIBarButtonItem) {
+    @IBAction func share(_ sender: UIBarButtonItem) {
     
-        let itemsToShare : [AnyObject]
-        let activities : [UIActivity]?
+        var itemsToShare : [Any]
+        var activities : [UIActivity]?
         
-        if let link = self.feed!.link, let url = NSURL(string: self.feed!.link) where link != "" {
-            itemsToShare = [url]
+        activities = nil
+        
+        var shareString = ""
+        if let feed = self.feed {
+            if let title = feed.title {
+                shareString += title
+            }
+            if let date = dateLabel.text {
+                if shareString.characters.count > 0 {
+                    shareString += "\n\n"
+                }
+                shareString += "Date: "
+                shareString += date
+            }
+            if let content = feed.content {
+                if shareString.characters.count > 0 {
+                    shareString += "\n\n"
+                }
+                shareString += content.convertingHTMLToPlainText()
+                shareString += "\n\n"
+            }
+            
+        }
+        itemsToShare = [shareString]
+        
+        if let link = self.feed?.link, let url = URL(string: link), link != "" {
+            itemsToShare.append(url)
             activities = [SafariActivity()]
-        } else {
-            itemsToShare = [self.feed!.title]
-            activities = nil
         }
         
         let activityVC = UIActivityViewController(activityItems: itemsToShare, applicationActivities: activities)
         activityVC.popoverPresentationController?.barButtonItem = sender
         activityVC.completionWithItemsHandler = {
             (activityType, success, returnedItems, error) in
-            let label = "Tap Share Icon - \(activityType)"
-            self.sendEventWithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionInvoke_Native, withLabel: label, withValue: nil, forModuleNamed: self.module!.name)
+            if success {
+                let label = "Tap Share Icon - \(activityType)"
+                self.sendEvent(category: .ui_Action, action: .invoke_Native, label: label, moduleName: self.module?.name)
+            }
         }
 
-        self.presentViewController(activityVC, animated: true, completion: nil)
+        self.present(activityVC, animated: true, completion: nil)
 
     }
 }

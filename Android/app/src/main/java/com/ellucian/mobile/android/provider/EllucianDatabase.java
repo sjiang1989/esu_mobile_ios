@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.provider;
@@ -15,7 +15,6 @@ import com.ellucian.mobile.android.provider.EllucianContract.CourseAssignmentsCo
 import com.ellucian.mobile.android.provider.EllucianContract.CourseCoursesColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseEventsColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseInstructorsColumns;
-import com.ellucian.mobile.android.provider.EllucianContract.CourseMeetingsColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.CoursePatternsColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseRosterColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseTermsColumns;
@@ -38,6 +37,7 @@ import com.ellucian.mobile.android.provider.EllucianContract.MapsCampusesColumns
 import com.ellucian.mobile.android.provider.EllucianContract.ModulesColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.ModulesPropertiesColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.ModulesRolesColumns;
+import com.ellucian.mobile.android.provider.EllucianContract.ModulesBeaconsColumns;
 import com.ellucian.mobile.android.provider.EllucianContract.News;
 import com.ellucian.mobile.android.provider.EllucianContract.NewsCategories;
 import com.ellucian.mobile.android.provider.EllucianContract.NewsCategoriesColumns;
@@ -50,20 +50,23 @@ import com.ellucian.mobile.android.provider.EllucianContract.RegistrationLevelsC
 import com.ellucian.mobile.android.provider.EllucianContract.RegistrationLocationsColumns;
 
 public class EllucianDatabase extends SQLiteOpenHelper {
-	
+	final String TAG = EllucianDatabase.class.getSimpleName();
+
 	// 7 = Ellucian Mobile 3.5
 	// 8 = Ellucian Mobile 3.6
 	// 9 = Ellucian Mobile 3.8
     // 10 = Ellucian Mobile 4.0
     // 11 - Ellucian Mobile 4.5.0_a
     // 12 = Ellucian Mobile 4.5
-	private static final int DB_VERSION = 12;
+    // 13 = Ellucian Mobile 5.0
+	private static final int DB_VERSION = 13;
 	private static final String DB_NAME = "ellucian_mobile.db";
 
 	public interface Tables {
 		String MODULES = "modules";
 		String MODULES_ROLES = "modules_roles";
 		String MODULES_PROPERTIES = "modules_urls";
+		String MODULES_BEACONS = "modules_beacons";
 
 		String GRADE_TERMS = "grade_terms";
 		String GRADE_COURSES = "grade_courses";
@@ -186,6 +189,7 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
+		Log.v(TAG, "Creating database");
 		db.execSQL("CREATE TABLE " + Tables.MODULES + " (" + BaseColumns._ID
 				+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
 				+ ModulesColumns.MODULES_ID + " TEXT NOT NULL, "
@@ -197,6 +201,8 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 				+ ModulesColumns.MODULE_SHOW_FOR_GUEST + " INTEGER NOT NULL DEFAULT 0, " 
 				+ ModulesColumns.MODULE_TYPE + " TEXT NOT NULL, "
 				+ ModulesColumns.MODULE_SUB_TYPE + " TEXT, "
+                + ModulesColumns.MODULE_USE_BEACON_TO_LAUNCH + " TEXT, "
+				+ ModulesColumns.MODULE_DISPLAY_IN_MENU + " TEXT, "
 				+ "UNIQUE (" + ModulesColumns.MODULES_ID
 				+ ") ON CONFLICT REPLACE)");
 
@@ -213,6 +219,15 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 				+ References.MODULES_ID + ", "
 				+ ModulesRolesColumns.MODULE_ROLES_NAME + " TEXT NOT NULL " + ")");
 
+		db.execSQL("CREATE TABLE " + Tables.MODULES_BEACONS + " ("
+				+ BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+				+ ModulesColumns.MODULES_ID + " TEXT NOT NULL "
+				+ References.MODULES_ID + ", "
+				+ ModulesBeaconsColumns.MODULES_BEACONS_UUID + " TEXT NOT NULL, "
+				+ ModulesBeaconsColumns.MODULES_BEACONS_MAJOR + " TEXT NOT NULL, "
+				+ ModulesBeaconsColumns.MODULES_BEACONS_MINOR + " TEXT NOT NULL, "
+				+ ModulesBeaconsColumns.MODULES_BEACONS_DISTANCE + " TEXT NOT NULL, "
+				+ ModulesBeaconsColumns.MODULES_BEACONS_MESSAGE + " TEXT NOT NULL " + ")");
 
 		db.execSQL("CREATE TABLE " + Tables.GRADE_TERMS + " ("
 				+ BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -385,7 +400,9 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 				+ CourseCoursesColumns.COURSE_SECTION_NUMBER + " TEXT, "
 				+ CourseCoursesColumns.COURSE_IS_INSTRUCTOR + " INTEGER, "
 				+ CourseCoursesColumns.COURSE_LEARNING_PROVIDER + " TEXT, "
-				+ CourseCoursesColumns.COURSE_LEARNING_PROVIDER_SITE_ID + " TEXT "
+				+ CourseCoursesColumns.COURSE_LEARNING_PROVIDER_SITE_ID + " TEXT, "
+                + CourseCoursesColumns.COURSE_FIRST_MEETING_DATE + " TEXT, "
+                + CourseCoursesColumns.COURSE_LAST_MEETING_DATE + " TEXT "
 				+ ")");
 
 		db.execSQL("CREATE TABLE " + Tables.COURSE_INSTRUCTORS + " ("
@@ -406,22 +423,15 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 				+ References.COURSE_COURSES_COURSE_ID + ", "
 				+ CoursePatternsColumns.PATTERN_DAYS + " TEXT, "
 				+ CoursePatternsColumns.PATTERN_LOCATION + " TEXT, "
+                + CoursePatternsColumns.PATTERN_START_DATE + " TEXT, "
+                + CoursePatternsColumns.PATTERN_END_DATE + " TEXT, "
 				+ CoursePatternsColumns.PATTERN_START_TIME + " TEXT, "
 				+ CoursePatternsColumns.PATTERN_END_TIME + " TEXT, "
 				+ CoursePatternsColumns.PATTERN_ROOM + " TEXT, "
-				+ MapsBuildingsColumns.BUILDING_BUILDING_ID + " TEXT, "
-				+ MapsCampusesColumns.CAMPUS_ID + " TEXT, "
+				+ CoursePatternsColumns.PATTERN_BUILDING_ID + " TEXT, "
+				+ CoursePatternsColumns.PATTERN_CAMPUS_ID + " TEXT, "
+                + CoursePatternsColumns.PATTERN_CAMPUS_NAME + " TEXT, "
 				+ CoursePatternsColumns.PATTERN_INSTRUCTIONAL_METHOD + " TEXT "
-				+ ")");
-
-		db.execSQL("CREATE TABLE " + Tables.COURSE_MEETINGS + " ("
-				+ BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-				+ CourseCoursesColumns.COURSE_ID + " TEXT NOT NULL "
-				+ References.COURSE_COURSES_COURSE_ID + ", "
-				+ CourseMeetingsColumns.MEETING_LOCATION + " TEXT, "
-				+ CourseMeetingsColumns.MEETING_SUMMARY + " TEXT, "
-				+ CourseMeetingsColumns.MEETING_START + " TEXT, "
-				+ CourseMeetingsColumns.MEETING_END + " TEXT " 
 				+ ")");
 		
 		db.execSQL("CREATE TABLE " + Tables.COURSE_ROSTER + " (" 
@@ -586,7 +596,7 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        Log.v("EllucianDatabase","The database is updating");
 		Log.d(this.getClass().getSimpleName(), "onUpdate() from " + oldVersion
 				+ " to " + newVersion);
 		// here do anything that needs to be done to get the database scheme to
@@ -661,7 +671,8 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 					+ ModulesColumns.MODULE_SUB_TYPE + " TEXT " 
 					);
 		case 5:
-			db.execSQL("ALTER TABLE " + Tables.NOTIFICATIONS					
+            Log.i(TAG, "Applying 3.0 DB updates");
+			db.execSQL("ALTER TABLE " + Tables.NOTIFICATIONS
 					+ " ADD COLUMN " + NotificationsColumns.NOTIFICATIONS_SOURCE + " TEXT ");
 			db.execSQL("ALTER TABLE " + Tables.NOTIFICATIONS	
 					+ " ADD COLUMN " + NotificationsColumns.NOTIFICATIONS_DISPATCH_DATE + " TEXT ");
@@ -678,6 +689,7 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 			db.execSQL("ALTER TABLE " + Tables.NOTIFICATIONS
 					+ " ADD COLUMN " + NotificationsColumns.NOTIFICATIONS_STATUSES + " TEXT ");
 		case 6: //3.0
+            Log.i(TAG, "Applying 3.5 DB updates");
 			db.execSQL("DROP TRIGGER " + Triggers.EVENTS_SEARCH_INSERT);
 			db.execSQL("CREATE TRIGGER " + Triggers.EVENTS_SEARCH_INSERT
 					+ " AFTER INSERT ON " + Tables.EVENTS + " BEGIN INSERT INTO "
@@ -690,9 +702,11 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 					+ References.MODULES_ID + ", "
 					+ ModulesRolesColumns.MODULE_ROLES_NAME + " TEXT NOT NULL " + ")");
 		case 7: //3.5
-			db.execSQL("ALTER TABLE " + Tables.COURSE_PATTERNS					
+            Log.i(TAG, "Applying 3.6 DB updates");
+			db.execSQL("ALTER TABLE " + Tables.COURSE_PATTERNS
 					+ " ADD COLUMN " + CoursePatternsColumns.PATTERN_INSTRUCTIONAL_METHOD + " TEXT ");
 		case 8: //3.6
+            Log.i(TAG, "Applying 3.8 DB updates");
 			db.execSQL("CREATE TABLE " + Tables.REGISTRATION_LOCATIONS + " ("
 					+ BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
 					+ ModulesColumns.MODULES_ID + " TEXT NOT NULL " + References.MODULES_ID + ", " 
@@ -707,6 +721,7 @@ public class EllucianDatabase extends SQLiteOpenHelper {
 					+ RegistrationLevelsColumns.REGISTRATION_LEVELS_CODE + " TEXT NOT NULL "
 					+ ")");
         case 9: //3.8
+            Log.i(TAG, "Applying 4.0 DB updates");
             db.execSQL("ALTER TABLE " + Tables.NUMBERS
                     + " ADD COLUMN " + NumbersColumns.NUMBERS_EXTENSION + " TEXT ");
             db.execSQL("ALTER TABLE " + Tables.COURSE_ASSIGNMENTS
@@ -716,6 +731,7 @@ public class EllucianDatabase extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + Tables.COURSE_EVENTS
                     + " ADD COLUMN " + CourseEventsColumns.EVENT_SECTION_NAME + " TEXT ");
         case 10: //4.0
+            Log.i(TAG, "Applying 4.5.0_a DB updates");
             db.execSQL("CREATE TABLE " + Tables.DIRECTORIES + " ("
                     + BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                     + DirectoriesColumns.DIRECTORY_KEY + " TEXT, "
@@ -724,10 +740,63 @@ public class EllucianDatabase extends SQLiteOpenHelper {
                     + DirectoriesColumns.DIRECTORY_AUTHENTICATED_ONLY + " TEXT "
                     + ")");
         case 11: // 4.5.0 - pre-release
+            Log.i(TAG, "Applying 4.5 DB updates");
             db.execSQL("ALTER TABLE " + Tables.MODULES
-                    + " ADD COLUMN " + ModulesColumns.MODULE_HOME_SCREEN_ORDER + " INTEGER "
-            );
+                    + " ADD COLUMN " + ModulesColumns.MODULE_HOME_SCREEN_ORDER + " INTEGER ");
+        case 12: // upgrading from 4.5
+            Log.i(TAG, "Applying 5.0 DB updates");
+            db.execSQL("DROP TABLE IF EXISTS " + Tables.COURSE_MEETINGS);
 
+            db.execSQL("DROP TABLE IF EXISTS " + Tables.COURSE_COURSES);
+            db.execSQL("CREATE TABLE " + Tables.COURSE_COURSES + " ("
+                    + BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + CourseCoursesColumns.COURSE_ID + " TEXT NOT NULL,"
+                    + CourseTermsColumns.TERM_ID + " TEXT NOT NULL "
+                    + References.COURSE_TERMS_TERM_ID + ", "
+                    + CourseCoursesColumns.COURSE_NAME + " TEXT, "
+                    + CourseCoursesColumns.COURSE_TITLE + " TEXT, "
+                    + CourseCoursesColumns.COURSE_DESCRIPTION + " TEXT, "
+                    + CourseCoursesColumns.COURSE_SECTION_NUMBER + " TEXT, "
+                    + CourseCoursesColumns.COURSE_IS_INSTRUCTOR + " INTEGER, "
+                    + CourseCoursesColumns.COURSE_LEARNING_PROVIDER + " TEXT, "
+                    + CourseCoursesColumns.COURSE_LEARNING_PROVIDER_SITE_ID + " TEXT, "
+                    + CourseCoursesColumns.COURSE_FIRST_MEETING_DATE + " TEXT, "
+                    + CourseCoursesColumns.COURSE_LAST_MEETING_DATE + " TEXT "
+                    + ")");
+
+            db.execSQL("DROP TABLE IF EXISTS " + Tables.COURSE_PATTERNS);
+            db.execSQL("CREATE TABLE " + Tables.COURSE_PATTERNS + " ("
+                    + BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + CourseCoursesColumns.COURSE_ID + " TEXT NOT NULL "
+                    + References.COURSE_COURSES_COURSE_ID + ", "
+                    + CoursePatternsColumns.PATTERN_DAYS + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_LOCATION + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_START_DATE + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_END_DATE + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_START_TIME + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_END_TIME + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_ROOM + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_BUILDING_ID + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_CAMPUS_ID + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_CAMPUS_NAME + " TEXT, "
+                    + CoursePatternsColumns.PATTERN_INSTRUCTIONAL_METHOD + " TEXT "
+                    + ")");
+
+            db.execSQL("ALTER TABLE " + Tables.MODULES
+                    + " ADD COLUMN " + ModulesColumns.MODULE_DISPLAY_IN_MENU + " TEXT ");
+
+			db.execSQL("ALTER TABLE " + Tables.MODULES
+					+ " ADD COLUMN " + ModulesColumns.MODULE_USE_BEACON_TO_LAUNCH + " TEXT ");
+
+			db.execSQL("CREATE TABLE " + Tables.MODULES_BEACONS + " ("
+					+ BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+					+ ModulesColumns.MODULES_ID + " TEXT NOT NULL "
+					+ References.MODULES_ID + ", "
+					+ ModulesBeaconsColumns.MODULES_BEACONS_UUID + " TEXT NOT NULL, "
+					+ ModulesBeaconsColumns.MODULES_BEACONS_MAJOR + " TEXT NOT NULL, "
+					+ ModulesBeaconsColumns.MODULES_BEACONS_MINOR + " TEXT NOT NULL, "
+					+ ModulesBeaconsColumns.MODULES_BEACONS_DISTANCE + " TEXT NOT NULL, "
+					+ ModulesBeaconsColumns.MODULES_BEACONS_MESSAGE + " TEXT NOT NULL " + ")");
 		}
 
 		Log.d(this.getClass().getSimpleName(),

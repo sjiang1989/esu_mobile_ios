@@ -9,7 +9,7 @@
 import Foundation
 
 extension Dictionary {
-    mutating func merge<K, V>(dictionaries: Dictionary<K, V>...) {
+    mutating func merge<K, V>(_ dictionaries: Dictionary<K, V>...) {
         for dictionary in dictionaries {
             for (key, value) in dictionary {
                 self.updateValue(value as! Value, forKey: key as! Key)

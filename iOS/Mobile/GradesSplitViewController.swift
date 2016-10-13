@@ -14,36 +14,36 @@ class GradesSplitViewController : UISplitViewController, UISplitViewControllerDe
         super.viewDidLoad()
         self.delegate = self
         let navigationController = self.viewControllers[self.viewControllers.count-1] as! UINavigationController
-        navigationController.topViewController!.navigationItem.leftBarButtonItem = self.displayModeButtonItem()
+        navigationController.topViewController!.navigationItem.leftBarButtonItem = self.displayModeButtonItem
         navigationController.topViewController!.navigationItem.leftItemsSupplementBackButton = true
         self.view.setNeedsLayout()
     }
     
-    func splitViewController(splitViewController: UISplitViewController, collapseSecondaryViewController secondaryViewController: UIViewController, ontoPrimaryViewController primaryViewController: UIViewController) -> Bool {
+    func splitViewController(_ splitViewController: UISplitViewController, collapseSecondary secondaryViewController: UIViewController, onto primaryViewController: UIViewController) -> Bool {
         if let secondaryViewController = secondaryViewController as? UINavigationController {
             let childViewController = secondaryViewController.childViewControllers[0]
-            if childViewController.isKindOfClass(GradesTermTableViewController) {
+            if childViewController is GradesTermTableViewController {
                 return false;
             }
         }
         return true;
     }
     
-    override internal func viewDidAppear(animated: Bool) {
+    override internal func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         adjustPreferredDisplayMode()
     }
     
-    override internal func viewWillTransitionToSize(size: CGSize, withTransitionCoordinator coordinator: UIViewControllerTransitionCoordinator) {
+    override internal func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         adjustPreferredDisplayMode()
-        super.viewWillTransitionToSize(size, withTransitionCoordinator: coordinator)
+        super.viewWillTransition(to: size, with: coordinator)
     }
     
     func adjustPreferredDisplayMode() {
-        if UIScreen.mainScreen().traitCollection.userInterfaceIdiom == .Pad {
-            self.preferredDisplayMode = .AllVisible;
+        if UIScreen.main.traitCollection.userInterfaceIdiom == .pad {
+            self.preferredDisplayMode = .allVisible;
         } else {
-            self.preferredDisplayMode = .Automatic;
+            self.preferredDisplayMode = .automatic;
         }
     }
 }

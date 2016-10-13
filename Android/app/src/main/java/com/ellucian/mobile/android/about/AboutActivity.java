@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.about;
@@ -28,7 +28,8 @@ import com.ellucian.mobile.android.client.MobileClient;
 import com.ellucian.mobile.android.util.Utils;
 
 public class AboutActivity extends EllucianActivity {
-	
+
+    private static final String TAG = AboutActivity.class.getSimpleName();
 	public static final String PREFERENCES_CONTACT = "aboutContact";
 	public static final String PREFERENCES_ICON = "aboutIcon";
 	public static final String PREFERENCES_LOGO_URL_PHONE = "aboutLogoUrlPhone";
@@ -108,7 +109,7 @@ public class AboutActivity extends EllucianActivity {
         try {
             configAppVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (NameNotFoundException e) {
-            Log.e("tag", e.getMessage());
+            Log.e(TAG, "onCreate: errorMessage:" + e.getMessage());
         }
         Resources r = getResources();
 

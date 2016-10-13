@@ -20,24 +20,23 @@ class GradesTermFilterViewController : UITableViewController {
         tableView.estimatedRowHeight = 44
         tableView.rowHeight = UITableViewAutomaticDimension
         
-        let managedObjectContext = CoreDataManager.shared.managedObjectContext
-        let request = NSFetchRequest()
-        request.entity = NSEntityDescription.entityForName("GradeTerm", inManagedObjectContext: managedObjectContext)
+        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
+        let request = NSFetchRequest<GradeTerm>(entityName: "GradeTerm")
         request.sortDescriptors = [NSSortDescriptor(key: "startDate", ascending: false)]
-        terms = try? managedObjectContext.executeFetchRequest(request) as! [GradeTerm]
+        terms = try? managedObjectContext.fetch(request)
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        sendView("Grades Term Filter", forModuleNamed: self.module?.name)
+        sendView("Grades Term Filter", moduleName: self.module?.name)
     }
     
     //MARK :UITable
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
 
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let terms = terms {
             return terms.count
         } else {
@@ -45,18 +44,18 @@ class GradesTermFilterViewController : UITableViewController {
         }
     }
     
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let _ = self.delegate {
-            self.delegate!.term = terms![indexPath.row]
-            self.dismissViewControllerAnimated(true, completion: nil)
+            self.delegate!.term = terms![(indexPath as NSIndexPath).row]
+            self.dismiss(animated: true, completion: nil)
 
         }
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Term Cell", forIndexPath: indexPath) as UITableViewCell
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Term Cell", for: indexPath) as UITableViewCell
         
-        let term = terms![indexPath.row]
+        let term = terms![(indexPath as NSIndexPath).row]
         
         let titleLabel = cell.viewWithTag(1) as! UILabel
         

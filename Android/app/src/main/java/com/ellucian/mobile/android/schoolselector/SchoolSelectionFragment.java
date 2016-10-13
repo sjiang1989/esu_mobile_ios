@@ -28,6 +28,7 @@ import com.ellucian.mobile.android.client.MobileClient;
 import com.ellucian.mobile.android.client.configurationlist.Configuration;
 import com.ellucian.mobile.android.client.configurationlist.ConfigurationListResponse;
 import com.ellucian.mobile.android.client.services.ConfigurationUpdateService;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -96,9 +97,9 @@ public class SchoolSelectionFragment extends EllucianFragment {
         	List<String> segments = data.getPathSegments();
         	cloudUrl = TextUtils.join("/", segments.subList(intStart, segments.size()));
         	cloudUrl = cloudUrl.replaceFirst("/", "://");
-        	Utils.addStringToPreferences(this.activity, PREFERENCES_FILENAME, PREFERENCES_CLOUD_URL, cloudUrl);
+        	PreferencesUtils.addStringToPreferences(this.activity, PREFERENCES_FILENAME, PREFERENCES_CLOUD_URL, cloudUrl);
         } else {
-        	cloudUrl = Utils.getStringFromPreferences(this.activity, PREFERENCES_FILENAME, PREFERENCES_CLOUD_URL, configurationListUrl);
+        	cloudUrl = PreferencesUtils.getStringFromPreferences(this.activity, PREFERENCES_FILENAME, PREFERENCES_CLOUD_URL, configurationListUrl);
         }
 
 		if (configurationList != null) {
@@ -182,7 +183,7 @@ public class SchoolSelectionFragment extends EllucianFragment {
 			
 			//Capture Google Analytics id
 			if(response != null && response.analytics != null) {
-				Utils.addStringToPreferences(activity.getBaseContext(), Utils.GOOGLE_ANALYTICS, Utils.GOOGLE_ANALYTICS_TRACKER1, response.analytics.ellucian);
+				PreferencesUtils.addStringToPreferences(activity.getBaseContext(), Utils.GOOGLE_ANALYTICS, Utils.GOOGLE_ANALYTICS_TRACKER1, response.analytics.ellucian);
 			}
 
 			ArrayList<Configuration> configurationList = null;

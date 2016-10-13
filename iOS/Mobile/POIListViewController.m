@@ -7,13 +7,12 @@
 //
 
 #import "POIListViewController.h"
-#import "MapPOI.h"
 #import "POIDetailViewController.h"
-#import "MapPOIType.h"
-#import "MapCampus.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
+#import "Ellucian_GO-Swift.h"
 
 @interface POIListViewController ()
+
+@property (strong, nonatomic) UISearchController *searchController;
 
 @end
 
@@ -25,37 +24,52 @@
     [super viewDidLoad];
     self.navigationController.navigationBar.translucent = NO;
     
+    self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+    self.searchController.searchResultsUpdater = self;
+    self.searchController.hidesNavigationBarDuringPresentation = NO;
+    self.searchController.dimsBackgroundDuringPresentation = NO;
+    self.searchController.searchBar.delegate = self;
+    self.searchController.definesPresentationContext = YES;
+    self.tableView.tableHeaderView = self.searchController.searchBar;
+    
     NSError *error;
     if (![[self fetchedResultsController] performFetch:&error]) {
 		NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
 	}
+    
+    // Ensure that searchController will not persist
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(backButtonSelected:) name:@"MapsViewWillAppear" object:nil];
 }
 
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
     
-    [self sendView:@"Building List" forModuleNamed:self.module.name];
+    [self sendView:@"Building List" moduleName:self.module.name];
+}
+
+// Ensure that searchController will not persist
+-(void) backButtonSelected:(id)sender
+{
+    [self.searchController setActive:NO];
+    self.searchController.searchBar.showsCancelButton = NO;
+    self.searchController.searchBar.text = @"";
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    NSFetchedResultsController *fetchController = [self fetchedResultsControllerForTableView:tableView];
-    return [[fetchController sections] count];
+    return [[self.fetchedResultsController sections] count];
 }
 
 -(NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
 {
-    
-    NSFetchedResultsController *fetchController = [self fetchedResultsControllerForTableView:tableView];
-    return [[[fetchController sections] objectAtIndex:section] name];
+    return [[[self.fetchedResultsController sections] objectAtIndex:section] name];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     NSInteger numberOfRows = 0;
-    NSFetchedResultsController *fetchController = [self fetchedResultsControllerForTableView:tableView];
-    NSArray *sections = fetchController.sections;
+    NSArray *sections = self.fetchedResultsController.sections;
     if(sections.count > 0)
     {
         id <NSFetchedResultsSectionInfo> sectionInfo = [sections objectAtIndex:section];
@@ -72,7 +86,7 @@
     UITableViewCell *cell =
     [self.tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     
-    MapPOI *poi = [[self fetchedResultsControllerForTableView:tableView] objectAtIndexPath:indexPath];
+    MapPOI *poi = [self.fetchedResultsController objectAtIndexPath:indexPath];
     UILabel *textLabel = (UILabel *)[cell viewWithTag:1];
     UILabel *detailTextLabel = (UILabel *)[cell viewWithTag:2];
     
@@ -93,15 +107,12 @@
     {
         return _fetchedResultsController;
     }
-    _fetchedResultsController = [self newFetchedResultsControllerWithSearch:nil];
+    _fetchedResultsController = [self newFetchedResultsControllerWithSearch:self.searchController.searchBar.text];
     return _fetchedResultsController;
 }
 
 #pragma mark Fetch results controller management
-- (NSFetchedResultsController *)fetchedResultsControllerForTableView:(UITableView *)tableView
-{
-    return tableView == self.tableView ? self.fetchedResultsController : self.searchFetchedResultsController;
-}
+
 
 - (NSFetchedResultsController *)newFetchedResultsControllerWithSearch:(NSString *)searchString
 {
@@ -113,7 +124,6 @@
     } else {
         request.predicate = [NSPredicate predicateWithFormat:@"moduleInternalKey = %@", self.module.internalKey];
     }
-//    request.sortDescriptors = [NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"type" ascending:YES ],[NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES ],nil ];
     request.sortDescriptors = [NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES ],nil ];
 
 
@@ -133,39 +143,20 @@
     return aFetchedResultsController;
 }
 
-- (NSFetchedResultsController *)searchFetchedResultsController
-{
-    if (_searchFetchedResultsController != nil)
-    {
-        return _searchFetchedResultsController;
-    }
-    _searchFetchedResultsController = [self newFetchedResultsControllerWithSearch:self.searchDisplayController.searchBar.text];
-    return _searchFetchedResultsController;
-}
-
-- (UITableView *) tableViewForFetchedResultsController:(NSFetchedResultsController *)controller
-{
-    UITableView *tableView = controller == self.fetchedResultsController ? self.tableView : self.searchDisplayController.searchResultsTableView;
-    return tableView;
-    
-}
-
 - (void)controllerWillChangeContent:(NSFetchedResultsController *)controller {
-    UITableView *tableView = [self tableViewForFetchedResultsController:controller];
-    [tableView beginUpdates];
+    [self.tableView beginUpdates];
 }
 
 - (void)controller:(NSFetchedResultsController *)controller didChangeSection:(id <NSFetchedResultsSectionInfo>)sectionInfo atIndex:(NSUInteger)sectionIndex forChangeType:(NSFetchedResultsChangeType)type {
-    UITableView *tableView = controller == self.fetchedResultsController ? self.tableView : self.searchDisplayController.searchResultsTableView;
     
     switch(type) {
         case NSFetchedResultsChangeInsert:
             if (!(sectionIndex == 0 && [self.tableView numberOfSections] == 1))
-                [tableView insertSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
+                [self.tableView insertSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
             break;
         case NSFetchedResultsChangeDelete:
             if (!(sectionIndex == 0 && [self.tableView numberOfSections] == 1))
-                [tableView deleteSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
+                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
             break;
         case NSFetchedResultsChangeMove:
             break;
@@ -177,32 +168,30 @@
 }
 
 - (void)controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    UITableView *tableView = [self tableViewForFetchedResultsController:controller];
     
     switch(type) {
             
         case NSFetchedResultsChangeInsert:
-            [tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
             
         case NSFetchedResultsChangeDelete:
-            [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
             
         case NSFetchedResultsChangeUpdate:
-            [tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
             
         case NSFetchedResultsChangeMove:
-            [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
-            [tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self.tableView insertRowsAtIndexPaths:[NSArray arrayWithObject:newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
             break;
     }
 }
 
 - (void)controllerDidChangeContent:(NSFetchedResultsController *)controller {
-    UITableView *tableView = [self tableViewForFetchedResultsController:controller];
-    [tableView endUpdates];
+    [self.tableView endUpdates];
 }
 
 
@@ -212,7 +201,7 @@
     {
         UITableView *tableView = sender;
         NSIndexPath *indexPath = [tableView indexPathForSelectedRow];
-        MapPOI *poi = [[self fetchedResultsControllerForTableView:tableView] objectAtIndexPath:indexPath];
+        MapPOI *poi = [self.fetchedResultsController objectAtIndexPath:indexPath];
         
         POIDetailViewController *vc = (POIDetailViewController *)[segue destinationViewController];
         vc.imageUrl = poi.imageUrl;
@@ -228,29 +217,20 @@
         vc.additionalServices = poi.additionalServices;
         vc.campusName = poi.campus.name;
         vc.module = self.module;
+        
+        [self.searchController setActive:NO];
     }
-}
-
-- (BOOL)searchDisplayController:(UISearchDisplayController *)controller shouldReloadTableForSearchString:(NSString *)searchString
-{
-    self.searchFetchedResultsController = nil;
-    return YES;
 }
 
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar
 {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionSearch withLabel:@"Search" withValue:nil forModuleNamed:nil];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Search label:@"Search" moduleName:nil];
 }
 
-//workaround for iOS 7 double tap on search bar, search disappears
--(void)searchDisplayControllerDidEndSearch:(UISearchDisplayController *)controller
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController
 {
-    self.searchFetchedResultsController = nil;
-    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1) {
-        [self.tableView insertSubview:self.searchDisplayController.searchBar aboveSubview:self.tableView];
-    }
-    return;
+    _fetchedResultsController = nil;
+    [self.tableView reloadData];
 }
-
 
 @end

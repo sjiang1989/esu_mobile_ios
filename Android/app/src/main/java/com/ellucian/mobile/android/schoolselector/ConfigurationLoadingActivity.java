@@ -19,11 +19,15 @@ import android.util.Log;
 
 import com.androidquery.AQuery;
 import com.ellucian.elluciango.R;
+import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.client.services.ConfigurationUpdateService;
 import com.ellucian.mobile.android.provider.EllucianContract;
-import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.settings.SettingsUtils;
+import com.ellucian.mobile.android.util.PreferencesUtils;
+import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.util.List;
 
@@ -43,8 +47,8 @@ public class ConfigurationLoadingActivity extends EllucianActivity {
         Utils.showProgressIndicator(activity);
 
         // set the colors directly, not going through preferences
-		int primaryColor = Utils.getColorHelper(this, R.color.ellucian_primary_color);
-		int headerTextColor = Utils.getColorHelper(this, R.color.ellucian_header_text_color);
+		int primaryColor = VersionSupportUtils.getColorHelper(this, R.color.ellucian_primary_color);
+		int headerTextColor = VersionSupportUtils.getColorHelper(this, R.color.ellucian_header_text_color);
 		configureActionBarDirect(primaryColor, headerTextColor);
         ActionBar bar = getSupportActionBar();
         bar.setDisplayHomeAsUpEnabled(false);
@@ -92,26 +96,35 @@ public class ConfigurationLoadingActivity extends EllucianActivity {
 				null, null);
 
 		getSharedPreferences(
-				Utils.GOOGLE_ANALYTICS, Context.MODE_PRIVATE).edit().clear().commit();
+				Utils.GOOGLE_ANALYTICS, Context.MODE_PRIVATE).edit().clear().apply();
 		
 		final SharedPreferences preferences = getSharedPreferences(
 				Utils.CONFIGURATION, MODE_PRIVATE);
 		final SharedPreferences.Editor editor = preferences.edit();
 		// Clear all Configuration Preferences
-		editor.clear().commit();
+		editor.clear().apply();
 		
+        // Clear all User Preferences
+        SettingsUtils.addBooleanToPreferences(this, UserUtils.USER_FINGERPRINT_OPT_IN, false);
+        getEllucianApp().removeAppUser();
+
 		editor.putString(Utils.CONFIGURATION_URL, configurationUrl);
 		editor.putString(Utils.CONFIGURATION_NAME,
 				getIntent().getStringExtra(Utils.CONFIGURATION_NAME));
 		editor.putString(Utils.ID, getIntent().getStringExtra(Utils.ID));
 		editor.commit();
-		
-		Log.d("ConfigurationLoadingActivity",
-				"Loading configuration using url: " + configurationUrl);
-		Intent intent = new Intent(this, ConfigurationUpdateService.class);
-		intent.putExtra(Extra.CONFIG_URL, configurationUrl);
 
-		startService(intent);
+		EllucianApplication ea = (EllucianApplication) getApplication();
+		if (!ea.isServiceRunning(ConfigurationUpdateService.class)) {
+			Log.d("ConfigurationLoadingActivity",
+					"Loading configuration using url: " + configurationUrl);
+			Intent intent = new Intent(this, ConfigurationUpdateService.class);
+			intent.putExtra(Utils.CONFIGURATION_URL, configurationUrl);
+
+			startService(intent);
+		} else {
+            Log.v(TAG, "Can't start ConfigurationUpdateService because it is already running");
+        }
 
 	}
 	
@@ -141,7 +154,7 @@ public class ConfigurationLoadingActivity extends EllucianActivity {
 			AQuery aq = new AQuery(ConfigurationLoadingActivity.this);
 			aq.id(R.id.configuration_loading_message).text(
 					R.string.configuration_loading_failed);
-			Utils.removeValuesFromPreferences(ConfigurationLoadingActivity.this, 
+			PreferencesUtils.removeValuesFromPreferences(ConfigurationLoadingActivity.this,
 					Utils.CONFIGURATION, Utils.CONFIGURATION_URL);
 		}
 

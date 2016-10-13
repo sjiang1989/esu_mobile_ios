@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "Ellucian_GO-Swift.h"
 
 #define kRegistrationPlanDataReloaded @"RegistrationPlanDataReloaded"
 #define kRegistrationItemRemovedFromCart @"RegistrationItemRemovedFromCart"
@@ -15,7 +16,7 @@
 @class RegistrationPlannedSection;
 @class RegistrationTerm;
 
-@interface RegistrationTabBarController : UITabBarController<UIAlertViewDelegate>
+@interface RegistrationTabBarController : UITabBarController <EllucianMobileLaunchableControllerProtocol>
 
 @property (strong, nonatomic) Module *module;
 

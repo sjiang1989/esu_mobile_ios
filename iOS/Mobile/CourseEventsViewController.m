@@ -7,14 +7,11 @@
 //
 
 #import "CourseEventsViewController.h"
-#import "CurrentUser.h"
-#import "AuthenticatedRequest.h"
-#import "EmptyTableViewCell.h"
 #import "CourseEvent.h"
 #import "CourseEventsDetailViewController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
+#import "Ellucian_GO-Swift.h"
 
-@interface CourseEventsViewController ()
+@interface CourseEventsViewController () <CourseDetailViewControllerProtocol>
 
 @property (strong, nonatomic) NSDateFormatter *datetimeFormatter;
 @property (strong, nonatomic) NSDateFormatter *datetimeOutputFormatter;
@@ -39,15 +36,20 @@
         [self fetchEvents:self];
     }
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fetchEvents:) name:kLoginExecutorSuccess object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fetchEvents:) name:CurrentUser.LoginExecutorSuccessNotification object:nil];
     
     
+}
+
+-(NSString *)courseNameAndSectionNumber
+{
+    return [NSString stringWithFormat:@"%@-%@", self.courseName, self.courseSectionNumber];
 }
 
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Course events list" forModuleNamed:self.module.name];
+    [self sendView:@"Course events list" moduleName:self.module.name];
 }
 
 - (NSFetchedResultsController *)fetchedResultsController {
@@ -189,7 +191,7 @@
     NSManagedObjectContext *importContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     importContext.parentContext = self.module.managedObjectContext;
 
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/%@/events?term=%@", [self.module propertyForKey:@"ilp"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.sectionId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.termId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/%@/events?term=%@", [self.module propertyForKey:@"ilp"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.sectionId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.termId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
     
     [importContext performBlock: ^{
         

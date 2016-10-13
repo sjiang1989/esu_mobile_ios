@@ -15,7 +15,7 @@ import CoreData
 class MenuController: WKInterfaceController {
     
     @IBOutlet var menuTable: WKInterfaceTable!
-    var modules : [Dictionary<String, AnyObject>]!
+    var modules = [[String : Any]]()
     
     @IBOutlet var chooseConfigurationLabel: WKInterfaceLabel!
     @IBOutlet var retrievingDataLabel: WKInterfaceLabel!
@@ -28,7 +28,7 @@ class MenuController: WKInterfaceController {
     
     func getTitle() -> String? {
         if watchAppTitle == nil {
-            let plistPath = NSBundle.mainBundle().pathForResource("Customizations", ofType: "plist")
+            let plistPath = Bundle.main.path(forResource: "Customizations", ofType: "plist")
             let plistDictioanry = NSDictionary(contentsOfFile: plistPath!)!
             
             if let title = plistDictioanry["Watch Menu Title"] as! String? {
@@ -41,24 +41,24 @@ class MenuController: WKInterfaceController {
         return self.watchAppTitle
     }
     
-    override func awakeWithContext(context: AnyObject?) {
-        super.awakeWithContext(context)
+    override func awake(withContext context: Any?) {
+        super.awake(withContext: context)
         
         // tell WatchConnectivityManager the menu controller instance
-        WatchConnectivityManager.instance.saveRootController(self)
+        WatchConnectivityManager.sharedInstance.saveRootController(self)
     }
     
     override func willActivate() {
         super.willActivate()
 
-        NSLog("MenuController willActivate called")
+        print("MenuController willActivate called")
 
         let prefs = AppGroupUtilities.userDefaults()!
-        let _ = prefs.stringForKey("configurationUrl")
-        let _ = prefs.stringForKey("watchkit-last-configurationUrl")
+        let _ = prefs.string(forKey: "configurationUrl")
+        let _ = prefs.string(forKey: "watchkit-last-configurationUrl")
         
-        let _ = prefs.objectForKey("menu updated date") as! NSDate?
-        let _ = prefs.objectForKey("watchkit-last-updatedConfiguration") as! NSDate?
+        let _ = prefs.object(forKey: "menu updated date") as! Date?
+        let _ = prefs.object(forKey: "watchkit-last-updatedConfiguration") as! Date?
         
         self.initMenu()
         
@@ -67,13 +67,13 @@ class MenuController: WKInterfaceController {
         }
     }
     
-    override func table(table: WKInterfaceTable, didSelectRowAtIndex rowIndex: Int) {
+    override func table(_ table: WKInterfaceTable, didSelectRowAt rowIndex: Int) {
         if(rowIndex == self.modules.count + 0) {
-            pushControllerWithName("about",  context: nil)
+            self.pushController(withName: "about",  context: nil)
         } else {
             let selectedModule = self.modules[rowIndex]
             
-            if let user = WatchConnectivityManager.instance.currentUser() {
+            if let user = WatchConnectivityManager.sharedInstance.currentUser() {
                 
                 var match = false
                 let roles = selectedModule["roles"] as! [String]
@@ -94,7 +94,7 @@ class MenuController: WKInterfaceController {
                 }
                 
                 if !match {
-                    self.presentControllerWithName("You do not have permission", context: nil)
+                    self.presentController(withName: "You do not have permission", context: nil)
                 }
             }
             pushController(selectedModule)
@@ -102,14 +102,13 @@ class MenuController: WKInterfaceController {
     }
     
     func initMenu() {
-        NSLog("MenuController initMenu called")
+        print("MenuController initMenu called")
         
         if !fetchingConfigurationFlag {
             fetchingConfigurationFlag = true
-            dispatch_async(dispatch_get_main_queue()) {
+            DispatchQueue.main.async {
                 self.chooseConfigurationLabel.setHidden(true)
-
-                let configurationManager = ConfigurationManager.instance
+                let configurationManager = ConfigurationManager.shared
                 if configurationManager.isConfigurationLoaded() {
                     if configurationManager.shouldConfigurationBeRefreshed() {
                         // load in the background but show what we have
@@ -117,9 +116,9 @@ class MenuController: WKInterfaceController {
                             (result) in
                             
                             self.fetchingConfigurationFlag = false
-                            WatchConnectivityManager.instance.refreshUser()
+                            WatchConnectivityManager.sharedInstance.refreshUser()
                             if (result is Bool && result as! Bool) || configurationManager.isConfigurationLoaded() {
-                                dispatch_async(dispatch_get_main_queue()) {
+                                DispatchQueue.main.async {
                                     self.initMenuAfterConfigurationLoaded()
                                 }
                             } else if result is Bool && !(result as! Bool) {
@@ -130,7 +129,7 @@ class MenuController: WKInterfaceController {
                         // just show it
                         self.fetchingConfigurationFlag = false
                         self.initMenuAfterConfigurationLoaded()
-                        WatchConnectivityManager.instance.refreshUser()
+                        WatchConnectivityManager.sharedInstance.refreshUser()
                     }
                 } else {
                     // attempt to load configuration
@@ -141,11 +140,11 @@ class MenuController: WKInterfaceController {
                         (result) in
                         
                         self.fetchingConfigurationFlag = false
-                        WatchConnectivityManager.instance.refreshUser()
-                        dispatch_async(dispatch_get_main_queue()) {
-                            if (result is Bool && result as! Bool) || configurationManager.isConfigurationLoaded() {
+                        WatchConnectivityManager.sharedInstance.refreshUser()
+                        DispatchQueue.main.async {
+                            if result || configurationManager.isConfigurationLoaded() {
                                 self.initMenuAfterConfigurationLoaded()
-                            } else if result is Bool && !(result as! Bool) {
+                            } else if result {
                                 self.retrievingDataLabel.setHidden(true)
                                 self.spinner.stopAnimating()
                                 self.spinner.setHidden(true)
@@ -154,8 +153,7 @@ class MenuController: WKInterfaceController {
                                 self.retrievingDataLabel.setHidden(true)
                                 self.spinner.stopAnimating()
                                 self.spinner.setHidden(true)
-                                
-                                // communicaton error
+                                self.chooseConfigurationLabel.setHidden(false)
                             }
                         }
                     }
@@ -170,16 +168,16 @@ class MenuController: WKInterfaceController {
         self.spinner.setHidden(true)
 
         // configuration is loaded - build menu
-        let context = CoreDataManager.shared.managedObjectContext
+        let context = CoreDataManager.sharedInstance.managedObjectContext
         
-        let modulesRequest = NSFetchRequest(entityName: "Module")
+        let modulesRequest = NSFetchRequest<Module>(entityName: "Module")
         modulesRequest.sortDescriptors = [NSSortDescriptor(key: "index" , ascending: true)]
         
         var rolePredicates = [NSPredicate]()
         rolePredicates.append(NSPredicate(format: "roles.@count == 0"))
         rolePredicates.append(NSPredicate(format: "ANY roles.role like %@", "Everyone"))
         
-        if let user = WatchConnectivityManager.instance.currentUser() {
+        if let user = WatchConnectivityManager.sharedInstance.currentUser() {
             if let roles = user["roles"] as! [String]? {
                 for role in roles {
                     rolePredicates.append(NSPredicate(format: "ANY roles.role like %@", role))
@@ -202,31 +200,47 @@ class MenuController: WKInterfaceController {
         let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: andPredicates)
         
         do {
-            let allModules = try context.executeFetchRequest(modulesRequest)
+            let allModules = try context.fetch(modulesRequest)
             
             // filter after Core Data fetch to avoid bug when there are >= about 10 predicates
-            let modules = allModules.filter{ compoundPredicate.evaluateWithObject($0) }
+            let modules = allModules.filter{ compoundPredicate.evaluate(with: $0) }
             
-            var modulesAsDictionaries = [Dictionary<String, AnyObject>]()
+            var modulesAsDictionaries = [[String : Any]]()
             
-            for module in modules as! [Module] {
+            for module in modules {
                 if (module.type) != nil && supportedModuleTypes.contains(module.type) {
-                    var properties = Dictionary<String, String>()
-                    for property in module.properties as! Set<ModuleProperty>! {
-                        properties[property.name] = property.value
+                    var properties = [String : String] ()
+                    for property in module.properties {
+                        if let property = property as? ModuleProperty {
+                            if let name = property.name {
+                                properties[name] = property.value
+                            }
+                        }
                     }
                     
                     var roles = [String]()
-                    for role in module.roles as! Set<ModuleRole>! {
-                        roles.append(role.role)
+                    for role in module.roles {
+                        if let role = role as? ModuleRole {
+                            roles.append(role.role)
+                        }
                     }
                     
-                    var moduleAsDictionary = [String : AnyObject]()
-                    if ((module.iconUrl) != nil) { moduleAsDictionary["iconUrl"] = module.iconUrl }
-                    if ((module.index) != nil) { moduleAsDictionary["index"] = module.index }
-                    if ((module.internalKey) != nil) { moduleAsDictionary["internalKey"] = module.internalKey }
-                    if ((module.name) != nil) { moduleAsDictionary["name"] = module.name }
-                    if ((module.hideBeforeLogin) != nil) { moduleAsDictionary["hideBeforeLogin"] = module.hideBeforeLogin }
+                    var moduleAsDictionary = [String : Any]()
+                    if let iconUrl = module.iconUrl {
+                        moduleAsDictionary["iconUrl"] = iconUrl
+                    }
+                    if let index = module.index {
+                        moduleAsDictionary["index"] = index
+                    }
+                    if let internalKey = module.internalKey {
+                        moduleAsDictionary["internalKey"] = internalKey
+                    }
+                    if let name = module.name {
+                        moduleAsDictionary["name"] = name
+                    }
+                    if let hideBeforeLogin = module.hideBeforeLogin {
+                        moduleAsDictionary["hideBeforeLogin"] = hideBeforeLogin
+                    }
                     if ((module.type) != nil) { moduleAsDictionary["type"] = module.type }
                     moduleAsDictionary["properties"] = properties
                     moduleAsDictionary["roles"] = roles
@@ -237,31 +251,38 @@ class MenuController: WKInterfaceController {
             self.setUpTable(modulesAsDictionaries)
             
         } catch {
-            NSLog("Unable to query modules for menu")
+            print("Unable to query modules for menu")
         }
     }
     
-    func setUpTable(modules: [Dictionary<String, AnyObject>]) {
+    func setUpTable(_ modules: [[String : Any]]) {
         self.chooseConfigurationLabel.setHidden(true)
         
         let modulesCount = modules.count
-        if(self.modules?.count != modulesCount) {
+        if(self.modules.count != modulesCount || modules.count == 0) {
             self.clearTableRows()
             
             self.createTableFromModules(modules)
             
-            self.menuTable.insertRowsAtIndexes(NSIndexSet(indexesInRange: NSMakeRange(modulesCount, 1)), withRowType: "MenuTableRowController")
-            let row = self.menuTable.rowControllerAtIndex(modules.count) as! MenuTableRowController
+            self.menuTable.insertRows(at: IndexSet(integersIn: NSMakeRange(modulesCount, 1).toRange() ?? 0..<0), withRowType: "MenuTableRowController")
+            let row = self.menuTable.rowController(at: modules.count) as! MenuTableRowController
             row.nameLabel.setText(NSLocalizedString("About", comment: "About menu item"))
             let defaults = AppGroupUtilities .userDefaults()
-            if let aboutIcon : String = defaults?.stringForKey("about-icon") where aboutIcon.characters.count > 0 {
+            // default to named icon-about. Configuration will overwrite if specified
+            row.image.setImageNamed("icon-about")
+            //row.image.setImage(UIImage(named: "icon-about"))
+            
+            if let aboutIcon = defaults?.string(forKey: "about-icon"), aboutIcon.characters.count > 0 {
                 
-                dispatch_async(dispatch_get_main_queue(), {
-                    let image = ImageCache.sharedCache().getImage(aboutIcon)
-                    row.image.setImage(image)
+                DispatchQueue.main.async(execute: {
+                    ImageCache.sharedCache.getImage(aboutIcon) {
+                        (image: UIImage?) in
+                        
+                        if image != nil {
+                            row.image.setImage(image)
+                        }
+                    }
                 })
-            } else {
-                row.image.setImageNamed("icon-about")
             }
             
         } else {
@@ -273,57 +294,83 @@ class MenuController: WKInterfaceController {
     // MARK: setUpTable helper methods
     
     private func clearTableRows() {
-        self.menuTable.removeRowsAtIndexes(NSIndexSet(indexesInRange: NSMakeRange(0, self.menuTable.numberOfRows)))
+        self.menuTable.removeRows(at: IndexSet(integersIn: NSMakeRange(0, self.menuTable.numberOfRows).toRange()!))
         
     }
     
-    private func updateTableFromModules(modules:[Dictionary<String, AnyObject>]) {
+    private func updateTableFromModules(_ modules:[ [String : Any] ] ) {
         var i = 0
         for module in modules {
-            if let rowInterfaceController = self.menuTable.rowControllerAtIndex(i) as? MenuTableRowController {
+            if let rowInterfaceController = self.menuTable.rowController(at: i) as? MenuTableRowController {
                 
                 rowInterfaceController.nameLabel.setText(module["name"] as? String)
                 
-                if let iconUrl = module["iconUrl"] as? String {
+                DispatchQueue.main.async {
+                    switch module["type"] as! String  {
+                    case "maps":
+                        rowInterfaceController.image.setImageNamed("icon-maps-location")
+                    case "ilp":
+                        rowInterfaceController.image.setImageNamed("ilp-assignments")
+                    default:
+                        break
+                    }
                     
-                    dispatch_async(dispatch_get_main_queue(), {
-                        let image = ImageCache.sharedCache().getImage(iconUrl)
-                        rowInterfaceController.image.setImage(image)
-                    })
+                    if let iconUrl = module["iconUrl"] as? String {
+                        
+                        ImageCache.sharedCache.getImage(iconUrl) {
+                            (image: UIImage?) in
+                            
+                            if image != nil {
+                                rowInterfaceController.image.setImage(image)
+                            }
+                        }
+                    }
                 }
             }
             i += 1
         }
-        let row = self.menuTable.rowControllerAtIndex(modules.count) as! MenuTableRowController
-        row.nameLabel.setText(NSLocalizedString("About", comment: "About menu item"))
-        let defaults = AppGroupUtilities .userDefaults()
-        if let aboutIcon : String = defaults?.stringForKey("about-icon") where aboutIcon.characters.count > 0 {
-            
-            dispatch_async(dispatch_get_main_queue(), {
-                let image = ImageCache.sharedCache().getImage(aboutIcon)
-                row.image.setImage(image)
-            })
-        } else {
-            row.image.setImageNamed("icon-about")
+        if modules.count > 0 {
+            let row = self.menuTable.rowController(at: modules.count) as! MenuTableRowController
+            row.nameLabel.setText(NSLocalizedString("About", comment: "About menu item"))
+            let defaults = AppGroupUtilities .userDefaults()
+            if let aboutIcon : String = defaults?.string(forKey: "about-icon"), aboutIcon.characters.count > 0 {
+                
+                DispatchQueue.main.async(execute: {
+                    ImageCache.sharedCache.getImage(aboutIcon) {
+                        (image: UIImage?) in
+                        
+                        if image != nil {
+                            row.image.setImage(image)
+                        }
+                    }
+                })
+            } else {
+                row.image.setImageNamed("icon-about")
+            }
         }
     }
     
-    private func createTableFromModules(modules:[Dictionary<String, AnyObject>]) {
-        self.menuTable.insertRowsAtIndexes(NSIndexSet(indexesInRange: NSMakeRange(0, modules.count)), withRowType: "MenuTableRowController")
+    private func createTableFromModules(_ modules:[[String : Any]]) {
+        self.menuTable.insertRows(at: IndexSet(integersIn: NSMakeRange(0, modules.count).toRange()!), withRowType: "MenuTableRowController")
         
         var i = 0
         for module in modules {
             
-            if let rowInterfaceController = self.menuTable.rowControllerAtIndex(i) as? MenuTableRowController{
+            if let rowInterfaceController = self.menuTable.rowController(at: i) as? MenuTableRowController{
                 
                 rowInterfaceController.nameLabel.setText(module["name"] as? String)
                 
                 if let iconUrl = module["iconUrl"] as? String  {
                     
-                    dispatch_async(dispatch_get_main_queue(), {
-                        let image = ImageCache.sharedCache().getImage(iconUrl)
-                        rowInterfaceController.image.setImage(image)
-                    })
+                    DispatchQueue.main.async {
+                        ImageCache.sharedCache.getImage(iconUrl) {
+                            (image: UIImage?) in
+                            
+                            if image != nil {
+                                rowInterfaceController.image.setImage(image)
+                            }
+                        }
+                    }
                 }
             }
             i += 1
@@ -332,18 +379,18 @@ class MenuController: WKInterfaceController {
     
     // MARK - customized functions
     
-    func pushController(selectedModule: Dictionary<String, AnyObject>) {
+    func pushController(_ selectedModule: [String : Any] ) {
         switch selectedModule["type"] as! String  {
         case "maps":
             let properties = selectedModule["properties"] as! Dictionary<String, String>
             let url = properties["campuses"] as String!
-            self.pushControllerWithName("maps",  context: ["internalKey": selectedModule["internalKey"] as! String, "title": selectedModule["name"] as! String, "campuses": url])
+            self.pushController(withName: "maps",  context: ["internalKey": (selectedModule["internalKey"] as! String), "title": (selectedModule["name"] as! String), "campuses": url])
         case "ilp":
             let properties = selectedModule["properties"] as! Dictionary<String, String>
             let url = properties["ilp"] as String!
-            self.pushControllerWithName("ilp",  context: ["internalKey": selectedModule["internalKey"] as! String, "title": selectedModule["name"] as! String, "ilp": url])
+            self.pushController(withName: "ilp",  context: ["internalKey": (selectedModule["internalKey"] as! String), "title": (selectedModule["name"] as! String), "ilp": url])
         default:
-            pushControllerWithName(selectedModule["type"] as! String,  context: nil)
+            self.pushController(withName: selectedModule["type"] as! String,  context: nil)
         }
     }
 }

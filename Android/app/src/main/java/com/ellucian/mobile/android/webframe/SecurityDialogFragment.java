@@ -1,14 +1,15 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.webframe;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.app.EllucianDialogFragment;
@@ -18,12 +19,13 @@ public class SecurityDialogFragment extends EllucianDialogFragment {
 	private WebframeActivity webActivity;
 	
 	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
-		webActivity = (WebframeActivity)activity;
+	public void onAttach(Context context) {
+		super.onAttach(context);
+		webActivity = (WebframeActivity)context;
 	}
 	
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
+	@NonNull
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());
 		

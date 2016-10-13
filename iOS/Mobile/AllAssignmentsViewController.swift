@@ -9,16 +9,16 @@
 import Foundation
 
 
-class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UITableViewDataSource, UITableViewDelegate, NSFetchedResultsControllerDelegate, UISplitViewControllerDelegate, UIAlertViewDelegate, EKEventEditViewDelegate
+class AllAssignmentsViewController : UIViewController, UITableViewDataSource, UITableViewDelegate, NSFetchedResultsControllerDelegate, UISplitViewControllerDelegate, EKEventEditViewDelegate, EllucianMobileLaunchableControllerProtocol
 {
     @IBOutlet weak var dateSelector: UISegmentedControl!
     @IBOutlet weak var myTabBarItem: UITabBarItem!
     @IBOutlet var allAssignmentsTableView: UITableView!
     
     var detailSelectionDelegate: DetailSelectionDelegate!
-    var allAssignmentController: NSFetchedResultsController!
-    var myDatetimeOutputFormatter: NSDateFormatter?
-    var myOverDueDatetimeOutputFormatter: NSDateFormatter?
+    var allAssignmentController: NSFetchedResultsController<CourseAssignment>!
+    var myDatetimeOutputFormatter: DateFormatter?
+    var myOverDueDatetimeOutputFormatter: DateFormatter?
     var myTabBarController: UITabBarController?
     var module: Module!
     var detailViewController: CourseAssignmentDetailViewController!
@@ -31,14 +31,14 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
     var myManagedObjectContext: NSManagedObjectContext!
     
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.extendedLayoutIncludesOpaqueBars = true
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if UIDevice.currentDevice().userInterfaceIdiom == .Pad {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             findSelectedItem()
         }
     }
@@ -50,30 +50,30 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         do {
             try allAssignmentController.performFetch()
         } catch let assignmentError as NSError {
-            NSLog("fetch error: \(assignmentError.localizedDescription)")
+            print("fetch error: \(assignmentError.localizedDescription)")
         }
-        allAssignmentsTableView.registerClass(NSClassFromString("UITableViewHeaderFooterView"), forHeaderFooterViewReuseIdentifier: "Header")
+        allAssignmentsTableView.register(NSClassFromString("UITableViewHeaderFooterView"), forHeaderFooterViewReuseIdentifier: "Header")
         
-        self.view.backgroundColor = UIColor.primaryColor()
+        self.view.backgroundColor = UIColor.primary
         let tabBarItem0 = myTabBarController?.tabBar.items?[0]
         if let tabBarItem0 = tabBarItem0 {
             tabBarItem0.selectedImage = UIImage(named: "ilp-assignments-selected")
         }
         
-        if UIDevice.currentDevice().userInterfaceIdiom == .Pad {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             if selectedAssignment == nil {
                 if allAssignmentController.fetchedObjects!.count > 0 {
-                    let indexPath = NSIndexPath(forRow: 0, inSection: 0)
-                    allAssignmentsTableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition:UITableViewScrollPosition.Top)
-                    tableView(self.allAssignmentsTableView, didSelectRowAtIndexPath: indexPath);
+                    let indexPath = IndexPath(row: 0, section: 0)
+                    allAssignmentsTableView.selectRow(at: indexPath, animated: true, scrollPosition:UITableViewScrollPosition.top)
+                    tableView(self.allAssignmentsTableView, didSelectRowAt: indexPath);
                 }
             }
         }
-        self.sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction:kAnalyticsActionSearch, withLabel:"ILP Assignments List", withValue:nil, forModuleNamed:"ILP");
+        self.sendEventToTracker1(category: .ui_Action, action: .search, label:"ILP Assignments List", moduleName: "ILP");
         overdueRed = UIColor(red: 193.0/255.0, green: 39.0/255.0, blue: 45.0/255.0, alpha: 1.0)
     }
     
-    @IBAction func indexChanged(sender: UISegmentedControl) {
+    @IBAction func indexChanged(_ sender: UISegmentedControl) {
         
         switch dateSelector.selectedSegmentIndex
         {
@@ -82,14 +82,14 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
             do {
                 try allAssignmentController.performFetch()
             } catch let assignmentError as NSError {
-                NSLog("Unresolved error: fetch error: \(assignmentError.localizedDescription)")
+                print("Unresolved error: fetch error: \(assignmentError.localizedDescription)")
             }
         case 1:
             allAssignmentController = getAssignmentsFetchedResultsController(false)
             do {
                 try allAssignmentController.performFetch()
             } catch let assignmentError as NSError {
-                NSLog("Unresolved error: fetch error: \(assignmentError.localizedDescription)")
+                print("Unresolved error: fetch error: \(assignmentError.localizedDescription)")
             }
         default:
             break
@@ -97,11 +97,11 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         
         allAssignmentsTableView.reloadData()
         
-        if UIDevice.currentDevice().userInterfaceIdiom == .Pad {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             if allAssignmentController.fetchedObjects!.count > 0 {
-                let indexPath = NSIndexPath(forRow: 0, inSection: 0)
-                allAssignmentsTableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition:UITableViewScrollPosition.Top)
-                tableView(self.allAssignmentsTableView, didSelectRowAtIndexPath: indexPath);
+                let indexPath = IndexPath(row: 0, section: 0)
+                allAssignmentsTableView.selectRow(at: indexPath, animated: true, scrollPosition:UITableViewScrollPosition.top)
+                tableView(self.allAssignmentsTableView, didSelectRowAt: indexPath);
             }
         }
         
@@ -110,19 +110,19 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
     /* called first
     begins update to `UITableView`
     ensures all updates are animated simultaneously */
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         allAssignmentsTableView.beginUpdates()
     }
     
     /* helper method to configure a `UITableViewCell`
     ask `NSFetchedResultsController` for the model */
-    func configureCell(cell: UITableViewCell, atIndexPath indexPath: NSIndexPath) {
+    func configureCell(_ cell: UITableViewCell, atIndexPath indexPath: IndexPath) {
         
         var isOverdue = false
         var sectionName:String = ""
         
         if let sections = allAssignmentController!.sections {
-            let name = sections[indexPath.section].name
+            let name = sections[(indexPath as NSIndexPath).section].name
             sectionName =  name
         }
         
@@ -130,7 +130,7 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
             isOverdue = true
         }
         
-        let assignment = allAssignmentController.objectAtIndexPath(indexPath) as! CourseAssignment
+        let assignment = allAssignmentController.object(at: indexPath)
         let nameLabel = cell.viewWithTag(100) as! UILabel
         nameLabel.text = assignment.name
         
@@ -141,9 +141,9 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         
         if let assignmentDate = assignment.dueDate {
             if isOverdue {
-                dueDateLabel.text = self.overDueDatetimeOutputFormatter()!.stringFromDate(assignmentDate)
+                dueDateLabel.text = self.overDueDatetimeOutputFormatter()!.string(from: assignmentDate)
             } else {
-                dueDateLabel.text = self.datetimeOutputFormatter()!.stringFromDate(assignmentDate)
+                dueDateLabel.text = self.datetimeOutputFormatter()!.string(from: assignmentDate)
             }
         } else {
             dueDateLabel.text = ""
@@ -152,7 +152,7 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         if isOverdue {
             nameLabel.textColor = overdueRed
         } else {
-            nameLabel.textColor = UIColor.blackColor()
+            nameLabel.textColor = UIColor.black
         }
         
     }
@@ -161,40 +161,35 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
     - when a new model is created
     - when an existing model is updated
     - when an existing model is deleted */
-    func controller(controller: NSFetchedResultsController,
-        didChangeObject object: AnyObject,
-        atIndexPath indexPath: NSIndexPath?,
-        forChangeType type: NSFetchedResultsChangeType,
-        newIndexPath: NSIndexPath?)  {
-            
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {            
             switch type {
-            case .Insert:
-                allAssignmentsTableView.insertRowsAtIndexPaths([newIndexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Update:
-                let cell = self.allAssignmentsTableView.cellForRowAtIndexPath(indexPath as NSIndexPath!)
-                configureCell(cell!, atIndexPath: indexPath as NSIndexPath!)
-                allAssignmentsTableView.reloadRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Delete:
-                allAssignmentsTableView.deleteRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
+            case .insert:
+                allAssignmentsTableView.insertRows(at: [newIndexPath as IndexPath!], with: .fade)
+            case .update:
+                let cell = self.allAssignmentsTableView.cellForRow(at: indexPath as IndexPath!)
+                configureCell(cell!, atIndexPath: indexPath as IndexPath!)
+                allAssignmentsTableView.reloadRows(at: [indexPath as IndexPath!], with: .fade)
+            case .delete:
+                allAssignmentsTableView.deleteRows(at: [indexPath as IndexPath!], with: .fade)
             default:
                 break
             }
     }
     
-    func controller(controller: NSFetchedResultsController,
-        didChangeSection sectionInfo: NSFetchedResultsSectionInfo,
-        atIndex sectionIndex: Int,
-        forChangeType type: NSFetchedResultsChangeType)
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>,
+        didChange sectionInfo: NSFetchedResultsSectionInfo,
+        atSectionIndex sectionIndex: Int,
+        for type: NSFetchedResultsChangeType)
     {
         switch(type) {
             
-        case .Insert:
-            allAssignmentsTableView.insertSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
+        case .insert:
+            allAssignmentsTableView.insertSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
             
-        case .Delete:
-            allAssignmentsTableView.deleteSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
+        case .delete:
+            allAssignmentsTableView.deleteSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
             
         default:
             break
@@ -203,28 +198,28 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
     
     /* called last
     tells `UITableView` updates are complete */
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         allAssignmentsTableView.endUpdates()
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCellWithIdentifier("Daily Assignment Cell", forIndexPath: indexPath) as UITableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Assignment Cell", for: indexPath) as UITableViewCell
         configureCell(cell, atIndexPath:indexPath)
         return cell
     }
     
-    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if UIDevice.currentDevice().userInterfaceIdiom == .Pad {
-            let assignment = allAssignmentController.objectAtIndexPath(indexPath) as! CourseAssignment
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let assignment = allAssignmentController.object(at: indexPath)
             selectedAssignment = assignment
             
             detailViewController.courseName = assignment.courseName
             detailViewController.courseSectionNumber = assignment.courseSectionNumber
             detailViewController.itemTitle = assignment.name
             detailViewController.itemContent = assignment.assignmentDescription
-            detailViewController.itemLink = assignment.url.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+            detailViewController.itemLink = assignment.url.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             if let assignmentDate = assignment.dueDate {
                 detailViewController.itemPostDateTime = assignmentDate
             }
@@ -232,18 +227,18 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
                 detailViewController.itemPostDateTime = nil
             }
             self.detailSelectionDelegate = detailViewController
-            self.detailSelectionDelegate.selectedDetail(assignment, withIndex: indexPath, withModule: self.module!, withController: self)
+            self.detailSelectionDelegate.selectedDetail(assignment, withIndex: indexPath, with: self.module!, withController: self)
             
-        } else if UIDevice.currentDevice().userInterfaceIdiom == .Phone {
-            self.performSegueWithIdentifier("Show ILP Assignment Detail", sender:tableView)
+        } else if UIDevice.current.userInterfaceIdiom == .phone {
+            self.performSegue(withIdentifier: "Show ILP Assignment Detail", sender:tableView)
         }
         
     }
-    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 60.0
     }
     
-    func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat{
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat{
         
         let count = allAssignmentController.sections?.count
         
@@ -255,43 +250,43 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         }
     }
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         
         let numberOfSections = allAssignmentController.sections?.count
         return numberOfSections!
     }
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         let numberOfRowsInSection = allAssignmentController.sections?[section].numberOfObjects
         return numberOfRowsInSection!
     }
     
-    func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
         let sections = allAssignmentController.sections
         let dateLabel:String? = sections?[section].name
         var header:UITableViewCell
         
         if dateLabel == NSLocalizedString("OVERDUE", comment:"overdue assignment indicator for ilp module") {
-            header = tableView.dequeueReusableCellWithIdentifier("OverdueSectionHeader")!
+            header = tableView.dequeueReusableCell(withIdentifier: "OverdueSectionHeader")!
         } else {
-            header = tableView.dequeueReusableCellWithIdentifier("SectionHeader")!
+            header = tableView.dequeueReusableCell(withIdentifier: "SectionHeader")!
         }
         
-        header.contentView.backgroundColor = UIColor.accentColor()
+        header.contentView.backgroundColor = UIColor.accent
         let labelView = header.viewWithTag(101) as! UILabel
         labelView.text = dateLabel
         labelView.sizeToFit()
         return header
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?)
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?)
     {
         if segue.identifier == "Show ILP Assignment Detail" {
-            let indexPath: NSIndexPath! = allAssignmentsTableView.indexPathForSelectedRow
-            let assignment = allAssignmentController.objectAtIndexPath(indexPath) as! CourseAssignment
-            let detailController = segue.destinationViewController as! CourseAssignmentDetailViewController
+            let indexPath: IndexPath! = allAssignmentsTableView.indexPathForSelectedRow
+            let assignment = allAssignmentController.object(at: indexPath)
+            let detailController = segue.destination as! CourseAssignmentDetailViewController
             detailController.courseSectionNumber = assignment.courseSectionNumber
             detailController.courseName = assignment.courseName
             detailController.itemTitle = assignment.name
@@ -299,7 +294,7 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
             detailController.itemContent = assignment.assignmentDescription
             
             if let url = assignment.url {
-                detailController.itemLink = url.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+                detailController.itemLink = url.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             } else {
                 detailController.itemLink = nil
             }
@@ -310,28 +305,51 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
             else {
                 detailController.itemPostDateTime = nil
             }
-            allAssignmentsTableView.deselectRowAtIndexPath(indexPath, animated: true)
+            allAssignmentsTableView.deselectRow(at: indexPath, animated: true)
         } else if segue.identifier == "Edit Reminder"{
-            let detailController = segue.destinationViewController.childViewControllers[0] as! EditReminderViewController
+            let detailController = segue.destination.childViewControllers[0] as! EditReminderViewController
             
             detailController.reminderTitle = reminderAssignment!.name
             
             if let date = reminderAssignment!.dueDate {
                 detailController.reminderDate = date
-                let formattedDate = NSDateFormatter.localizedStringFromDate(date, dateStyle: .ShortStyle, timeStyle: .ShortStyle)
-                let localizedDue = NSString.localizedStringWithFormat(NSLocalizedString("Due: %@", comment: "due date label with date"), formattedDate)
-                detailController.reminderNotes = "\(reminderAssignment!.courseName)-\(reminderAssignment!.courseSectionNumber)\n\(localizedDue)\n\(reminderAssignment!.assignmentDescription)"
+                let formattedDate = DateFormatter.localizedString(from: date, dateStyle: .short, timeStyle: .short)
+                let localizedDue = String.localizedStringWithFormat(NSLocalizedString("Due: %@", comment: "due date label with date"), formattedDate)
+                
+                var reminderString = ""
+                if let courseName = reminderAssignment!.courseName {
+                    reminderString += "\(courseName)"
+                }
+                if let courseSectionNumber = reminderAssignment!.courseSectionNumber {
+                    reminderString += "-\(courseSectionNumber)"
+                }
+                reminderString += "\n\(localizedDue)"
+                if let assignmentDescription = reminderAssignment!.assignmentDescription {
+                    reminderString += "\n\(assignmentDescription)"
+                }
+                
+                detailController.reminderNotes = reminderString
             } else {
-                detailController.reminderNotes = "\(reminderAssignment!.courseName)-\(reminderAssignment!.courseSectionNumber)\n\(reminderAssignment!.assignmentDescription)"
+                var reminderString = ""
+                if let courseName = reminderAssignment!.courseName {
+                    reminderString += "\(courseName)"
+                }
+                if let courseSectionNumber = reminderAssignment!.courseSectionNumber {
+                    reminderString += "-\(courseSectionNumber)"
+                }
+                if let assignmentDescription = reminderAssignment!.assignmentDescription {
+                    reminderString += "\n\(assignmentDescription)"
+                }
+                detailController.reminderNotes = reminderString
             }
             
             
         }
     }
     
-    func assignmentFetchRequest(showOnlyItemsWithDates:Bool) -> NSFetchRequest {
+    func assignmentFetchRequest(_ showOnlyItemsWithDates:Bool) -> NSFetchRequest<CourseAssignment> {
         
-        let fetchRequest = NSFetchRequest(entityName:"CourseAssignment")
+        let fetchRequest = NSFetchRequest<CourseAssignment>(entityName: "CourseAssignment")
         var fetchPredicate:NSPredicate!
         
         if (showOnlyItemsWithDates) {
@@ -346,19 +364,19 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         return fetchRequest
     }
     
-    func getAssignmentsFetchedResultsController(showOnlyItemsWithDates: Bool) -> NSFetchedResultsController {
+    func getAssignmentsFetchedResultsController(_ showOnlyItemsWithDates: Bool) -> NSFetchedResultsController<CourseAssignment> {
         
         showHeaders = showOnlyItemsWithDates
         
-        let importContext = NSManagedObjectContext(concurrencyType: .MainQueueConcurrencyType)
+        let importContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         
-        importContext.parentContext = self.myManagedObjectContext
+        importContext.parent = self.myManagedObjectContext
         
         let fetchRequest = assignmentFetchRequest(showOnlyItemsWithDates)
-        let entity:NSEntityDescription? = NSEntityDescription.entityForName("CourseAssignment", inManagedObjectContext:importContext)
+        let entity:NSEntityDescription? = NSEntityDescription.entity(forEntityName: "CourseAssignment", in:importContext)
         fetchRequest.entity = entity;
         
-        var theFetchedResultsController:NSFetchedResultsController!
+        var theFetchedResultsController:NSFetchedResultsController<CourseAssignment>!
         
         if showOnlyItemsWithDates {
             theFetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext:importContext, sectionNameKeyPath:"displayDateSectionHeader", cacheName:nil)
@@ -370,22 +388,22 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         
     }
     
-    func datetimeOutputFormatter() ->NSDateFormatter? {
+    func datetimeOutputFormatter() ->DateFormatter? {
         
         if (myDatetimeOutputFormatter == nil) {
-            myDatetimeOutputFormatter = NSDateFormatter()
-            myDatetimeOutputFormatter!.dateStyle = .NoStyle
-            myDatetimeOutputFormatter!.timeStyle = .ShortStyle
+            myDatetimeOutputFormatter = DateFormatter()
+            myDatetimeOutputFormatter!.dateStyle = .none
+            myDatetimeOutputFormatter!.timeStyle = .short
         }
         return myDatetimeOutputFormatter
     }
     
-    func overDueDatetimeOutputFormatter() ->NSDateFormatter? {
+    func overDueDatetimeOutputFormatter() ->DateFormatter? {
         
         if (myOverDueDatetimeOutputFormatter == nil) {
-            myOverDueDatetimeOutputFormatter = NSDateFormatter()
-            myOverDueDatetimeOutputFormatter!.dateStyle = .ShortStyle
-            myOverDueDatetimeOutputFormatter!.timeStyle = .ShortStyle
+            myOverDueDatetimeOutputFormatter = DateFormatter()
+            myOverDueDatetimeOutputFormatter!.dateStyle = .short
+            myOverDueDatetimeOutputFormatter!.timeStyle = .short
         }
         return myOverDueDatetimeOutputFormatter
     }
@@ -398,62 +416,59 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
     func findSelectedItem() {
         
         if let myTargetItem = selectedAssignment {
-            var indexPath = NSIndexPath(forRow: 0, inSection: 0)
+            var indexPath = IndexPath(row: 0, section: 0)
             
             for iter in allAssignmentController.fetchedObjects!
             {
-                let temp: CourseAssignment = iter as! CourseAssignment
+                let temp: CourseAssignment = iter
                 if myTargetItem.url != nil && temp.url == myTargetItem.url {
-                    indexPath = allAssignmentController.indexPathForObject(temp)!
+                    indexPath = allAssignmentController.indexPath(forObject: temp)!
                 }
             }
-            allAssignmentsTableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition:UITableViewScrollPosition.Top)
-            tableView(self.allAssignmentsTableView, didSelectRowAtIndexPath: indexPath);
+            allAssignmentsTableView.selectRow(at: indexPath, animated: true, scrollPosition:UITableViewScrollPosition.top)
+            tableView(self.allAssignmentsTableView, didSelectRowAt: indexPath);
         }
     }
     
     var reminderAssignment : CourseAssignment? = nil
     
-    @IBAction func addReminderTapped(sender: AnyObject) {
-        let buttonPosition = sender.convertPoint(CGPointZero, toView: self.allAssignmentsTableView);
-        let indexPath = self.allAssignmentsTableView.indexPathForRowAtPoint(buttonPosition);
+    @IBAction func addReminderTapped(_ sender: AnyObject) {
+        let buttonPosition = sender.convert(CGPoint.zero, to: self.allAssignmentsTableView);
+        let indexPath = self.allAssignmentsTableView.indexPathForRow(at: buttonPosition);
         if let indexPath = indexPath {
-            reminderAssignment = allAssignmentController.objectAtIndexPath(indexPath) as? CourseAssignment
+            reminderAssignment = allAssignmentController.object(at: indexPath)
             
-            let reminderType = NSUserDefaults.standardUserDefaults().stringForKey("settings-assignments-reminder")
+            let reminderType = UserDefaults.standard.string(forKey: "settings-assignments-reminder")
             if reminderType == "Calendar" {
                 addToCalendar()
             } else if reminderType == "Reminders" {
                 addToReminders()
             } else {
-                let alert = UIAlertView(title: NSLocalizedString("Reminder Type", comment:"Reminder setting title"), message: NSLocalizedString("What application would you list to use for reminders?", comment:"Reminder setting message"), delegate:self, cancelButtonTitle:nil,  otherButtonTitles:  NSLocalizedString("Calendar", comment:"Calendar app name"), NSLocalizedString("Reminders", comment:"Reminders app name"))
-                alert.tag = 1
-                alert.show()
                 
-                
+                let alertController = UIAlertController(title: NSLocalizedString("Reminder Type", comment:"Reminder setting title"), message: NSLocalizedString("What application would you like to use for reminders?", comment:"Reminder setting message"), preferredStyle: .alert)
+
+                let calendarAction = UIAlertAction(title: NSLocalizedString("Calendar", comment:"Calendar app name"), style: .default) { (action) in
+                    UserDefaults.standard.set("Calendar", forKey: "settings-assignments-reminder")
+                    self.addToCalendar()
+                }
+                alertController.addAction(calendarAction)
+                let reminderAction = UIAlertAction(title: NSLocalizedString("Reminders", comment:"Reminders app name"), style: .default) { (action) in
+                    UserDefaults.standard.set("Reminders", forKey: "settings-assignments-reminder")
+                    self.addToReminders()
+                }
+                alertController.addAction(reminderAction)
+                self.present(alertController, animated: true)
             }
         }
     }
-    
-    func alertView(alertView: UIAlertView, didDismissWithButtonIndex buttonIndex: Int) {
-        if alertView.tag == 1 {
-            if buttonIndex == 1 {
-                NSUserDefaults.standardUserDefaults().setObject("Reminders", forKey: "settings-assignments-reminder")
-                addToReminders()
-            } else  if buttonIndex == 0 {
-                NSUserDefaults.standardUserDefaults().setObject("Calendar", forKey: "settings-assignments-reminder")
-                addToCalendar()
-            }
-        }
-    }
-    
+
     func addToReminders() {
         if let _ = reminderAssignment {
             let eventStore : EKEventStore = EKEventStore()
-            eventStore.requestAccessToEntityType(.Reminder) {
+            eventStore.requestAccess(to: .reminder) {
                 granted, error in
                 if (granted) && (error == nil) {
-                    self.performSegueWithIdentifier("Edit Reminder", sender: self)
+                    self.performSegue(withIdentifier: "Edit Reminder", sender: self)
                 } else {
                     self.showPermissionNotGrantedAlert()
                 }
@@ -464,7 +479,7 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
     func addToCalendar() {
         if let assignment = reminderAssignment {
             let eventStore : EKEventStore = EKEventStore()
-            eventStore.requestAccessToEntityType(.Event, completion: {
+            eventStore.requestAccess(to: .event, completion: {
                 granted, error in
                 if (granted) && (error == nil) {
                     
@@ -483,7 +498,7 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
                     evc.eventStore = eventStore
                     evc.editViewDelegate = self
                     self.reminderAssignment = nil
-                    self.presentViewController(evc, animated: true, completion: nil)
+                    self.present(evc, animated: true, completion: nil)
                 } else {
                     self.showPermissionNotGrantedAlert()
                 }
@@ -491,27 +506,27 @@ class AllAssignmentsViewController : UIViewController, UIActionSheetDelegate, UI
         }
     }
     
-    func eventEditViewController(controller: EKEventEditViewController, didCompleteWithAction action: EKEventEditViewAction) {
-        self.dismissViewControllerAnimated(true, completion:nil)
+    func eventEditViewController(_ controller: EKEventEditViewController, didCompleteWith action: EKEventEditViewAction) {
+        self.dismiss(animated: true, completion:nil)
     }
     
     private func showPermissionNotGrantedAlert() {
         
-        let alertController = UIAlertController(title: NSLocalizedString("Permission not granted", comment: "Permission not granted title"), message: NSLocalizedString("You must give permission in Settings to allow access", comment: "Permission not granted message"), preferredStyle: .Alert)
+        let alertController = UIAlertController(title: NSLocalizedString("Permission not granted", comment: "Permission not granted title"), message: NSLocalizedString("You must give permission in Settings to allow access", comment: "Permission not granted message. Settings is the name of an app that is part of iOS. Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages"), preferredStyle: .alert)
         
         
-        let settingsAction = UIAlertAction(title: NSLocalizedString("Settings", comment: "Settings application name"), style: .Default) { value in
-            let settingsUrl = NSURL(string: UIApplicationOpenSettingsURLString)
+        let settingsAction = UIAlertAction(title: NSLocalizedString("Settings", comment: "Settings application name. This is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages"), style: .default) { value in
+            let settingsUrl = URL(string: UIApplicationOpenSettingsURLString)
             if let url = settingsUrl {
-                UIApplication.sharedApplication().openURL(url)
+                UIApplication.shared.openURL(url)
             }
         }
-        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel"), style: .Default, handler: nil)
+        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel"), style: .default, handler: nil)
         alertController.addAction(settingsAction)
         alertController.addAction(cancelAction)
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
             () -> Void in
-            self.presentViewController(alertController, animated: true, completion: nil)
+            self.present(alertController, animated: true, completion: nil)
             
         }
     }

@@ -8,57 +8,75 @@
 
 import Foundation
 
-class CourseDetailViewController: UITableViewController {
+class CourseDetailViewController: UITableViewController, CourseDetailViewControllerProtocol {
     
+    var module : Module?
     var termId : String?
     var sectionId : String?
-    var courseNameAndSectionNumber : String?
-    var module : Module?
+    var courseName : String?
+    var courseSectionNumber : String?
+
+    
+    static let CourseDetailInformationLoadedNotification = Notification.Name("CourseDetailInformationLoaded")
+
     var courseDetail : CourseDetail?
     
-    let dateFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    let dateFormatter : DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = NSTimeZone(name:"UTC")
+        formatter.timeZone = TimeZone(abbreviation:"UTC")
         return formatter
     }()
-    let timeFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    let timeFormatter : DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "HH:mm'Z'"
-        formatter.timeZone = NSTimeZone(name:"UTC")
+        formatter.timeZone = TimeZone(abbreviation:"UTC")
         return formatter
     }()
-    let displayDateFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .ShortStyle
-        formatter.timeStyle = .NoStyle
-        formatter.timeZone = NSTimeZone(name:"UTC")
+    let displayDateFormatter : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
+        formatter.timeZone = TimeZone(abbreviation:"UTC")
         return formatter
     }()
-    let displayTimeFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .NoStyle
-        formatter.timeStyle = .ShortStyle
+    let shortDisplayDateFormatter : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("Md")
+        formatter.timeZone = TimeZone(abbreviation:"UTC")
+        return formatter
+    }()
+    let displayTimeFormatter : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
         return formatter
     }()
     var instructors : [CourseDetailInstructor]?
     var meetingPatterns : [CourseMeetingPattern]?
     var buildingsUrl : String?
+    var directoryUrl : String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.navigationController?.navigationBar.translucent = false
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "setupData", name: "CourseDetailInformationLoaded", object: nil)
-        self.navigationItem.title = self.courseNameAndSectionNumber!
+        NotificationCenter.default.addObserver(self, selector: #selector(CourseDetailViewController.setupData), name: CourseDetailViewController.CourseDetailInformationLoadedNotification, object: nil)
+        self.navigationItem.title = self.courseNameAndSectionNumber()
         
         tableView.estimatedRowHeight = 60
         tableView.rowHeight = UITableViewAutomaticDimension
         tableView.tableFooterView = UIView()
         
+        let defaults = AppGroupUtilities.userDefaults()
+        if ConfigurationManager.doesMobileServerSupportVersion("4.5") {
+            directoryUrl = defaults?.string(forKey: "urls-directory-baseSearch")
+        } else {
+            directoryUrl = defaults?.string(forKey: "urls-directory-facultySearch")
+        }
+        
     }
     
-    override func tableView(tableView: UITableView, estimatedHeightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
-        switch(indexPath.section) {
+    override func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
+        switch((indexPath as NSIndexPath).section) {
         case 0:
             return 60
         case 1:
@@ -70,20 +88,20 @@ class CourseDetailViewController: UITableViewController {
     }
     
     
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return 3
     }
     
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let _ = self.courseDetail {
             switch(section) {
             case 0:
-                if let count = self.meetingPatterns?.count where count > 0 {
+                if let count = self.meetingPatterns?.count , count > 0 {
                     return count
                 }
                 return 1
             case 1:
-                if let count = self.instructors?.count where count > 0 {
+                if let count = self.instructors?.count , count > 0 {
                     return count
                 }
                 return 1
@@ -96,7 +114,7 @@ class CourseDetailViewController: UITableViewController {
         return 0;
     }
     
-    override func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         if let _ = self.courseDetail {
             switch(section) {
             case 0:
@@ -113,7 +131,7 @@ class CourseDetailViewController: UITableViewController {
         
     }
     
-    override func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
         if let _ = self.courseDetail {
             switch(section) {
@@ -131,18 +149,18 @@ class CourseDetailViewController: UITableViewController {
     }
     
     func headerForTitle() -> UIView? {
-        let view = UIView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.frame), 30))
-        let label = UILabel(frame: CGRectMake(8,0,CGRectGetWidth(tableView.frame), 30))
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 30))
+        let label = UILabel(frame: CGRect(x: 8,y: 0,width: tableView.frame.width, height: 30))
         label.translatesAutoresizingMaskIntoConstraints = false
-        let label2 = UILabel(frame: CGRectMake(8,30,CGRectGetWidth(tableView.frame), 30))
+        let label2 = UILabel(frame: CGRect(x: 8,y: 30,width: tableView.frame.width, height: 30))
         label2.translatesAutoresizingMaskIntoConstraints = false
         
         
         label.textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)
         label2.textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)
         view.backgroundColor = UIColor(rgba: "#e6e6e6")
-        label.font = UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline)
-        label2.font = UIFont.preferredFontForTextStyle(UIFontTextStyleSubheadline)
+        label.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline)
+        label2.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.subheadline)
         
         view.addSubview(label)
         view.addSubview(label2)
@@ -150,51 +168,51 @@ class CourseDetailViewController: UITableViewController {
         let viewsDictionary = ["label": label, "label2": label2, "view": view]
         
         // Create and add the vertical constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|-4-[label]-4-[label2]-4-|",
-            options: NSLayoutFormatOptions.AlignAllLeading,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-4-[label]-4-[label2]-4-|",
+            options: NSLayoutFormatOptions.alignAllLeading,
             metrics: nil,
             views: viewsDictionary))
         
         // Create and add the horizontal constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-[label]",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-[label]",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-[label2]",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-[label2]",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         
         label.text = self.courseDetail!.sectionTitle;
-        if let courseDetail = courseDetail, firstMeetingDate = courseDetail.firstMeetingDate, lastMeetingDate = courseDetail.lastMeetingDate {
-            let dates = String(format: NSLocalizedString("course first meeting - last meeting", tableName: "Localizable", bundle: NSBundle.mainBundle(), value: "%@ - %@", comment: "course first meeting - last meeting"), self.displayDateFormatter.stringFromDate(firstMeetingDate), self.displayDateFormatter.stringFromDate(lastMeetingDate))
+        if let courseDetail = courseDetail, let firstMeetingDate = courseDetail.firstMeetingDate, let lastMeetingDate = courseDetail.lastMeetingDate {
+            let dates = String(format: NSLocalizedString("course first meeting - last meeting", tableName: "Localizable", bundle: Bundle.main, value: "%@ - %@", comment: "course first meeting - last meeting"), self.displayDateFormatter.string(from: firstMeetingDate), self.displayDateFormatter.string(from: lastMeetingDate))
             label2.text = dates
         }
         return view;
     }
     
     func headerForFaculty() -> UIView? {
-        let view = UIView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.frame), 30))
-        let label = UILabel(frame: CGRectMake(8,0,CGRectGetWidth(tableView.frame), 30))
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 30))
+        let label = UILabel(frame: CGRect(x: 8,y: 0,width: tableView.frame.width, height: 30))
         label.translatesAutoresizingMaskIntoConstraints = false
         
         label.textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)
         view.backgroundColor = UIColor(rgba: "#e6e6e6")
-        label.font = UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline)
+        label.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline)
         
         view.addSubview(label)
         
         let viewsDictionary = ["label": label, "view": view]
         
         // Create and add the vertical constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|-1-[label]-1-|",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-1-[label]-1-|",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         
         // Create and add the horizontal constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-[label]",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-[label]",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         
@@ -204,22 +222,22 @@ class CourseDetailViewController: UITableViewController {
     }
     
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        self.sendView("Course Overview", forModuleNamed: self.module!.name)
+        self.sendView("Course Overview", moduleName: self.module!.name)
     }
     
-    @IBAction func dismiss(sender: AnyObject) {
-        self.dismissViewControllerAnimated(true, completion: nil)
+    @IBAction func dismiss(_ sender: AnyObject) {
+        self.dismiss(animated: true, completion: nil)
     }
     
     func setupData() {
         let defaults = AppGroupUtilities.userDefaults()
-        self.buildingsUrl = defaults?.stringForKey("urls-map-buildings")
-        let request: NSFetchRequest = NSFetchRequest(entityName: "CourseDetail")
+        self.buildingsUrl = defaults?.string(forKey: "urls-map-buildings")
+        let request = NSFetchRequest<CourseDetail>(entityName: "CourseDetail")
         request.predicate = NSPredicate(format: "termId == %@ && sectionId == %@", self.termId!, self.sectionId!)
         
-        self.courseDetail = try! self.module?.managedObjectContext?.executeFetchRequest(request).last as? CourseDetail
+        self.courseDetail = try! self.module!.managedObjectContext!.fetch(request).last
         if let courseDetail = self.courseDetail {
             self.instructors = courseDetail.instructors.array as? [CourseDetailInstructor]
             self.meetingPatterns = courseDetail.meetingPatterns.array as? [CourseMeetingPattern]
@@ -227,38 +245,57 @@ class CourseDetailViewController: UITableViewController {
         self.tableView.reloadData()
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell : UITableViewCell
         
-        switch indexPath.section {
+        switch (indexPath as NSIndexPath).section {
         case 0:
-            if self.meetingPatterns?.count > 0 {
-                let meetingPattern = self.meetingPatterns![indexPath.row]
-                cell = tableView.dequeueReusableCellWithIdentifier("Course Detail Meeting Pattern Cell", forIndexPath: indexPath) as UITableViewCell
-                cell.userInteractionEnabled = true
+            if let count = self.meetingPatterns?.count, count > 0 {
+                let meetingPattern = self.meetingPatterns![(indexPath as NSIndexPath).row]
+                cell = tableView.dequeueReusableCell(withIdentifier: "Course Detail Meeting Pattern Cell", for: indexPath) as UITableViewCell
+                cell.isUserInteractionEnabled = true
                 let label = cell.viewWithTag(1) as! UILabel
                 let label2 = cell.viewWithTag(2) as! UILabel
+                let campusLabel = cell.viewWithTag(4) as! UILabel
                 
-                var daysOfClass = meetingPattern.daysOfWeek.componentsSeparatedByString(",") as [String]
+                var daysOfClass = meetingPattern.daysOfWeek.components(separatedBy: ",") as [String]
                 var shortStandaloneWeekdaySymbols = self.dateFormatter.shortStandaloneWeekdaySymbols
                 var localizedDays = [String]()
                 for i in 0 ..< daysOfClass.count {
                     let value = Int(daysOfClass[i])! - 1
-                    localizedDays.append(shortStandaloneWeekdaySymbols[value])
+                    localizedDays.append((shortStandaloneWeekdaySymbols?[value])!)
                 }
                 
                 //time
-                let days: String = String(format: NSLocalizedString("days:", tableName: "Localizable", bundle: NSBundle.mainBundle(), value:"%@: ", comment: "days:"), localizedDays.joinWithSeparator(", "))
+                let days: String = String(format: NSLocalizedString("days:", tableName: "Localizable", bundle: Bundle.main, value:"%@: ", comment: "days:"), localizedDays.joined(separator: ", "))
                 var line1: String
+                let sectionDatesMatchesMeetingPatternDates = (meetingPattern.startDate == self.courseDetail?.firstMeetingDate) && (meetingPattern.endDate == self.courseDetail?.lastMeetingDate)
+                
                 if meetingPattern.instructionalMethodCode != nil {
-                    line1 = String(format: NSLocalizedString("days start - end method", tableName: "Localizable", bundle: NSBundle.mainBundle(), value: "%@ %@ - %@ %@", comment: "days start - end method"), days, self.displayTimeFormatter.stringFromDate(meetingPattern.startTime), self.displayTimeFormatter.stringFromDate(meetingPattern.endTime), meetingPattern.instructionalMethodCode)
+                    if sectionDatesMatchesMeetingPatternDates {
+                        line1 = String(format: NSLocalizedString("days start - end method", tableName: "Localizable", bundle: Bundle.main, value: "%@ %@ - %@ %@", comment: "days start - end method"), days, self.displayTimeFormatter.string(from: meetingPattern.startTime), self.displayTimeFormatter.string(from: meetingPattern.endTime), meetingPattern.instructionalMethodCode)
+                    } else {
+                        if meetingPattern.startDate == meetingPattern.endDate {
+                            line1 = String(format: NSLocalizedString("days startdate starttime - endtime method", tableName: "Localizable", bundle: Bundle.main, value: "%@ %@ %@ - %@ %@", comment: "days startdate starttime - endtime method"), days, self.shortDisplayDateFormatter.string(from: meetingPattern.startDate), self.displayTimeFormatter.string(from: meetingPattern.startTime), self.displayTimeFormatter.string(from: meetingPattern.endTime), meetingPattern.instructionalMethodCode)
+                        } else {
+                            line1 = String(format: NSLocalizedString("days startdate - enddate starttime - endtime method", tableName: "Localizable", bundle: Bundle.main, value: "%@ %@ - %@ %@ - %@ %@", comment: "days startdate - enddate starttime - endtime method"), days, self.shortDisplayDateFormatter.string(from: meetingPattern.startDate), self.shortDisplayDateFormatter.string(from: meetingPattern.endDate), self.displayTimeFormatter.string(from: meetingPattern.startTime), self.displayTimeFormatter.string(from: meetingPattern.endTime), meetingPattern.instructionalMethodCode)
+                        }
+                    }
                 }
                 else {
-                    line1 = String(format: NSLocalizedString("days start - end", tableName: "Localizable", bundle: NSBundle.mainBundle(), value:"%@ %@ - %@", comment:"days start - end"), days, self.displayTimeFormatter.stringFromDate(meetingPattern.startTime), self.displayTimeFormatter.stringFromDate(meetingPattern.endTime))
+                    if sectionDatesMatchesMeetingPatternDates {
+                        line1 = String(format: NSLocalizedString("days start - end", tableName: "Localizable", bundle: Bundle.main, value:"%@ %@ - %@", comment:"days start - end"), days, self.displayTimeFormatter.string(from: meetingPattern.startTime), self.displayTimeFormatter.string(from: meetingPattern.endTime))
+                    } else {
+                        if meetingPattern.startDate == meetingPattern.endDate {
+                            line1 = String(format: NSLocalizedString("days startdate starttime - endtime", tableName: "Localizable", bundle: Bundle.main, value:"%@ %@ %@ - %@", comment:"days startdate starttime - endtime"), days, self.shortDisplayDateFormatter.string(from: meetingPattern.startDate), self.displayTimeFormatter.string(from: meetingPattern.startTime), self.displayTimeFormatter.string(from: meetingPattern.endTime))
+                        } else {
+                            line1 = String(format: NSLocalizedString("days startdate - enddate starttime - endtime", tableName: "Localizable", bundle: Bundle.main, value:"%@ %@ - %@ %@ - %@", comment:"days startdate - enddate starttime - endtime"), days, self.shortDisplayDateFormatter.string(from: meetingPattern.startDate), self.shortDisplayDateFormatter.string(from: meetingPattern.endDate), self.displayTimeFormatter.string(from: meetingPattern.startTime), self.displayTimeFormatter.string(from: meetingPattern.endTime))
+                        }
+                    }
                 }
                 
                 let attributedLine1: NSMutableAttributedString = NSMutableAttributedString(string: line1)
-                attributedLine1.addAttribute(NSFontAttributeName, value: UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline), range: NSMakeRange(0, days.characters.count))
+                attributedLine1.addAttribute(NSFontAttributeName, value: UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline), range: NSMakeRange(0, days.characters.count))
                 label.translatesAutoresizingMaskIntoConstraints = false
                 label.attributedText = attributedLine1
                 
@@ -277,10 +314,22 @@ class CourseDetailViewController: UITableViewController {
                         }
                     }
                 }
-                if let _ = self.buildingsUrl, _ = meetingPattern.buildingId {
-                    
-                    let underlineAttributes = [NSUnderlineStyleAttributeName: NSUnderlineStyle.StyleSingle.rawValue,
-                        NSForegroundColorAttributeName: UIColor.primaryColor()]
+ 
+                if let campusName = meetingPattern.campus {
+                    campusLabel.text = campusName;
+                    cell.isUserInteractionEnabled = true
+                }
+                else if let campusId = meetingPattern.campusId {
+                    campusLabel.text = campusId;
+                    cell.isUserInteractionEnabled = true
+                } else {
+                    campusLabel.text = ""
+                    cell.isUserInteractionEnabled = false //no building location so don't allow segue to it
+                }
+                
+                if let _ = self.buildingsUrl, let _ = meetingPattern.buildingId {
+                    let underlineAttributes : [String : Any] = [NSUnderlineStyleAttributeName: NSUnderlineStyle.styleSingle.rawValue,
+                                                                NSForegroundColorAttributeName: UIColor.primary]
                     let underlineAttributedString = NSAttributedString(string: location, attributes: underlineAttributes)
                     label2.attributedText = underlineAttributedString
                     
@@ -289,29 +338,41 @@ class CourseDetailViewController: UITableViewController {
                 }
                 
                 let imageView = cell.viewWithTag(3)
-                imageView!.tintColor = UIColor.primaryColor()
+                if let label2 = label2.text , label2.characters.count > 0 {
+                    imageView!.tintColor = UIColor.primary
+                } else {
+                    imageView?.removeFromSuperview()
+                }
+                
+                
+                
+                
             } else {
-                cell = tableView.dequeueReusableCellWithIdentifier("Course Detail No Meeting Pattern Cell", forIndexPath: indexPath) as UITableViewCell
-                cell.userInteractionEnabled = false
+                cell = tableView.dequeueReusableCell(withIdentifier: "Course Detail No Meeting Pattern Cell", for: indexPath) as UITableViewCell
+                cell.isUserInteractionEnabled = false
             }
             
         case 1:
             if self.instructors!.count > 0 {
-                let instructor = self.instructors![indexPath.row]
-                cell = tableView.dequeueReusableCellWithIdentifier("Course Detail Instructor Cell", forIndexPath: indexPath) as UITableViewCell
+                let instructor = self.instructors![(indexPath as NSIndexPath).row]
+                cell = tableView.dequeueReusableCell(withIdentifier: "Course Detail Instructor Cell", for: indexPath) as UITableViewCell
                 let label = cell.viewWithTag(1) as! UILabel
                 label.text = instructor.formattedName
-                cell.userInteractionEnabled = true
+                if let _ = directoryUrl {
+                    cell.isUserInteractionEnabled = true
+                } else {
+                    cell.isUserInteractionEnabled = false
+                }
             } else {
-                cell = tableView.dequeueReusableCellWithIdentifier("Course Detail No Instructor Cell", forIndexPath: indexPath) as UITableViewCell
-                cell.userInteractionEnabled = false
+                cell = tableView.dequeueReusableCell(withIdentifier: "Course Detail No Instructor Cell", for: indexPath) as UITableViewCell
+                cell.isUserInteractionEnabled = false
             }
             
         case 2:
-            cell = tableView.dequeueReusableCellWithIdentifier("Course Detail Description Cell", forIndexPath: indexPath) as UITableViewCell
+            cell = tableView.dequeueReusableCell(withIdentifier: "Course Detail Description Cell", for: indexPath) as UITableViewCell
             let label = cell.viewWithTag(1) as! UILabel
             label.text = courseDetail?.courseDescription
-            cell.userInteractionEnabled = false
+            cell.isUserInteractionEnabled = false
         default:
             cell = UITableViewCell()
         }
@@ -321,23 +382,14 @@ class CourseDetailViewController: UITableViewController {
         return cell
     }
     
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        switch indexPath.section {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        switch (indexPath as NSIndexPath).section {
         case 0:
-            let mp: CourseMeetingPattern = self.meetingPatterns![indexPath.row]
-            self.performSegueWithIdentifier("Show Course Location", sender: mp.buildingId)
+            let mp: CourseMeetingPattern = self.meetingPatterns![(indexPath as NSIndexPath).row]
+            self.performSegue(withIdentifier: "Show Course Location", sender: mp.buildingId)
         case 1:
             
-            let instructor = self.instructors![indexPath.row]
-            let defaults = AppGroupUtilities.userDefaults()
-            var urlString : String?
-            
-            if ConfigurationManager.doesMobileServerSupportVersion("4.5") {
-                urlString = defaults?.stringForKey("urls-directory-baseSearch")
-            } else {
-                urlString = defaults?.stringForKey("urls-directory-facultySearch")
-            }
-            
+            let instructor = self.instructors![(indexPath as NSIndexPath).row]
             let name : String
             if instructor.firstName != nil  && instructor.lastName != nil  {
                 name = instructor.firstName + " " + instructor.lastName
@@ -349,22 +401,24 @@ class CourseDetailViewController: UITableViewController {
                 name = instructor.formattedName
             }
             
-            let encodedSearchString = name.stringByAddingPercentEncodingWithAllowedCharacters(NSCharacterSet.URLQueryAllowedCharacterSet())
-            let encodedIdString = instructor.instructorId.stringByAddingPercentEncodingWithAllowedCharacters(NSCharacterSet.URLQueryAllowedCharacterSet())
-            urlString = "\(urlString!)?searchString=\(encodedSearchString!)&targetId=\(encodedIdString!)"
+            let encodedSearchString = name.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
+            let encodedIdString = instructor.instructorId.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
+            let urlString = "\(directoryUrl!)?searchString=\(encodedSearchString!)&targetId=\(encodedIdString!)"
             let authenticatedRequest = AuthenticatedRequest()
-            let responseData: NSData = authenticatedRequest.requestURL(NSURL(string: urlString!)!, fromView: self)
-            let entries = DirectoryEntry.parseResponse(responseData)
+            var entries = [DirectoryEntry]()
+            if let responseData = authenticatedRequest.requestURL(URL(string: urlString)!, fromView: self) {
+                entries = DirectoryEntry.parseResponse(responseData)
+            }
             
             if entries.count == 0 {
-                let alertController = UIAlertController(title: NSLocalizedString("Faculty", comment: "title for faculty no match"), message: NSLocalizedString("Person was not found", comment: "Person was not found"), preferredStyle: .Alert)
-                let OKAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+                let alertController = UIAlertController(title: NSLocalizedString("Faculty", comment: "title for faculty no match"), message: NSLocalizedString("Person was not found", comment: "Person was not found"), preferredStyle: .alert)
+                let OKAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
                 alertController.addAction(OKAction)
-                self.presentViewController(alertController, animated: true, completion: nil)
+                self.present(alertController, animated: true, completion: nil)
             } else if entries.count == 1 {
-                self.performSegueWithIdentifier("Show Faculty Person", sender: entries[0])
+                self.performSegue(withIdentifier: "Show Faculty Person", sender: entries[0])
             } else {
-                self.performSegueWithIdentifier("Show Faculty List", sender: entries)
+                self.performSegue(withIdentifier: "Show Faculty List", sender: entries)
             }
             
             
@@ -375,19 +429,19 @@ class CourseDetailViewController: UITableViewController {
         }
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         if segue.identifier == "Show Course Location" {
-            self.sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionList_Select, withLabel: "Map Detail", withValue: nil, forModuleNamed: self.module!.name)
-            let vc = segue.destinationViewController as! POIDetailViewController
+            self.sendEventToTracker1(category: .ui_Action, action: .list_Select, label: "Map Detail", moduleName: self.module!.name)
+            let vc = segue.destination as! POIDetailViewController
             vc.buildingId = sender as? String
             vc.module = self.module
         } else if segue.identifier == "Show Faculty List" {
-            let detailController = segue.destinationViewController as! DirectoryViewController
+            let detailController = segue.destination as! DirectoryViewController
             detailController.entries = sender as! [DirectoryEntry];
             detailController.module = self.module;
         } else if segue.identifier == "Show Faculty Person" {
-            let detailController = segue.destinationViewController as! DirectoryEntryViewController
+            let detailController = segue.destination as! DirectoryEntryViewController
             detailController.entry = sender as? DirectoryEntry;
             detailController.module = self.module;
         }

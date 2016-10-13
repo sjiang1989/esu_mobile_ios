@@ -32,14 +32,14 @@ public class FinancesTransactionsIntentService extends IntentService {
         TransactionsResponse response = client.getFinanceTransactions(url);
         if (response != null) {
             Log.d(TAG, "Retrieved transaction response from client");
-            LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
-            Intent broadcastIntent = new Intent();
-            broadcastIntent.setAction(ACTION_UPDATE_FINISHED);
-            broadcastIntent.putExtra(UPDATE_RESULT, response);
-            lbm.sendBroadcast(broadcastIntent);
         } else {
             Log.d(TAG, "Response Object was null");
         }
+        LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_UPDATE_FINISHED);
+        broadcastIntent.putExtra(UPDATE_RESULT, response);
+        lbm.sendBroadcast(broadcastIntent);
 
     }
 }

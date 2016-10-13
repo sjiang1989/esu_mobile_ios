@@ -75,7 +75,7 @@ public class EllucianNotificationManager {
 				// should not happen!
 			}
 			String storedVersion = preferences.getString(REGISTERED_APP_VERSION_KEY, "");
-			boolean versionChanged = storedVersion.equals(currentVersion);
+			boolean versionChanged = !storedVersion.equals(currentVersion);
 			
 			long now = System.currentTimeMillis();
 			boolean timeTofetch = now - lastRegisterWithGCMTime > MIN_REGISTRATION_REFRESH_TIME;
@@ -142,7 +142,7 @@ public class EllucianNotificationManager {
 					// save device id to prefs
 					prefEditor.putString(REGISTERED_DEVICE_ID_KEY,  deviceId);
 					
-					prefEditor.commit();
+					prefEditor.apply();
 				}
             } catch (Exception e) {
             	Log.e(TAG, "Exception while registering with GCM", e);
@@ -189,7 +189,7 @@ public class EllucianNotificationManager {
     			// save notificationEnabled
     			SharedPreferences.Editor prefEditor = preferences.edit();
     			prefEditor.putBoolean(Utils.NOTIFICATION_ENABLED,  notificationEnabled);
-    			prefEditor.commit();
+    			prefEditor.apply();
     	    }
     	    
             } catch (Exception e) {

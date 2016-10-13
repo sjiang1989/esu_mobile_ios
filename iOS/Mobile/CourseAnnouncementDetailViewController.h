@@ -22,8 +22,7 @@
 @property (weak, nonatomic) IBOutlet UIView *backgroundView;
 @property (weak, nonatomic) IBOutlet UIToolbar *padToolBar;
 
-@property (nonatomic, strong) UIPopoverController *popover;
-@property (nonatomic, strong) UIPopoverController *masterPopover;
+
 
 @property (strong, nonatomic) NSString *courseName;
 @property (strong, nonatomic) NSString *courseSectionNumber;

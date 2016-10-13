@@ -10,6 +10,8 @@ import Foundation
 
 class ConfigurationSelectionViewController : UITableViewController, UISearchResultsUpdating, NSFetchedResultsControllerDelegate {
     
+    static let ConfigurationListRefreshIfPresentNotification = Notification.Name("RefreshConfigurationListIfPresent")
+    
     let itunesLink = "https://itunes.apple.com/us/app/ellucian-go/id607185179?mt=8"
     let searchController = UISearchController(searchResultsController: nil)
     var allItems = [Configuration]()
@@ -19,7 +21,7 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
     
     lazy var liveConfigurationsUrl : String = {
         
-        let plistPath = NSBundle.mainBundle().pathForResource("Customizations", ofType: "plist")
+        let plistPath = Bundle.main.path(forResource: "Customizations", ofType: "plist")
         let plistDictioanry = NSDictionary(contentsOfFile: plistPath!)!
         
         if let url = plistDictioanry["Live Configurations URL"] {
@@ -29,18 +31,18 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         }
     }()
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         buildSearchBar()
-        self.navigationItem.leftBarButtonItem?.tintColor = UIColor.defaultHeaderColor()
+        self.navigationItem.leftBarButtonItem?.tintColor = UIColor.defaultHeader
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("outdated:"), name: kVersionCheckerOutdatedNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("updateAvailable:"), name: kVersionCheckerUpdateAvailableNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("fetchConfigurations"), name: "RefreshConfigurationListIfPresent", object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(ConfigurationSelectionViewController.outdated(_:)), name: VersionChecker.VersionCheckerOutdatedNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(ConfigurationSelectionViewController.updateAvailable(_:)), name: VersionChecker.VersionCheckerUpdateAvailableNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(ConfigurationSelectionViewController.fetchConfigurations), name: ConfigurationSelectionViewController.ConfigurationListRefreshIfPresentNotification, object: nil)
         
         self.fetchConfigurations()
     }
@@ -53,19 +55,19 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         self.searchController.definesPresentationContext = true
         self.searchController.searchBar.sizeToFit()
         self.navigationItem.titleView = self.searchController.searchBar;
-        tableView.sectionIndexBackgroundColor = UIColor.clearColor()
+        tableView.sectionIndexBackgroundColor = UIColor.clear
     }
     
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-        if self.searchController.active {
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        if self.searchController.isActive {
             return 1
         } else {
-            return UILocalizedIndexedCollation.currentCollation().sectionTitles.count
+            return UILocalizedIndexedCollation.current().sectionTitles.count
         }
     }
     
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if (self.searchController.active) {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if (self.searchController.isActive) {
             return filteredItems.count
         } else {
             if let rows = rowsForSection(section) {
@@ -76,15 +78,15 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         }
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("ConfigurationCell", forIndexPath: indexPath) as UITableViewCell
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ConfigurationCell", for: indexPath) as UITableViewCell
         
         let configuration : Configuration
-        if (self.searchController.active) {
-            configuration = self.filteredItems[indexPath.row]
+        if (self.searchController.isActive) {
+            configuration = self.filteredItems[(indexPath as NSIndexPath).row]
         } else {
-            let rows = rowsForSection(indexPath.section)!
-            configuration = rows[indexPath.row]
+            let rows = rowsForSection((indexPath as NSIndexPath).section)!
+            configuration = rows[(indexPath as NSIndexPath).row]
         }
         
         let nameLabel = cell.viewWithTag(1) as! UILabel
@@ -92,13 +94,13 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         return cell
     }
     
-    override func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        if searchController.active {
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        if searchController.isActive {
             return nil
         } else {
             let sectionRows = rowsForSection(section)
-            if let sectionRows = sectionRows where sectionRows.count > 0 {
-                return self.sectionIndexTitlesForTableView(tableView)![section]
+            if let sectionRows = sectionRows , sectionRows.count > 0 {
+                return self.sectionIndexTitles(for: tableView)![section]
                 
             } else {
                 return nil
@@ -106,13 +108,13 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         }
     }
     
-    func rowsForSection(section: Int) -> [Configuration]? {
-        let index = self.sectionIndexTitlesForTableView(self.tableView)![section]
+    func rowsForSection(_ section: Int) -> [Configuration]? {
+        let index = self.sectionIndexTitles(for: self.tableView)![section]
         
         return allItems.filter {
             let name = $0.configurationName as String
             
-            let range = name.rangeOfString(index, options: [NSStringCompareOptions.CaseInsensitiveSearch , NSStringCompareOptions.AnchoredSearch] )
+            let range = name.range(of: index, options: [.caseInsensitive, .anchored] )
             if let range  = range {
                 if !range.isEmpty {
                     return true
@@ -123,69 +125,65 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
     }
     
     
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let configuration : Configuration
-        if (self.searchController.active) {
-            configuration = self.filteredItems[indexPath.row]
+        if (self.searchController.isActive) {
+            configuration = self.filteredItems[(indexPath as NSIndexPath).row]
         } else {
-            let rows = rowsForSection(indexPath.section)!
-            configuration = rows[indexPath.row]
+            let rows = rowsForSection((indexPath as NSIndexPath).section)!
+            configuration = rows[(indexPath as NSIndexPath).row]
         }
         schoolChosen(configuration)
     }
     
-    func schoolChosen(configuration: Configuration) {
+    func schoolChosen(_ configuration: Configuration) {
+        self.sendEventToTracker1(category: .ui_Action, action: .list_Select, label: "Choose Institution")
         let defaults = AppGroupUtilities.userDefaults()
-        if let trackingId1 = defaults?.stringForKey("gaTracker1") {
-            let tracker1 = GAI.sharedInstance().trackerWithTrackingId(trackingId1)
-            tracker1.send(GAIDictionaryBuilder.createEventWithCategory(kAnalyticsCategoryUI_Action, action:kAnalyticsActionList_Select, label: "Choose Institution", value: nil).build() as [NSObject : AnyObject])
-            
+        let window = self.view.window
+        
+        if let window = window {
+            let hud = MBProgressHUD.showAdded(to: window, animated: true)
+            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
         }
         
-        let hud = MBProgressHUD.showHUDAddedTo(self.view.window, animated: true)
-        hud.labelText = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
         
-        
-        let delayTime = dispatch_time(DISPATCH_TIME_NOW,
-            Int64(0.01 * Double(NSEC_PER_SEC)))
-        dispatch_after(delayTime, dispatch_get_main_queue()) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             let configurationUrl = configuration.configurationUrl
             let name = configuration.configurationName
             
-            let delegate : AppDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
+            let delegate : AppDelegate = UIApplication.shared.delegate as! AppDelegate
             delegate.reset()
             
-            defaults?.setObject(configurationUrl, forKey: "configurationUrl")
-            defaults?.setObject(name, forKey: "configurationName")
+            defaults?.set(configurationUrl, forKey: "configurationUrl")
+            defaults?.set(name, forKey: "configurationName")
             
-            NSNotificationCenter.defaultCenter().removeObserver(self, name: kVersionCheckerUpdateAvailableNotification, object: nil)
-            ConfigurationManager.instance.loadConfiguration(configurationUrl: configurationUrl) {
-                (result) in
+            NotificationCenter.default.removeObserver(self, name: VersionChecker.VersionCheckerUpdateAvailableNotification, object: nil)
+            ConfigurationManager.shared.loadConfiguration(configurationUrl: configurationUrl) {
+                (result: Bool) in
                 
-                ConfigurationManager.instance.loadMobileServerConfiguration() {
+                ConfigurationManager.shared.loadMobileServerConfiguration() {
                     (result2) in
                     
-                    dispatch_async(dispatch_get_main_queue()) {
-                        MBProgressHUD.hideHUDForView(self.view.window, animated: true)
-                        if (result is Bool && result as! Bool) {
-                            NSNotificationCenter.defaultCenter().removeObserver(self)
+                    DispatchQueue.main.async {
+                        
+                        if let window = window {
+                            MBProgressHUD.hide(for: window, animated: true)
+                        }
+                        if result {
+                            NotificationCenter.default.removeObserver(self)
                             
-                            AppearanceChanger.applyAppearanceChanges(self.view)
+                            AppearanceChanger.applyAppearanceChanges()
                             
                             let storyboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
-                            let slidingVC = storyboard.instantiateViewControllerWithIdentifier("SlidingViewController") as! ECSlidingViewController
+                            let slidingVC = storyboard.instantiateViewController(withIdentifier: "SlidingViewController") as! ECSlidingViewController
                             slidingVC.anchorRightRevealAmount = 276
                             slidingVC.anchorLeftRevealAmount = 276
-                            slidingVC.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.Tapping, ECSlidingViewControllerAnchoredGesture.Panning]
-                            let menu = storyboard.instantiateViewControllerWithIdentifier("Menu")
-                            
-                            if #available(iOS 9, *) {
-                                let direction = UIView.userInterfaceLayoutDirectionForSemanticContentAttribute(slidingVC.view.semanticContentAttribute)
-                                if direction == .RightToLeft {
-                                    slidingVC.underRightViewController = menu
-                                } else {
-                                    slidingVC.underLeftViewController = menu
-                                }
+                            slidingVC.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.tapping, ECSlidingViewControllerAnchoredGesture.panning]
+                            let menu = storyboard.instantiateViewController(withIdentifier: "Menu")
+
+                            let direction = UIView.userInterfaceLayoutDirection(for: slidingVC.view.semanticContentAttribute)
+                            if direction == .rightToLeft {
+                                slidingVC.underRightViewController = menu
                             } else {
                                 slidingVC.underLeftViewController = menu
                             }
@@ -193,12 +191,12 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
                             self.view.window?.rootViewController = slidingVC
                             delegate.slidingViewController = slidingVC
                             
-                            NSOperationQueue.mainQueue().addOperation(OpenModuleHomeOperation())
+                            OperationQueue.main.addOperation(OpenModuleHomeOperation())
                         } else {
-                            self.tableView.deselectRowAtIndexPath(self.tableView.indexPathForSelectedRow!, animated: true)
+                            self.tableView.deselectRow(at: self.tableView.indexPathForSelectedRow!, animated: true)
                             self.fetchConfigurations()
-                            dispatch_async(dispatch_get_main_queue()) {
-                                ConfigurationFetcher.showErrorAlertView()
+                            DispatchQueue.main.async {
+                                ConfigurationFetcher.showErrorAlertView(controller: self)
                             }
                         }
                     }
@@ -211,30 +209,31 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         if fetchInProgress {
             return
         }
-        UIApplication.sharedApplication().networkActivityIndicatorVisible = true
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
+
+        DispatchQueue.global(qos: .userInteractive).async {
             self.fetchInProgress = true
             let defaults = AppGroupUtilities.userDefaults()
-            var urlString = defaults?.stringForKey("mobilecloud-url")
+            var urlString = defaults?.string(forKey: "mobilecloud-url")
             if urlString == nil || urlString?.characters.count == 0 {
                 urlString = self.liveConfigurationsUrl
-                defaults?.setObject(urlString, forKey: "mobilecloud-url")
+                defaults?.set(urlString, forKey: "mobilecloud-url")
                 
             }
-            let url = NSURL(string:urlString!)
-            NSURLSession.sharedSession().dataTaskWithURL(url!,
+            let url = URL(string:urlString!)
+            URLSession.shared.dataTask(with: url!,
                 completionHandler: {
                     (data, response, error) -> Void in
-                    UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     
                     if let _ = error {
                         self.showErrorAlert()
                     } else {
                         let json = JSON(data: data!)
                         let supportedVersions = json["versions"]["ios"].arrayValue.map { $0.string!}
-                        if VersionChecker.checkVersion(supportedVersions) {
+                        if VersionChecker.sharedInstance.checkVersion(supportedVersions) {
                             if let analytics = json["analytics"]["ellucian"].string {
-                                defaults?.setObject(analytics, forKey: "gaTracker1")
+                                defaults?.set(analytics, forKey: "gaTracker1")
                             }
                             
                             var configurations = [Configuration]()
@@ -260,10 +259,10 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
                                     
                                 }
                             }
-                            self.allItems = configurations.sort { $0.configurationName.localizedCaseInsensitiveCompare($1.configurationName) == NSComparisonResult.OrderedAscending }
+                            self.allItems = configurations.sorted { $0.configurationName.localizedCaseInsensitiveCompare($1.configurationName) == ComparisonResult.orderedAscending }
                         }
                     }
-                    dispatch_async(dispatch_get_main_queue(), {
+                    DispatchQueue.main.async(execute: {
                         self.fetchInProgress = false
                         self.tableView.reloadData()
                     })
@@ -271,32 +270,18 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
                 }
                 ).resume()
             
-        })
+        }
     }
     
-    func updateSearchResultsForSearchController(searchController: UISearchController) {
-        if let searchBarText = self.searchController.searchBar.text where searchBarText.characters.count > 0 {
-            
-            //            let predicate = NSPredicate(format: "(configurationName CONTAINS[cd] %@) OR (institutionName CONTAINS[cd] %@) OR (ANY keywords CONTAINS[cd] %@)", searchBarText, searchBarText, searchBarText)
-            
-            
+    func updateSearchResults(for searchController: UISearchController) {
+        if let searchBarText = self.searchController.searchBar.text , searchBarText.characters.count > 0 {
+
             self.filteredItems = self.allItems.filter( {
-                
-                if #available(iOS 9, *) {
-                    return $0.configurationName.localizedStandardContainsString(searchBarText) ||
-                        $0.institutionName.localizedStandardContainsString(searchBarText) ||
-                        $0.keywords.filter{ $0.localizedStandardContainsString(searchBarText)
-                            }.count > 0
-                    
-                } else {
-                    return ($0.configurationName as NSString).localizedCaseInsensitiveContainsString(searchBarText) ||
-                        ($0.institutionName as NSString).localizedCaseInsensitiveContainsString(searchBarText) ||
-                        $0.keywords.filter{ ($0 as NSString).localizedCaseInsensitiveContainsString(searchBarText)
-                            }.count > 0
-                    
-                }
-                
-                
+
+                return $0.configurationName.localizedStandardContains(searchBarText) ||
+                    $0.institutionName.localizedStandardContains(searchBarText) ||
+                    $0.keywords.filter{ $0.localizedStandardContains(searchBarText)
+                        }.count > 0
                 }
             )
         } else {
@@ -305,57 +290,57 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         tableView.reloadData()
     }
     
-    func updateAvailable(sender: AnyObject) {
-        dispatch_async(dispatch_get_main_queue(), {
-            let alertController = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("A new version is available.", comment: "Outdated alert message"), preferredStyle: .Alert)
-            let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .Cancel, handler: nil)
+    func updateAvailable(_ sender: AnyObject) {
+        DispatchQueue.main.async(execute: {
+            let alertController = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("A new version is available.", comment: "Outdated alert message"), preferredStyle: .alert)
+            let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .cancel, handler: nil)
             alertController.addAction(okAction)
-            let upgradeAction = UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .Default) { (action) in
+            let upgradeAction = UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .default) { (action) in
                 self.openITunes()
             }
             alertController.addAction(upgradeAction)
             
-            self.presentViewController(alertController, animated: true, completion: nil)
+            self.present(alertController, animated: true, completion: nil)
         })
     }
     
-    func outdated(sender: AnyObject) {
-        dispatch_async(dispatch_get_main_queue(), {
-            let alertController = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("The application must be upgraded to the latest version.", comment: "Force update alert message"), preferredStyle: .Alert)
-            let upgradeAction = UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .Cancel) { (action) in
+    func outdated(_ sender: AnyObject) {
+        DispatchQueue.main.async(execute: {
+            let alertController = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("The application must be upgraded to the latest version.", comment: "Force update alert message"), preferredStyle: .alert)
+            let upgradeAction = UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .cancel) { (action) in
                 self.openITunes()
             }
             alertController.addAction(upgradeAction)
             
-            self.presentViewController(alertController, animated: true, completion: nil)
+            self.present(alertController, animated: true, completion: nil)
         })
     }
     
     func openITunes() {
-        UIApplication.sharedApplication().openURL(NSURL(string:itunesLink)!)
+        UIApplication.shared.openURL(URL(string:itunesLink)!)
     }
     
     func showErrorAlert() {
         if self.allItems.count == 0 {
-            dispatch_async(dispatch_get_main_queue(), {
-                let alertController = UIAlertController(title: nil, message: NSLocalizedString("There are no institutions to display at this time.", comment: "configurations cannot be downloaded"), preferredStyle: .Alert)
-                let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .Cancel, handler: nil)
+            DispatchQueue.main.async(execute: {
+                let alertController = UIAlertController(title: nil, message: NSLocalizedString("There are no institutions to display at this time.", comment: "configurations cannot be downloaded"), preferredStyle: .alert)
+                let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .cancel, handler: nil)
                 alertController.addAction(okAction)
                 
-                self.presentViewController(alertController, animated: true, completion: nil)
+                self.present(alertController, animated: true, completion: nil)
             })
         }
     }
     
-    override func sectionIndexTitlesForTableView(tableView: UITableView) -> [String]? {
-        if searchController.active {
+    override func sectionIndexTitles(for tableView: UITableView) -> [String]? {
+        if searchController.isActive {
             return nil
         }
-        return UILocalizedIndexedCollation.currentCollation().sectionIndexTitles
+        return UILocalizedIndexedCollation.current().sectionIndexTitles
     }
     
-    override func tableView(tableView: UITableView, sectionForSectionIndexTitle title: String, atIndex index: Int) -> Int {
-        return UILocalizedIndexedCollation.currentCollation().sectionForSectionIndexTitleAtIndex(index)
+    override func tableView(_ tableView: UITableView, sectionForSectionIndexTitle title: String, at index: Int) -> Int {
+        return UILocalizedIndexedCollation.current().section(forSectionIndexTitle: index)
         
     }
     

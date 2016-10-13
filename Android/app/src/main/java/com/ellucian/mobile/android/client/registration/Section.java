@@ -1,4 +1,4 @@
-// Copyright 2014 Ellucian Company L.P and its affiliates.
+// Copyright 2014-2016 Ellucian Company L.P and its affiliates.
 
 package com.ellucian.mobile.android.client.registration;
 
@@ -17,8 +17,10 @@ public class Section implements Parcelable {
 	public static final String VARIABLE_OPERATOR_INC = "INC";
 	public static final String CLASSIFICATION_PLANNED = "planned";
 	public static final String CLASSIFICATION_REGISTERED = "registered";
-	
+
+    public String planId;
 	public String termId;
+    public String termName;
 	public String sectionId;
 	private String courseId;
 	public String sectionTitle;
@@ -46,7 +48,8 @@ public class Section implements Parcelable {
 	public String[] academicLevels;
     public Integer capacity;
     public Integer available;
-
+    public boolean authorizationCodeRequired;
+    public String authorizationCodePresented;
 	
 	public Section() {
 	}
@@ -56,7 +59,9 @@ public class Section implements Parcelable {
 	}
 	
 	private void readFromParcel(Parcel in) {
+        planId = in.readString();
 		termId = in.readString();
+        termName = in.readString();
 		sectionId = in.readString();
 		courseId = in.readString();
 		sectionTitle = in.readString();
@@ -84,6 +89,8 @@ public class Section implements Parcelable {
 		academicLevels = in.createStringArray();
         capacity = (Integer) in.readSerializable();
         available = (Integer) in.readSerializable();
+        authorizationCodeRequired = in.readInt() == 1 ? true : false;
+        authorizationCodePresented = in.readString();
 	}
 
 	@Override
@@ -93,7 +100,9 @@ public class Section implements Parcelable {
 
 	@Override
 	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeString(termId);
+		dest.writeString(planId);
+        dest.writeString(termId);
+        dest.writeString(termName);
 		dest.writeString(sectionId);
 		dest.writeString(courseId);
 		dest.writeString(sectionTitle);
@@ -121,6 +130,8 @@ public class Section implements Parcelable {
 		dest.writeStringArray(academicLevels);
         dest.writeSerializable(capacity);
         dest.writeSerializable(available);
+        dest.writeInt(authorizationCodeRequired ? 1 : 0);
+        dest.writeString(authorizationCodePresented);
 		
 	}
 	
@@ -132,6 +143,7 @@ public class Section implements Parcelable {
 		public Section[] newArray(int size) { 
 			return new Section[size]; 
 		}
-	}; 
+	};
+
 }
 

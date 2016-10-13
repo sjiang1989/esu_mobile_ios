@@ -14,15 +14,15 @@ let kWeek = kDay * 7
 let kMonth = kDay * 31
 let kYear = kDay * 365
 
-extension NSDate {
+extension Date {
     
     // shows 1 or two letter abbreviation for units.
     // does not include 'ago' text ... just {value}{unit-abbreviation}
     // does not include interim summary options such as 'Just now'
     var timeAgoSimple: String {
         
-        let now = NSDate()
-        let deltaSeconds = Int(fabs(timeIntervalSinceDate(now)))
+        let now = Date()
+        let deltaSeconds = Int(fabs(timeIntervalSince(now)))
         let deltaMinutes = deltaSeconds / 60
         
         var value: Int!
@@ -58,8 +58,8 @@ extension NSDate {
     
     var timeAgo: String {
         
-        let now = NSDate()
-        let deltaSeconds = Int(fabs(timeIntervalSinceDate(now)))
+        let now = Date()
+        let deltaSeconds = Int(fabs(timeIntervalSince(now)))
         let deltaMinutes = deltaSeconds / 60
         
         var value: Int!

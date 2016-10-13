@@ -1,1 +1,18 @@
-/* No Localized Strings */
+/* (No Commment) */
+NSBluetoothPeripheralUsageDescription = "يتم استخدام Bluetooth في جامعتك لتنبيهك عندما تكون بالقرب من خدمات أو لتوفير معلومات عن الأماكن.";
+
+/* (No Commment) */
+NSCalendarsUsageDescription = "يُستخدم التقويم عند إضافة بند تقويم من الفعاليات أو المقررات.";
+
+/* (No Commment) */
+NSContactsUsageDescription = "تٌستخدم جهات الإتصال عند إضافة جهة اتصال من الدليل.";
+
+/* (No Commment) */
+NSLocationAlwaysUsageDescription = "حتى عند عدم استخدام التطبيق، قد تُستخدم معلومات موقعك لتنبيهك عن معلومات أو خدمات عند اقترابك من مزوديها في الحرم الجامعي. يستخدم التطبيق تقنية مراقبة الـ beacon -التي لا تستهلك طاقة كبيرة- عند اقترابك من مواقع الاهتمام دون استخدام نظام تحديد المواقع (GPS).";
+
+/* (No Commment) */
+NSLocationWhenInUseUsageDescription = "عند عدم استخدام التطبيق، تُستخدم معلومات موقعك على خرائط الحرم الجامعي لتنبيهك عن معلومات أو خدمات عند اقترابك من مزوديها في الحرم الجامعي. ";
+
+/* (No Commment) */
+NSRemindersUsageDescription = "تٌستخدم التذكيرات عند إضافة تذكير لواجب.";
+

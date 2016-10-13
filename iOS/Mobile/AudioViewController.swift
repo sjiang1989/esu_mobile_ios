@@ -10,12 +10,11 @@ import Foundation
 import AVFoundation
 import MediaPlayer
 
-class AudioViewController: UIViewController, AVAudioPlayerDelegate {
+class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobileLaunchableControllerProtocol {
     
-    var module : Module?
-    
-    var audioPlayer : AVPlayer?
-    var sliderTimer : NSTimer?
+    var module : Module!
+
+    var sliderTimer : Timer?
     var mpArtwork : MPMediaItemArtwork?
     
     @IBOutlet var imageView: UIImageView!
@@ -30,70 +29,69 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate {
     @IBOutlet var textLabel: UILabel!
     @IBOutlet var play: UIButton!
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        sendView("Audio", forModuleNamed: module!.name)
+        sendView("Audio", moduleName: module!.name)
     }
-    
-    override func viewDidAppear(animated: Bool) {
+
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        UIApplication.sharedApplication().beginReceivingRemoteControlEvents()
+
         self.becomeFirstResponder()
     }
     
-    override func viewWillDisappear(animated: Bool) {
+    override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        UIApplication.sharedApplication().endReceivingRemoteControlEvents()
         self.resignFirstResponder()
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let urlString = module!.propertyForKey("audio")
-        let url = NSURL(string: urlString)
+        let urlString = module!.property(forKey: "audio")
+        let url = URL(string: urlString!)
         if let url = url {
-            let asset = AVURLAsset(URL: url)
+            let asset = AVURLAsset(url: url)
             let playerItem = AVPlayerItem(asset: asset)
             
             do {
-                NSNotificationCenter.defaultCenter().addObserver(self, selector:Selector("itemDidFinishPlaying:"), name:AVPlayerItemDidPlayToEndTimeNotification, object: playerItem)
+                NotificationCenter.default.addObserver(self, selector:#selector(AudioViewController.itemDidFinishPlaying(_:)), name:NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: playerItem)
                 
-                sliderTimer = NSTimer .scheduledTimerWithTimeInterval(0.1, target: self, selector: Selector("updateSlider"), userInfo: nil, repeats: true)
+                sliderTimer = Timer .scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(AudioViewController.updateSlider), userInfo: nil, repeats: true)
                 
                 try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback)
                 try AVAudioSession.sharedInstance().setActive(true)
                 
-                audioPlayer = AVPlayer(playerItem: playerItem)
-                audioPlayer?.currentItem?.addObserver(self, forKeyPath: "status", options: ([.New, .Initial]), context: nil)
+                SingletonAVPlayer.shared.player = AVPlayer(playerItem: playerItem)
+                SingletonAVPlayer.shared.player?.currentItem?.addObserver(self, forKeyPath: "status", options: ([.new, .initial]), context: nil)
                 
                
-                if let description = module!.propertyForKey("description") where description.characters.count > 0 {
+                if let description = module!.property(forKey: "description") , description.characters.count > 0 {
                     
                     textLabel.text = description
                     textTextView.text = description
                     
-                    textTextView.textColor = UIColor.whiteColor()
-                    textTextView.font = UIFont.preferredFontForTextStyle(UIFontTextStyleBody)
+                    textTextView.textColor = UIColor.white
+                    textTextView.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.body)
                     
-                    let labelTapGestureRecognizer = UITapGestureRecognizer(target: self, action: Selector("expandText:"))
+                    let labelTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(AudioViewController.expandText(_:)))
                     labelTapGestureRecognizer.numberOfTapsRequired = 1
                     textLabelBackgroundView.addGestureRecognizer(labelTapGestureRecognizer)
                     
-                    let textViewTapGestureRecognizer = UITapGestureRecognizer(target:self, action: Selector("expandText:"))
+                    let textViewTapGestureRecognizer = UITapGestureRecognizer(target:self, action: #selector(AudioViewController.expandText(_:)))
                     textViewTapGestureRecognizer.numberOfTapsRequired = 1
                     textTextView.addGestureRecognizer(textViewTapGestureRecognizer)
                     
                     
                 } else {
-                    textLabelBackgroundView.hidden = true
-                    textLabel.hidden = true
+                    textLabelBackgroundView.isHidden = true
+                    textLabel.isHidden = true
                 }
 
-                if let imageUrl = self.module?.propertyForKey("image") {
-                    NSURLSession.sharedSession().dataTaskWithURL(NSURL(string: imageUrl)!) { (data, response, error) in
+                if let imageUrl = self.module?.property(forKey: "image") {
+                    URLSession.shared.dataTask(with: URL(string: imageUrl)!) { (data, response, error) in
                         if let data = data {
-                            dispatch_async(dispatch_get_main_queue()) {
+                            DispatchQueue.main.async {
                                 let image = UIImage(data: data)
                                 if let image = image {
                                     self.imageView.image = image
@@ -106,8 +104,10 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate {
                 }
                 
                 self.title = module!.name
-                self.seeker.thumbTintColor = UIColor.primaryColor()
-                self.seeker.minimumTrackTintColor = UIColor.primaryColor()
+                self.seeker.thumbTintColor = UIColor.primary
+                self.seeker.minimumTrackTintColor = UIColor.primary
+                
+                configureRemoteCommandCenter()
 
                 self.updateNowPlaying()
             } catch let error {
@@ -117,35 +117,44 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate {
         }
     }
     
-    // MPMediaItemPropertyAlbumTitle
-    // MPMediaItemPropertyAlbumTrackCount
-    // MPMediaItemPropertyAlbumTrackNumber
-    // MPMediaItemPropertyArtist
-    // MPMediaItemPropertyArtwork
-    // MPMediaItemPropertyComposer
-    // MPMediaItemPropertyDiscCount
-    // MPMediaItemPropertyDiscNumber
-    // MPMediaItemPropertyGenre
-    // MPMediaItemPropertyPersistentID
-    // MPMediaItemPropertyPlaybackDuration
-    // MPMediaItemPropertyTitle
+    func configureRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.pauseCommand.addTarget(self, action: #selector(self.goPause))
+        commandCenter.playCommand.isEnabled = true
+        commandCenter.playCommand.addTarget(self, action: #selector(self.goPlay))
+        commandCenter.stopCommand.isEnabled = true
+        commandCenter.stopCommand.addTarget(self, action: #selector(self.goPause))
+        commandCenter.togglePlayPauseCommand.isEnabled = true
+        commandCenter.togglePlayPauseCommand.addTarget(self, action: #selector(self.togglePlay))
+        commandCenter.nextTrackCommand.isEnabled = true
+        commandCenter.nextTrackCommand.addTarget(self, action: #selector(self.goForward))
+        commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.previousTrackCommand.addTarget(self, action: #selector(self.goBack))
+
+    }
+
     func updateNowPlaying() {
         
-        let playbackDuration = CMTimeGetSeconds(audioPlayer!.currentItem!.duration)
-        let playbackTime = CMTimeGetSeconds(audioPlayer!.currentItem!.currentTime())
-        
-        if let artwork = self.mpArtwork{
-            MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = [ MPMediaItemPropertyArtwork : artwork, MPMediaItemPropertyTitle : module!.name, MPMediaItemPropertyPlaybackDuration:playbackDuration, MPNowPlayingInfoPropertyPlaybackRate: 1.0, MPNowPlayingInfoPropertyElapsedPlaybackTime: playbackTime ]
-        
-        } else {
-             MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = [ MPMediaItemPropertyTitle : module!.name, MPMediaItemPropertyPlaybackDuration:playbackDuration, MPNowPlayingInfoPropertyPlaybackRate: 1.0, MPNowPlayingInfoPropertyElapsedPlaybackTime: playbackTime ]
+        if let audioPlayer = SingletonAVPlayer.shared.player {
+            let playbackDuration = CMTimeGetSeconds(audioPlayer.currentItem!.duration)
+            let playbackTime = CMTimeGetSeconds(audioPlayer.currentItem!.currentTime())
+            let duration = isPlaying() ? 1.0 : 0.0
+            
+            if let artwork = self.mpArtwork{
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = [ MPMediaItemPropertyArtwork : artwork, MPMediaItemPropertyTitle : module!.name, MPMediaItemPropertyPlaybackDuration:playbackDuration, MPNowPlayingInfoPropertyPlaybackRate: duration, MPNowPlayingInfoPropertyElapsedPlaybackTime: playbackTime ]
+                
+            } else {
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = [ MPMediaItemPropertyTitle : module!.name, MPMediaItemPropertyPlaybackDuration:playbackDuration, MPNowPlayingInfoPropertyPlaybackRate: duration, MPNowPlayingInfoPropertyElapsedPlaybackTime: playbackTime ]
+            }
         }
     }
+
     
 
     
-    @IBAction func togglePlay(sender: AnyObject) {
-        if let _ = audioPlayer {
+    @IBAction func togglePlay(_ sender: AnyObject) {
+        if let _ = SingletonAVPlayer.shared.player {
             if isPlaying() {
                 goPause(sender)
             } else {
@@ -154,40 +163,40 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate {
         }
     }
     
-    func goPlay(sender: AnyObject) {
-        if let player = audioPlayer {
-            sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionButton_Press, withLabel: "Play button pressed", withValue: nil, forModuleNamed: self.module!.name)
+    func goPlay(_ sender: AnyObject) {
+        if let player = SingletonAVPlayer.shared.player {
+            sendEventToTracker1(category: .ui_Action, action: .button_Press, label: "Play button pressed", moduleName: self.module?.name)
             player.play()
-            playButton.setImage(UIImage(named: "media_pause"), forState: .Normal)
+            playButton.setImage(UIImage(named: "media_pause"), for: UIControlState())
             updateNowPlaying()
         }
     }
     
-    func goPause(sender: AnyObject) {
-        if let player = audioPlayer {
+    func goPause(_ sender: AnyObject) {
+        if let player = SingletonAVPlayer.shared.player {
             player.pause()
-            playButton.setImage(UIImage(named: "media_play"), forState: .Normal)
+            playButton.setImage(UIImage(named: "media_play"), for: UIControlState())
             updateNowPlaying()
         }
     }
     
-    @IBAction func goBack(sender: AnyObject) {
-        if let player = audioPlayer {
-            let newTime = CMTimeMakeWithSeconds(0, 1)
-            player.seekToTime(newTime)
+    @IBAction func goBack(_ sender: AnyObject) {
+        if let player = SingletonAVPlayer.shared.player {
+            let newTime = CMTimeMakeWithSeconds(0, 600)
+            player.seek(to: newTime)
             updateSlider()
         }
     }
-    @IBAction func goForward(sender: AnyObject) {
-        if let player = audioPlayer {
-            let newTime = CMTimeMakeWithSeconds(durationInSeconds() + 1, 1)
-            player.seekToTime(newTime)
+    @IBAction func goForward(_ sender: AnyObject) {
+        if let player = SingletonAVPlayer.shared.player {
+            let newTime = CMTimeMakeWithSeconds(durationInSeconds() + 1, 600)
+            player.seek(to: newTime)
             updateSlider()
         }
     }
     
     func isPlaying() -> Bool {
-        if let player = audioPlayer {
+        if let player = SingletonAVPlayer.shared.player {
             return player.currentItem != nil && player.rate != 0
         }
         return false
@@ -200,106 +209,83 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate {
             self.seeker.value = Float(currentTimeInSeconds())
             updateNowPlaying()
         } else {
-            self.seeker.enabled = false
+            self.seeker.isEnabled = false
         }
     }
     
     func durationInSeconds() -> Float64 {
-        if let currentItem = audioPlayer?.currentItem {
+        if let currentItem = SingletonAVPlayer.shared.player?.currentItem {
             return CMTimeGetSeconds(currentItem.duration)
         }
         return 0
     }
     
     func currentTimeInSeconds() -> Float64 {
-        if let currentItem = audioPlayer?.currentItem {
+        if let currentItem = SingletonAVPlayer.shared.player?.currentItem {
             return CMTimeGetSeconds(currentItem.currentTime())
         }
         return 0
     }
     
-    @IBAction func sliding(sender: AnyObject) {
-        if let player = audioPlayer {
+    @IBAction func sliding(_ sender: AnyObject) {
+        if let player = SingletonAVPlayer.shared.player {
             
-            let newTime = CMTimeMakeWithSeconds(Float64(seeker.value), 1)
-            player.seekToTime(newTime)
+            let newTime = CMTimeMakeWithSeconds(Float64(seeker.value), 600)
+            player.seek(to: newTime)
         }
     }
     
-    override func observeValueForKeyPath(keyPath: String?, ofObject object: AnyObject?, change: [String : AnyObject]?, context: UnsafeMutablePointer<Void>) {
-        if self.audioPlayer?.currentItem!.status == .ReadyToPlay {
-            let _ = self.audioPlayer?.currentItem?.duration
-            
-            playButton.enabled = true
-            forwardButton.enabled = true
-            backButton.enabled = true
-            seeker.enabled = true
-            
-            updateSlider()
-            
-            if let currentItem = self.audioPlayer?.currentItem {
-                currentItem.removeObserver(self, forKeyPath: "status")
-            }
-        } else if self.audioPlayer?.currentItem!.status == .Failed {
-            let error = self.audioPlayer?.currentItem?.error?.localizedDescription
-            let alertController = UIAlertController(title: NSLocalizedString("Error Loading Audio", comment: "title when error loading audio"), message: error, preferredStyle: .Alert)
-            
-            let OKAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
-            alertController.addAction(OKAction)
-            
-            if let currentItem = self.audioPlayer?.currentItem {
-                currentItem.removeObserver(self, forKeyPath: "status")
-            }
-            
-            self.presentViewController(alertController, animated: true, completion: nil)
-        }
-    }
-    
-    func itemDidFinishPlaying(sender: AnyObject) {
-        if let player = audioPlayer {
-            playButton.setImage(UIImage(named: "media_play"), forState: .Normal)
-            let newTime = CMTimeMakeWithSeconds(0, 1)
-            player.seekToTime(newTime)
-            updateSlider()
-        }
-    }
-    
-    override func canBecomeFirstResponder() -> Bool {
-        return true
-    }
-    
-    override func remoteControlReceivedWithEvent(event: UIEvent?) {
-        if let event = event {
-            if event.type == UIEventType.RemoteControl {
-                switch event.subtype {
-                case .RemoteControlPlay:
-                    goPlay(event)
-                case .RemoteControlPause, .RemoteControlStop:
-                    goPause(event)
-                case .RemoteControlTogglePlayPause:
-                   togglePlay(event)
-                case .RemoteControlNextTrack:
-                    goForward(event)
-                case .RemoteControlPreviousTrack:
-                    goBack(event)
-                case .RemoteControlBeginSeekingBackward, .RemoteControlEndSeekingBackward, .RemoteControlBeginSeekingForward, .RemoteControlEndSeekingForward:
-                    break
-                default:
-                    break
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if let player = SingletonAVPlayer.shared.player {
+            if player.currentItem!.status == .readyToPlay {
+                let _ = player.currentItem?.duration
+                
+                playButton.isEnabled = true
+                forwardButton.isEnabled = true
+                backButton.isEnabled = true
+                seeker.isEnabled = true
+                
+                updateSlider()
+                
+                if let currentItem = player.currentItem {
+                    currentItem.removeObserver(self, forKeyPath: "status")
                 }
+            } else if player.currentItem!.status == .failed {
+                let error = player.currentItem?.error?.localizedDescription
+                let alertController = UIAlertController(title: NSLocalizedString("Error Loading Audio", comment: "title when error loading audio"), message: error, preferredStyle: .alert)
+                
+                let OKAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
+                alertController.addAction(OKAction)
+                
+                if let currentItem = player.currentItem {
+                    currentItem.removeObserver(self, forKeyPath: "status")
+                }
+                
+                self.present(alertController, animated: true, completion: nil)
             }
         }
     }
     
-    func expandText(sender: AnyObject) {
-        if textLabelBackgroundView.hidden { //shrink
-            textLabel.hidden = false
-            textLabelBackgroundView.hidden = false
-            textTextView.hidden = true
+    func itemDidFinishPlaying(_ sender: AnyObject) {
+        if let player = SingletonAVPlayer.shared.player {
+            playButton.setImage(UIImage(named: "media_play"), for: UIControlState())
+            let newTime = CMTimeMakeWithSeconds(0, 1)
+            player.seek(to: newTime)
+            updateSlider()
+        }
+    }
+    
+    override public var canBecomeFirstResponder: Bool { return true }
+
+    func expandText(_ sender: AnyObject) {
+        if textLabelBackgroundView.isHidden { //shrink
+            textLabel.isHidden = false
+            textLabelBackgroundView.isHidden = false
+            textTextView.isHidden = true
         } else { //grow
-            textLabel.hidden = true
-            textLabelBackgroundView.hidden = true
-            textTextView.hidden = false
+            textLabel.isHidden = true
+            textLabelBackgroundView.isHidden = true
+            textTextView.isHidden = false
         }
     }
 }

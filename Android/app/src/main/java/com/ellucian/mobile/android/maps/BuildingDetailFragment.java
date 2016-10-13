@@ -31,6 +31,7 @@ import com.ellucian.mobile.android.client.maps.BuildingsResponse;
 import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.provider.EllucianContract.MapsBuildings;
 import com.ellucian.mobile.android.provider.EllucianContract.MapsCampuses;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.io.UnsupportedEncodingException;
@@ -155,7 +156,7 @@ public class BuildingDetailFragment extends EllucianDefaultDetailFragment {
 			if ( latitude == null || longitude == null || (latitude == 0.0 && longitude == 0.0)) {
 				Log.d(TAG, "latitude or longitude is missing, setting views from buildingId");
 				if (!TextUtils.isEmpty(buildingId)) {
-					buildingUrl = Utils.getStringFromPreferences(getActivity(), Utils.CONFIGURATION, Utils.MAP_BUILDINGS_URL, null);
+					buildingUrl = PreferencesUtils.getStringFromPreferences(getActivity(), Utils.CONFIGURATION, Utils.MAP_BUILDINGS_URL, null);
 					setViewsFromBuildingId();
 				} else {
 					Log.d(TAG, "buildingId is also missing showing data from args only");
@@ -241,14 +242,17 @@ public class BuildingDetailFragment extends EllucianDefaultDetailFragment {
 				// Must use mem and file cache in order for the downsampling to work. 
 				// Larger images will not show without it. 
 				View v = rootView.findViewById(R.id.image);
-				if (v != null) {
+				if ((v != null) && (imageUrl != null) && (aQuery != null)) {
 					Log.d(TAG, "fetching image");
 					aQuery.id(R.id.image).image(imageUrl, true, true, 300, 0).visible();
 				}
 			}
 
-			View detailsFrame = getActivity().findViewById(R.id.frame_extra);
-			boolean dualPane = detailsFrame != null && detailsFrame.getVisibility() == View.VISIBLE;
+            boolean dualPane = false;
+            if (getActivity() != null) {
+                View detailsFrame = getActivity().findViewById(R.id.frame_extra);
+                dualPane = detailsFrame != null && detailsFrame.getVisibility() == View.VISIBLE;
+            }
 
 			if ((!TextUtils.isEmpty(name)) && dualPane) {
 				setBasicView(R.id.nameLayout, R.id.name, name);
@@ -367,7 +371,7 @@ public class BuildingDetailFragment extends EllucianDefaultDetailFragment {
 									  selectionArgs, 
 									  null);
 			
-			if (cursor.moveToFirst()) {
+			if (cursor != null && cursor.moveToFirst()) {
 				Log.d(TAG, "Cursor returned a row");
 				// Don't overwrite name if present
 				if (TextUtils.isEmpty(name)) {
@@ -391,7 +395,7 @@ public class BuildingDetailFragment extends EllucianDefaultDetailFragment {
 				setViews();
 				refresh();				
 			} else {
-				cursor.close();
+				if (cursor != null) { cursor.close(); }
 				Log.d(TAG, "No building found in the database");
 				if (!TextUtils.isEmpty(buildingUrl) && !TextUtils.isEmpty(buildingId)) {
 					Log.d(TAG, "Requesting building info from server");

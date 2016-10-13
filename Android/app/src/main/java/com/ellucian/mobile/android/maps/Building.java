@@ -5,7 +5,9 @@
 package com.ellucian.mobile.android.maps;
 
 
-class Building {
+import java.io.Serializable;
+
+class Building implements Serializable {
 	public String name;
 	public String address;
 	public String description;

@@ -6,12 +6,13 @@
 //  Copyright (c) 2013 - 2014 Ellucian. All rights reserved.
 //
 
-#import "EllucianSectionedUITableViewController.h"
+#import "EllucianUITableViewController.h"
 #import "DetailSelectionDelegate.h"
+#import "Ellucian_GO-Swift.h"
 
 @class Module;
 
-@interface RegistrationCartViewController : EllucianSectionedUITableViewController<UITableViewDataSource, UITableViewDelegate, UIActionSheetDelegate, UISplitViewControllerDelegate>
+@interface RegistrationCartViewController : EllucianUITableViewController<UITableViewDataSource, UITableViewDelegate, UISplitViewControllerDelegate, EllucianMobileLaunchableControllerProtocol>
 
 @property (strong, nonatomic) Module *module;
 @property (nonatomic, assign) id<DetailSelectionDelegate> detailSelectionDelegate;

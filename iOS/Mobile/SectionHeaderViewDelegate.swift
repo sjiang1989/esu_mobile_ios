@@ -10,7 +10,7 @@ import Foundation
 
 @objc protocol SectionHeaderViewDelegate {
     
-    optional func sectionHeaderView(sectionHeaderView: MenuTableViewHeaderFooterView, sectionOpened: Int)
-    optional func sectionHeaderView(sectionHeaderView: MenuTableViewHeaderFooterView, sectionClosed: Int)
+    @objc optional func sectionHeaderView(_ sectionHeaderView: MenuTableViewHeaderFooterView, sectionOpened: Int)
+    @objc optional func sectionHeaderView(_ sectionHeaderView: MenuTableViewHeaderFooterView, sectionClosed: Int)
 
 }

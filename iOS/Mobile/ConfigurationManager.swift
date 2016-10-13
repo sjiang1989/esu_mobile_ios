@@ -13,29 +13,27 @@ import UIKit
 
 class ConfigurationManager: NSObject {
     
+    static let ConfigurationLoadStartedNotification = Notification.Name("Configuration Load Started")
+    static let ConfigurationLoadSucceededNotification = Notification.Name("Configuration Load Succeeded")
+    static let ConfigurationProcessingModulesStartedNotification = Notification.Name("Configuration Processing Modules Started")
+    static let ConfigurationProcessingModuleNotification = Notification.Name("Configuration Processing Module")
+    static let ConfigurationProcessingModulesCompletedNotification = Notification.Name("Configuration Processing Modules Completed")
+    static let ConfigurationLoadFailedNotification = Notification.Name("Configuration Load Failed")
+    static let MobileServerConfigurationLoadSucceededNotification = Notification.Name("Mobile Server Configuration Load Succeeded")
+    static let MobileServerConfigurationLoadFailedNotification = Notification.Name("Mobile Server Configuration Load Failed")
+    
+    static let shared = ConfigurationManager()
+    
     private let refreshInterval: Double = 1200  //seconds for 20 minutes = 1200 seconds
     
-    private var configurationData: NSData?
+    private var configurationData: Data?
     
-    lazy var urlSession: NSURLSession = {
-        let config = NSURLSessionConfiguration.ephemeralSessionConfiguration()
+    lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 10
-        return NSURLSession(configuration: config)
+        return URLSession(configuration: config)
     }()
-    
-    // Returns the singleton instance of ConfigurationManager
-    class var instance: ConfigurationManager {
-        get {
-            struct Singleton {
-                static var instance : ConfigurationManager? = nil
-                static var token : dispatch_once_t = 0
-            }
-            dispatch_once(&Singleton.token) { Singleton.instance = ConfigurationManager() }
-            
-            return Singleton.instance!
-        }
-    }
-    
+
     // make init private for singleton
     override private init() {
     }
@@ -49,30 +47,29 @@ class ConfigurationManager: NSObject {
         
         // check if it is time to refresh
         if let defaults = AppGroupUtilities.userDefaults() {
-            if let refreshDate = defaults.objectForKey("configuration refresh date") {
-                let intervals = (NSDate().timeIntervalSinceDate(refreshDate as! NSDate)) / refreshInterval
+            if let refreshDate = defaults.object(forKey: "configuration refresh date") {
+                let intervals = (Date().timeIntervalSince(refreshDate as! Date)) / refreshInterval
                 result = intervals >= 1
             } else {
                 return true
             }
             
             
-            guard let lastUpdated = defaults.stringForKey("lastUpdated-configuration") else {
+            guard let lastUpdated = defaults.string(forKey: "lastUpdated-configuration") else {
                 return result
             }
             
             
-            if let baseConfigurationUrl = getConfigurationUrl() where result {
+            if let baseConfigurationUrl = getConfigurationUrl() , result {
                 let configurationUrl = baseConfigurationUrl + "?onlyLastUpdated=true"
-                if let theUrl = NSURL(string: configurationUrl) {
+                if let theUrl = URL(string: configurationUrl) {
                     do {
-                        let configurationData = try NSData(contentsOfURL: theUrl, options: NSDataReadingOptions())
+                        let configurationData = try Data(contentsOf: theUrl, options: NSData.ReadingOptions())
                         
-                        
-                        let jsonResults = try NSJSONSerialization.JSONObjectWithData(configurationData, options: [])
-                        let lastUpdatedFromServer = jsonResults["lastUpdated"] as! String
+                        let jsonResults = JSON(data: configurationData)
+                        let lastUpdatedFromServer = jsonResults["lastUpdated"].stringValue
                         result = lastUpdatedFromServer != lastUpdated
-                        defaults.setObject(lastUpdatedFromServer, forKey: "lastUpdated-configuration")
+                        defaults.set(lastUpdatedFromServer, forKey: "lastUpdated-configuration")
                         
                     } catch {
                         print(error)
@@ -85,12 +82,12 @@ class ConfigurationManager: NSObject {
         return result
     }
     
-    func mostRecentConfigurationData() -> NSData? {
-        var configurationData: NSData? = self.configurationData
+    func mostRecentConfigurationData() -> Data? {
+        var configurationData: Data? = self.configurationData
         
         if configurationData == nil {
             if let defaults = AppGroupUtilities.userDefaults() {
-                if let defaultConfigurationData = defaults.objectForKey("configuration data") as! NSData? {
+                if let defaultConfigurationData = defaults.object(forKey: "configuration data") as! Data? {
                     configurationData = defaultConfigurationData
                 }
             }
@@ -104,7 +101,7 @@ class ConfigurationManager: NSObject {
         if configurationUrl == nil {
             // use the defaults configurationUrl
             if let defaults = AppGroupUtilities.userDefaults() {
-                configurationUrl = defaults.stringForKey("configurationUrl")
+                configurationUrl = defaults.string(forKey: "configurationUrl")
             }
         }
         
@@ -113,12 +110,12 @@ class ConfigurationManager: NSObject {
     
     // true return value means either configuration is loaded and doesn't need to be refreshed or configuration was refreshed
     // false return value indicates configuration has not been loaded and can't. In Watch case this may mean the user needs to select a configuration
-    func refreshConfigurationIfNeeded(configurationUrl configurationUrl: String? = nil, completionHandler: ((result: AnyObject) -> Void)?) {
+    func refreshConfigurationIfNeeded(configurationUrl: String? = nil, completionHandler: @escaping ((_ result: Any) -> Void)) {
         var respondWithFailureToCompletionHandler = true
         
         if mostRecentConfigurationData() == nil || shouldConfigurationBeRefreshed() {
             // time to refresh
-            NSLog("ConfigurationManager refreshConfigurationIfNeeded needs to be refreshed")
+            print("ConfigurationManager refreshConfigurationIfNeeded needs to be refreshed")
             loadConfiguration(configurationUrl: configurationUrl, completionHandler: completionHandler)
             respondWithFailureToCompletionHandler = false
         }
@@ -129,57 +126,62 @@ class ConfigurationManager: NSObject {
         }
         
         if respondWithFailureToCompletionHandler {
-            if let completionHandler = completionHandler {
-                completionHandler(result: false)
-            }
+            completionHandler(false)
         }
     }
     
-    func loadConfiguration(configurationUrl pConfigurationUrl: String? = nil, completionHandler: ((result: AnyObject) -> Void)?) {
+    func loadConfiguration(configurationUrl pConfigurationUrl: String? = nil, completionHandler: @escaping ((_ result: Bool) -> Void)) {
         var handleCompletionHandler = true
         
+        NotificationCenter.default.post(name: ConfigurationManager.ConfigurationLoadStartedNotification, object: nil)
+
         if let configurationUrl = getConfigurationUrl(configurationUrl: pConfigurationUrl) {
             // download the configuration
-            if let theUrl = NSURL(string: configurationUrl) {
+            if let theUrl = URL(string: configurationUrl) {
                 handleCompletionHandler = false
-                let task = urlSession.downloadTaskWithURL(theUrl) {
+                var request = URLRequest(url: theUrl)
+                let task = urlSession.ellucianDownloadTask(with: &request) {
                     (location, response, error) in
                     
-                    var loadSuccess = false
-                    
+                    handleCompletionHandler = true
                     #if os(iOS)
-                        UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     #endif
                     
                     if (error == nil) {
-                        if let configurationData = NSData(contentsOfURL: location!) {
-                            loadSuccess = self.processConfigurationData(configurationData)
+                        handleCompletionHandler = false
+                        if let configurationData = try? Data(contentsOf: location!) {
+                            self.processConfigurationData(configurationData) {
+                                (result: Bool) in
                             
-                            if loadSuccess {
-                                NSNotificationCenter.defaultCenter().postNotificationName("Configuration Load Succeeded", object: nil)
+                                if result {
+                                    NotificationCenter.default.post(name: ConfigurationManager.ConfigurationLoadSucceededNotification, object: nil)
+                                }
+                                completionHandler(result)
                             }
                         } else {
-                            NSLog("Cannot load configuration, unable to access data from: \(location) \(error)")
-                            NSNotificationCenter.defaultCenter().postNotificationName("Configuration Load Failed", object: nil)
+                            handleCompletionHandler = true
+                            print("Cannot load configuration, unable to access data from: \(location) \(error)")
+                            NotificationCenter.default.post(name: ConfigurationManager.ConfigurationLoadFailedNotification, object: nil)
                         }
                     } else {
-                        NSLog("Cannot load configuration, unable to access data from: \(location) \(error)")
-                        NSNotificationCenter.defaultCenter().postNotificationName("Configuration Load Failed", object: nil)
+                        print("Cannot load configuration, unable to access data from: \(location) \(error)")
+                        NotificationCenter.default.post(name: ConfigurationManager.ConfigurationLoadFailedNotification, object: nil)
                     }
-                    
-                    if let completionHandler = completionHandler {
-                        completionHandler(result: loadSuccess)
+
+                    if handleCompletionHandler {
+                        completionHandler(false)
                     }
                 }
                 task.resume()
                 #if os(iOS)
-                    UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = true
                 #endif
             } else {
                 // failed to create NSURL
                 // notify the failure
-                NSLog("Cannot load configuration, unable to create NSURL from: \"\(configurationUrl)\"")
-                NSNotificationCenter.defaultCenter().postNotificationName("Configuration Load Failed", object: nil)
+                print("Cannot load configuration, unable to create NSURL from: \"\(configurationUrl)\"")
+                NotificationCenter.default.post(name: ConfigurationManager.ConfigurationLoadFailedNotification, object: nil)
             }
         } else {
             
@@ -187,66 +189,59 @@ class ConfigurationManager: NSObject {
                 handleCompletionHandler = false
                 
                 // don't know the configuration url - watch needs to ask phone for configuration
-                WatchConnectivityManager.instance.sendActionMessage("fetch configuration", replyHandler: {
-                    (reply: [String: AnyObject]) -> Void in
-                    var result = false
+                WatchConnectivityManager.sharedInstance.sendActionMessage("fetch configuration", replyHandler: {
+                    (reply: [String: Any]) -> Void in
                     var handleCompletionHandler = true
                     
-                    if let configurationData = reply["configurationData"] as! NSData? {
-                        self.processConfigurationData(configurationData, notifyOtherSide: false)
-                        result = true
+                    if let configurationData = reply["configurationData"] as! Data? {
+                        handleCompletionHandler = false
+                        self.processConfigurationData(configurationData, notifyOtherSide: false, completionHandler: completionHandler)
                     } else if let configurationUrl = reply["configurationUrl"] as! String? {
                         handleCompletionHandler = false
-                        self.loadConfiguration(configurationUrl: configurationUrl) {
-                            (loadResult) -> Void in
-                            
-                            if let completionHandler = completionHandler {
-                                completionHandler(result: loadResult)
-                            }
-                        }
+                        self.loadConfiguration(configurationUrl: configurationUrl, completionHandler: completionHandler)
                     } else {
-                        NSLog("configurationData is missing from the data: \(reply)")
+                        print("configurationData is missing from the data: \(reply)")
                     }
                     
                     
                     if handleCompletionHandler {
-                        if let completionHandler = completionHandler {
-                            completionHandler(result: result)
-                        }
+                        completionHandler(false)
                     }
                     },
                     errorHandler: {
-                        (error: NSError) -> Void in
+                        (error: Error) -> Void in
                         
-                        if let completionHandler = completionHandler {
-                            completionHandler(result: error)
-                        }
-                        NSLog("Cannot load configuration fetched from Phone")
+                        completionHandler(false)
+                        print("Cannot load configuration fetched from Phone")
                 })
             #endif
             
             
             // No Configuration URL notify the failure
-            NSLog("Cannot load configuration, no configurationUrl")
-            NSNotificationCenter.defaultCenter().postNotificationName("Configuration Load Failed", object: nil)
+            print("Cannot load configuration, no configurationUrl")
+            NotificationCenter.default.post(name: ConfigurationManager.ConfigurationLoadFailedNotification, object: nil)
         }
         
         if handleCompletionHandler {
-            if let uCompletionHandler = completionHandler {
-                uCompletionHandler(result: false)
-            }
+            completionHandler(false)
         }
     }
     
-    func processConfigurationData(configurationData: NSData, notifyOtherSide: Bool = true) -> Bool {
-        do {
-            let json = try NSJSONSerialization.JSONObjectWithData(configurationData, options: NSJSONReadingOptions.AllowFragments) as! NSDictionary
-            self.processConfigurationData(json)
-            
+    func processConfigurationData(_ configurationData: Data, notifyOtherSide: Bool = true, completionHandler: @escaping ((_ result: Bool) -> Void)) {
+        
+        let json = JSON(data: configurationData)
+        let processingDispatchGroup = DispatchGroup()
+        processingDispatchGroup.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.processConfigurationData(json, dispatchGroup: processingDispatchGroup)
+            processingDispatchGroup.leave()
+        }
+        
+        processingDispatchGroup.notify(queue: DispatchQueue.main) {
             // cache the configuration data
             if let defaults = AppGroupUtilities.userDefaults() {
-                defaults.setObject(configurationData, forKey: "configuration data")
-                defaults.setObject(NSDate(), forKey: "configuration refresh date")
+                defaults.set(configurationData, forKey: "configuration data")
+                defaults.set(Date(), forKey: "configuration refresh date")
             }
             
             // clear watch cached data
@@ -255,187 +250,244 @@ class ConfigurationManager: NSObject {
             #endif
             
             // let other side know
-            if #available(iOS 9.0, *) {
-                if notifyOtherSide {
-                    WatchConnectivityManager.instance.notifyOtherSide("configurationLoaded", data: configurationData)
-                }
+            if notifyOtherSide {
+                WatchConnectivityManager.sharedInstance.notifyOtherSide("configurationLoaded", data: configurationData)
             }
             
-            NSNotificationCenter.defaultCenter().postNotificationName("Configuration Load Succeeded", object: nil)
-            return true
-        } catch {
-            NSLog("Cannot load configuration, data doesn't parse")
-            NSNotificationCenter.defaultCenter().postNotificationName("Configuration Load Failed", object: nil)
-            return false
+            NotificationCenter.default.post(name: ConfigurationManager.ConfigurationLoadSucceededNotification, object: nil)
+            
+            completionHandler(true)
         }
     }
     
-    private func setDefaultObject(defaults: NSUserDefaults, key: String, value: AnyObject?) {
-        if value != nil && !(value is NSNull) {
-            defaults.setObject(value, forKey: key)
-        }
-    }
-    
-    func processConfigurationData(json: NSDictionary) {
-        if let versions = json["versions"] as! NSDictionary? {
-            if let iosVersions = versions["ios"] as! [AnyObject]? {
-                if VersionChecker.checkVersion(iosVersions) {
+    func processConfigurationData(_ json: JSON, dispatchGroup: DispatchGroup) {
+        if let versions = json["versions"].dictionary {
+            let iosVersions = versions["ios"]?.arrayValue.map{ $0.string } as? [String]
+            if let iosVersions = iosVersions {
+                if VersionChecker.sharedInstance.checkVersion(iosVersions) {
                     let defaults = AppGroupUtilities.userDefaults()!
                     
-                    if let lastUpdated = json["lastUpdated"] as! String? {
-                        defaults.setObject(lastUpdated, forKey: "lastUpdated-configuration")
+                    if let lastUpdated = json["lastUpdated"].string {
+                        defaults.set(lastUpdated, forKey: "lastUpdated-configuration")
                     }
                     
-                    if let about = json["about"] as! NSDictionary? {
-                        defaults.setObject(about["contact"], forKey: "about-contact")
-                        if let email = about["email"] as! NSDictionary? {
-                            defaults.setObject(email["address"], forKey: "about-email-address")
-                            defaults.setObject(email["display"], forKey: "about-email-display")
+                    if let about = json["about"].dictionary {
+                        if let contact = about["contact"]?.stringValue {
+                            defaults.set(contact, forKey: "about-contact")
                         }
-                        let aboutIcon = about["icon"] as! String?
-                        defaults.setObject(aboutIcon, forKey: "about-icon")
-                        if aboutIcon != nil {
-                            ImageCache.sharedCache().getImage(aboutIcon!)
+                        if let email = about["email"]?.dictionary {
+                            if let address = email["address"]?.string {
+                                defaults.set(address, forKey: "about-email-address")
+                            }
+                            if let display = email["display"]?.string {
+                                defaults.set(display, forKey: "about-email-display")
+                            }
                         }
-                        let aboutLogoUrlPhone = about["logoUrlPhone"] as! String?
-                        defaults.setObject(aboutLogoUrlPhone, forKey: "about-logoUrlPhone")
-                        if aboutLogoUrlPhone != nil {
-                            ImageCache.sharedCache().getImage(aboutLogoUrlPhone!)
+                        if let aboutIcon = about["icon"]?.string {
+                            defaults.set(aboutIcon, forKey: "about-icon")
+                            ImageCache.sharedCache.cacheImageForLater(aboutIcon, dispatchGroup: dispatchGroup)
                         }
-                        if let phone = about["phone"] as! NSDictionary? {
-                            defaults.setObject(phone["display"], forKey: "about-phone-display")
-                            defaults.setObject(phone["number"], forKey: "about-phone-number")
+
+                        if let aboutLogoUrlPhone = about["logoUrlPhone"]?.string {
+                            defaults.set(aboutLogoUrlPhone, forKey: "about-logoUrlPhone")
+                            #if os(iOS)
+                            ImageCache.sharedCache.cacheImageForLater(aboutLogoUrlPhone, dispatchGroup: dispatchGroup)
+                            #endif
                         }
-                        if let privacy = about["privacy"] as! NSDictionary? {
-                            defaults.setObject(privacy["display"], forKey: "about-privacy-display")
-                            defaults.setObject(privacy["url"], forKey: "about-privacy-url")
+                        if let phone = about["phone"]?.dictionary {
+                            if let display = phone["display"]?.string {
+                                defaults.set(display, forKey: "about-phone-display")
+                            }
+                            if let number = phone["number"]?.string {
+                            defaults.set(number, forKey: "about-phone-number")
+                            }
                         }
-                        if let version = about["version"] as! NSDictionary? {
-                            defaults.setObject(version["url"], forKey: "about-version-url")
+                        if let privacy = about["privacy"]?.dictionary {
+                            if let display = privacy["display"]?.string {
+                                defaults.set(display, forKey: "about-privacy-display")
+                            }
+                            if let url = privacy["url"]?.string {
+                                defaults.set(url, forKey: "about-privacy-url")
+                            }
                         }
-                        if let website = about["website"] as! NSDictionary? {
-                            defaults.setObject(website["display"], forKey: "about-website-display")
-                            defaults.setObject(website["url"], forKey: "about-website-url")
+                        if let version = about["version"]?.dictionary {
+                            if let url = version["url"]?.string {
+                                defaults.set(url, forKey: "about-version-url")
+                            }
+                        }
+                        if let website = about["website"]?.dictionary {
+                            if let display = website["display"]?.string {
+                                defaults.set(display, forKey: "about-website-display")
+                            }
+                            if let url = website["url"]?.string {
+                                defaults.set(url, forKey: "about-website-url")
+                            }
                         }
                     }
                     
-                    if let layout = json["layout"] as! NSDictionary? {
-                        defaults.setObject(layout["primaryColor"], forKey: "primaryColor")
-                        defaults.setObject(layout["headerTextColor"], forKey: "headerTextColor")
-                        defaults.setObject(layout["accentColor"], forKey: "accentColor")
-                        defaults.setObject(layout["subheaderTextColor"], forKey: "subheaderTextColor")
+                    if let layout = json["layout"].dictionary {
+                        if let primaryColor = layout["primaryColor"]?.string {
+                            defaults.set(primaryColor, forKey: "primaryColor")
+                        }
+                        if let headerTextColor = layout["headerTextColor"]?.string {
+                            defaults.set(headerTextColor, forKey: "headerTextColor")
+                        }
+                        if let accentColor = layout["accentColor"]?.string {
+                            defaults.set(accentColor, forKey: "accentColor")
+                        }
+                        if let subheaderTextColor = layout["subheaderTextColor"]?.string {
+                            defaults.set(subheaderTextColor, forKey: "subheaderTextColor")
+                        }
                         
-                        let homeUrlPhone = layout["homeUrlPhone"] as! String?
-                        defaults.setObject(homeUrlPhone, forKey: "home-background")
+                        if let homeUrlPhone = layout["homeUrlPhone"]?.string {
+                            defaults.set(homeUrlPhone, forKey: "home-background")
+                        }
                         
                         #if os(iOS)
-                            let homeUrlTablet = layout["homeUrlTablet"] as! String?
-                            defaults.setObject(homeUrlTablet, forKey: "home-tablet-background")
-                            
-                        
-                            if let homeUrlTablet = homeUrlTablet where UIDevice.currentDevice().userInterfaceIdiom == .Pad && homeUrlTablet.characters.count > 0 {
-                                ImageCache.sharedCache().getImage(homeUrlTablet)
-                            } else if let homeUrlPhone = homeUrlPhone where homeUrlPhone.characters.count > 0 {
-                                ImageCache.sharedCache().getImage(homeUrlPhone)
+                            if let homeUrlTablet = layout["homeUrlTablet"]?.string {
+                                defaults.set(homeUrlTablet, forKey: "home-tablet-background")
                             }
+                            
+                            #if os(iOS)
+                            if let homeUrlTablet = layout["homeUrlTablet"]?.string, UIDevice.current.userInterfaceIdiom == .pad && homeUrlTablet.characters.count > 0 {
+                                ImageCache.sharedCache.cacheImageForLater(homeUrlTablet, dispatchGroup: dispatchGroup)
+                            } else if let homeUrlPhone = layout["homeUrlPhone"]?.string, homeUrlPhone.characters.count > 0 {
+                                ImageCache.sharedCache.cacheImageForLater(homeUrlPhone, dispatchGroup: dispatchGroup)
+                            }
+                            #endif
                         #endif
                     }
                     
-                    if let security = json["security"] as! NSDictionary? {
-                        defaults.setObject(security["url"], forKey: "login-url")
+                    if let security = json["security"].dictionary {
+                        if let url = security["url"]?.string {
+                            defaults.set(url, forKey: "login-url")
+                            if let logoutUrl = security["logoutUrl"]?.string {
+                                defaults.set(logoutUrl, forKey: "logout-url")
+                            }
+                        }
                         if let web = security["web"] {
-                            defaults.setObject("browser", forKey:"login-authenticationType")
-                            defaults.setObject(web["loginUrl"], forKey: "login-web-url")
+                            defaults.set("browser", forKey:"login-authenticationType")
+                            if let loginUrl = web["loginUrl"].string {
+                                defaults.set(loginUrl, forKey: "login-web-url")
+                            }
                         } else if let cas = security["cas"] {
-                            defaults.setObject(cas["loginType"], forKey: "login-authenticationType")
-                            defaults.setObject(cas["loginUrl"], forKey: "login-web-url")
+                            if let loginType = cas["loginType"].string {
+                                defaults.set(loginType, forKey: "login-authenticationType")
+                            }
+                            if let loginUrl = cas["loginUrl"].string {
+                                defaults.set(loginUrl, forKey: "login-web-url")
+                            }
+                            defaults.set(true, forKey: "login-native-cas")
                         } else {
-                            defaults.setObject("native", forKey: "login-authenticationType")
+                            defaults.set("native", forKey: "login-authenticationType")
                         }
                     }
                     
-                    if let mobileServerConfig = json["mobileServerConfig"] as! NSDictionary? {
-                        defaults.setObject(mobileServerConfig["url"], forKey: "mobileServerConfig-url")
-                    }
-                    
-                    if let map = json["map"] as! NSDictionary? {
-                        defaults.setObject(map["buildings"], forKey: "urls-map-buildings")
-                        defaults.setObject(map["campuses"], forKey: "urls-map-campuses")
-                    }
-                    
-                    if let directory = json["directory"] as! NSDictionary? {
-                        defaults.setObject(directory["allSearch"], forKey: "urls-directory-allSearch")
-                        defaults.setObject(directory["facultySearch"], forKey: "urls-directory-facultySearch")
-                        defaults.setObject(directory["studentSearch"], forKey: "urls-directory-studentSearch")
-                        if directory["baseSearch"] != nil {
-                            defaults.setObject(directory["baseSearch"], forKey: "urls-directory-baseSearch")
+                    if let mobileServerConfig = json["mobileServerConfig"].dictionary {
+                        if let url = mobileServerConfig["url"]?.string {
+                            defaults.set(url, forKey: "mobileServerConfig-url")
                         }
                     }
                     
-                    if let notification = json["notification"] as! NSDictionary? {
-                        if let urls = notification["urls"] as! NSDictionary? {
-                            defaults.setObject(urls["registration"], forKey: "notification-registration-url")
-                            defaults.setObject(urls["delivered"], forKey: "notification-delivered-url")
+                    if let map = json["map"].dictionary {
+                        if let buildings = map["buildings"]?.string {
+                            defaults.set(buildings, forKey: "urls-map-buildings")
+                        }
+                        if let campuses = map["campues"]?.string {
+                            defaults.set(campuses, forKey: "urls-map-campuses")
+                        }
+                    }
+                    
+                    if let directory = json["directory"].dictionary {
+                        defaults.set(directory["allSearch"]?.stringValue, forKey: "urls-directory-allSearch")
+                        defaults.set(directory["facultySearch"]?.stringValue, forKey: "urls-directory-facultySearch")
+                        defaults.set(directory["studentSearch"]?.stringValue, forKey: "urls-directory-studentSearch")
+                        if let baseSearch = directory["baseSearch"]?.string {
+                            defaults.set(baseSearch, forKey: "urls-directory-baseSearch")
+                        }
+                    }
+                    
+                    if let notification = json["notification"].dictionary {
+                        if let urls = notification["urls"]?.dictionary {
+                            if let registration = urls["registration"]?.string {
+                                defaults.set(registration, forKey: "notification-registration-url")
+                            }
+                            if let delivered = urls["delivered"]?.string {
+                                defaults.set(delivered, forKey: "notification-delivered-url")
+                            }
                         }
                     }
                     
                     // remove notifications enabled flag for this configuration until it is determined that notifications are enabled
-                    defaults.removeObjectForKey("notification-enabled")
+                    defaults.removeObject(forKey: "notification-enabled")
                     
                     //Google Analytics
-                    if let analytics = json["analytics"] as! NSDictionary? {
-                        setDefaultObject(defaults, key: "gaTracker1", value: analytics["ellucian"])
-                        setDefaultObject(defaults, key: "gaTracker2", value: analytics["client"])
+                    if let analytics = json["analytics"].dictionary {
+                        if let ellucian = analytics["ellucian"]?.string {
+                            defaults.set(ellucian, forKey:"gaTracker1")
+                        }
+                        if let client = analytics["client"]?.string {
+                            defaults.set(client, forKey: "gaTracker2")
+                        }
                     }
                     
-                    if let home = json["home"] as! NSDictionary? {
-                        setDefaultObject(defaults, key: "home-overlay-color", value: home["overlay"])
-                        //                        setDefaultObject(defaults, key: "icons", value: analytics["icons"])
+                    if let home = json["home"].dictionary {
+                        if let overlay = home["overlay"]?.string {
+                            defaults.set(overlay, forKey: "home-overlay-color")
+                        }
                     }
 
-                    dispatch_async(dispatch_get_main_queue()) {
-                        let context = CoreDataManager.shared.managedObjectContext
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: ConfigurationManager.ConfigurationProcessingModulesStartedNotification, object: nil)
+                        let context = CoreDataManager.sharedInstance.managedObjectContext
                         
-                        var currentKeys = [AnyObject]()
-                        if let modules = json["mapp"] as! NSDictionary? {
-                            for (key, jsonModule) in modules as! [String: AnyObject] {
-                                let moduleDictionary = jsonModule as! NSDictionary
-                                if self.validModuleDefinition(moduleDictionary) {
+                        var currentKeys = [String]()
+                        if let modules = json["mapp"].dictionary {
+                            for (key, moduleDictionary) in modules {
+
+                                let data = LaunchBeaconDefinition(
+                                    moduleKey: key,
+                                    moduleDictionary: moduleDictionary,
+                                    managedObjectContext: context
+                                )
+                                NotificationCenter.default.post(name: ConfigurationManager.ConfigurationProcessingModuleNotification, object: data)
                                 
-                                    let _ = Module(fromDictionary: moduleDictionary as [NSObject : AnyObject], inManagedObjectContext: context, withKey: key)
+                                if self.validModuleDefinition(moduleDictionary) {
+                                    let _ = Module.moduleFromJson( moduleDictionary, inManagedObjectContext: context, withKey: key, dispatchGroup: dispatchGroup)
                                     currentKeys.append(key)
-                                }
+                                }                                
                             }
                         }
+
+                        let keysNoLongerUsedReqeust = NSFetchRequest<Module>(entityName: "Module")
+                        keysNoLongerUsedReqeust.predicate = NSPredicate(format: "NOT (internalKey IN %@)", currentKeys)
                         
-                        let keysNoLongerUsedReqeust = NSFetchRequest(entityName: "Module")
-                        let keysNoLongerUsedPredicate = NSPredicate(format: "NOT (internalKey IN %@)", currentKeys)
-                        keysNoLongerUsedReqeust.predicate = keysNoLongerUsedPredicate
                         do {
-                            let modules = try context.executeFetchRequest(keysNoLongerUsedReqeust)
-                            for module in modules as! [NSManagedObject] {
-                                context.deleteObject(module)
+                            let modules = try context.fetch(keysNoLongerUsedReqeust)
+                            for module in modules {
+                                context.delete(module)
                             }
                             do {
                                 try context.save()
                             } catch {
-                                NSLog("Unable to save Managed Object context after deleting no longer used modules")
+                                print("Unable to save Managed Object context after deleting no longer used modules")
                             }
                             
                         } catch {
-                            NSLog("Unable to query for no longer used keys")
+                            print("Unable to query for no longer used keys")
                         }
+                        NotificationCenter.default.post(name: ConfigurationManager.ConfigurationProcessingModulesCompletedNotification, object: nil)
                     }
                     
-                    defaults.setObject(NSDate(), forKey: "menu updated date")
+                    defaults.set(Date(), forKey: "menu updated date")
                 }
             }
         }
     }
     
     //way to test if configuration is complete and ready.  If not, drop the module
-    func validModuleDefinition(dictionary: NSDictionary) -> Bool {
-        if dictionary["type"] as? String == "web" {
+    func validModuleDefinition(_ dictionary: JSON) -> Bool {
+        if let type = dictionary["type"].string, type == "web" {
             return dictionary["urls"] != nil
         }
         return true
@@ -448,32 +500,32 @@ class ConfigurationManager: NSObject {
         
         // check if it is time to refresh
         if let defaults = AppGroupUtilities.userDefaults() {
-            guard let baseConfigurationUrl = defaults.stringForKey("mobileServerConfig-url") else {
+            guard let baseConfigurationUrl = defaults.string(forKey: "mobileServerConfig-url") else {
                 return false
             }
             
-            if let refreshDate = defaults.objectForKey("mobile server configuration refresh date") {
-                let intervals = (NSDate().timeIntervalSinceDate(refreshDate as! NSDate)) / refreshInterval
+            if let refreshDate = defaults.object(forKey: "mobile server configuration refresh date") {
+                let intervals = (Date().timeIntervalSince(refreshDate as! Date)) / refreshInterval
                 result = intervals >= 1
             } else {
                 return true
             }
             
-            guard let lastUpdated = defaults.stringForKey("lastUpdated-mobileServerConfiguration") else {
+            guard let lastUpdated = defaults.string(forKey: "lastUpdated-mobileServerConfiguration") else {
                 return result
             }
             
             
             let configurationUrl = baseConfigurationUrl + "?onlyLastUpdated=true"
-            if let theUrl = NSURL(string: configurationUrl) where result {
+            if let theUrl = URL(string: configurationUrl) , result {
                 do {
-                    let configurationData = try NSData(contentsOfURL: theUrl, options: NSDataReadingOptions())
+                    let configurationData = try Data(contentsOf: theUrl, options: NSData.ReadingOptions())
                     
                     
-                    let jsonResults = try NSJSONSerialization.JSONObjectWithData(configurationData, options: [])
-                    let lastUpdatedFromServer = jsonResults["lastUpdated"] as! String
+                    let jsonResults = JSON(data:configurationData)
+                    let lastUpdatedFromServer = jsonResults.stringValue
                     result = lastUpdatedFromServer != lastUpdated
-                    defaults.setObject(lastUpdatedFromServer, forKey: "lastUpdated-mobileServerConfiguration")
+                    defaults.set(lastUpdatedFromServer, forKey: "lastUpdated-mobileServerConfiguration")
                     
                 } catch {
                     print(error)
@@ -484,32 +536,32 @@ class ConfigurationManager: NSObject {
         return result
     }
     
-    func loadMobileServerConfiguration(completionHandler: ((result: AnyObject) -> Void)?) {
+    func loadMobileServerConfiguration(_ completionHandler: ((_ result: Any) -> Void)?) {
         
         
         if let defaults = AppGroupUtilities.userDefaults() {
-            guard let configurationUrl = defaults.stringForKey("mobileServerConfig-url") else {
+            guard let configurationUrl = defaults.string(forKey: "mobileServerConfig-url") else {
                 if let completionHandler = completionHandler {
-                    completionHandler(result: false)
+                    completionHandler(false)
                 }
                 return
             }
             
             // download the configuration
-            if let theUrl = NSURL(string: configurationUrl) {
+            if let theUrl = URL(string: configurationUrl) {
                 
-                let task = urlSession.downloadTaskWithURL(theUrl) {
+                let task = urlSession.downloadTask(with: theUrl) {
                     (location, response, error) in
                     
                     #if os(iOS)
-                        UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     #endif
                     
                     var loadSuccess = false
-                    if let httpResponse = response as? NSHTTPURLResponse {
+                    if let httpResponse = response as? HTTPURLResponse {
                         if httpResponse.statusCode != 200 {
                             if let completionHandler = completionHandler {
-                                completionHandler(result: loadSuccess)
+                                completionHandler(loadSuccess)
                             }
                             
                             return
@@ -517,78 +569,76 @@ class ConfigurationManager: NSObject {
                     }
 
                     if (error == nil) {
-                        if let configurationData = NSData(contentsOfURL: location!) {
+                        if let configurationData = try? Data(contentsOf: location!) {
                             loadSuccess = self.processMobileServerConfiguration(configurationData)
                             
                             
-                            NSNotificationCenter.defaultCenter().postNotificationName("Mobile Server Configuration Load Succeeded", object: nil)
+                            NotificationCenter.default.post(name: ConfigurationManager.MobileServerConfigurationLoadSucceededNotification, object: nil)
                             
                         } else {
-                            NSLog("Cannot load mobile server configuration, unable to access data from: \(location)")
-                            NSNotificationCenter.defaultCenter().postNotificationName("Mobile Server Configuration Load Failed", object: nil)
+                            print("Cannot load mobile server configuration, unable to access data from: \(location)")
+                            NotificationCenter.default.post(name: ConfigurationManager.MobileServerConfigurationLoadFailedNotification, object: nil)
                         }
                     } else {
-                        NSLog("Cannot load mobile server configuration, unable to access data from: \(location)")
-                        NSNotificationCenter.defaultCenter().postNotificationName("Mobile Server Configuration Load Failed", object: nil)
+                        print("Cannot load mobile server configuration, unable to access data from: \(location)")
+                        NotificationCenter.default.post(name: ConfigurationManager.MobileServerConfigurationLoadFailedNotification, object: nil)
                     }
                     
                     if let completionHandler = completionHandler {
-                        completionHandler(result: loadSuccess)
+                        completionHandler(loadSuccess)
                     }
                 }
                 task.resume()
                 #if os(iOS)
-                    UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = true
                 #endif
             } else {
                 // failed to create NSURL
                 // notify the failure
-                NSLog("Cannot load mobile server configuration, unable to create NSURL from: \"\(configurationUrl)\"")
+                print("Cannot load mobile server configuration, unable to create NSURL from: \"\(configurationUrl)\"")
             }
         } else {
             // No Configuration URL notify the failure
-            NSLog("Cannot load configuration, no mobile server configurationUrl")
-            NSNotificationCenter.defaultCenter().postNotificationName("Mobile Server Configuration Load Failed", object: nil)
+            print("Cannot load configuration, no mobile server configurationUrl")
+            NotificationCenter.default.post(name: ConfigurationManager.MobileServerConfigurationLoadFailedNotification, object: nil)
         }
     }
     
-    func processMobileServerConfiguration(responseData: NSData) -> Bool {
+    func processMobileServerConfiguration(_ responseData: Data) -> Bool {
         
         let json = JSON(data: responseData)
         
         let defaults = AppGroupUtilities.userDefaults()!
         
         if let lastUpdated = json["lastUpdated"].string {
-            defaults.setObject(lastUpdated, forKey: "lastUpdated-mobileServerConfiguration")
+            defaults.set(lastUpdated, forKey: "lastUpdated-mobileServerConfiguration")
         }
         
         if let codebaseVersion = json["codebaseVersion"].string {
-            defaults.setObject(codebaseVersion, forKey: "mobileServerCodebaseVersion")
+            defaults.set(codebaseVersion, forKey: "mobileServerCodebaseVersion")
         }
         
-        dispatch_async(dispatch_get_main_queue()) {
-            let context = CoreDataManager.shared.managedObjectContext
+        DispatchQueue.main.async {
+            let context = CoreDataManager.sharedInstance.managedObjectContext
             
-            let privateContext = NSManagedObjectContext(concurrencyType: .PrivateQueueConcurrencyType)
-            privateContext.parentContext = context
+            let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+            privateContext.parent = context
             privateContext.undoManager = nil
             
-            privateContext.performBlock { () -> Void in
+            privateContext.perform { () -> Void in
                 
                 do {
-                    let request = NSFetchRequest(entityName: "DirectoryDefinition")
-                    let oldObjects = try privateContext
-                        .executeFetchRequest(request)
+                    let request = NSFetchRequest<DirectoryDefinition>(entityName: "DirectoryDefinition")
+                    let oldObjects = try privateContext.fetch(request)
                     
-                    if let managedObjects = oldObjects as? [NSManagedObject] {
-                        for object in managedObjects {
-                            privateContext.deleteObject(object)
-                        }
+                    for object in oldObjects {
+                        privateContext.delete(object)
                     }
+
                     for (key,subJson):(String, JSON) in json["directories"].dictionary! {
-                        let directory = NSEntityDescription.insertNewObjectForEntityForName("DirectoryDefinition", inManagedObjectContext: privateContext) as! DirectoryDefinition
+                        let directory = NSEntityDescription.insertNewObject(forEntityName: "DirectoryDefinition", into: privateContext) as! DirectoryDefinition
                         
-                        if(subJson["internalName"] != nil) { //todo
+                        if(subJson["internalName"] != nil) {
                             if let authenticated = subJson["authenticatedOnly"].string {
                                 directory.authenticatedOnly = (authenticated == "true")
                             } else {
@@ -604,18 +654,18 @@ class ConfigurationManager: NSObject {
                     
                     try privateContext.save()
                     
-                    privateContext.parentContext?.performBlock({
+                    privateContext.parent?.perform({
                         do {
-                            try privateContext.parentContext?.save()
+                            try privateContext.parent?.save()
                         } catch let error {
                             print (error)
                         }
                     })
                     
-                    dispatch_async(dispatch_get_main_queue()) {
+                    DispatchQueue.main.async {
                         if let defaults = AppGroupUtilities.userDefaults() {
                             //                                            defaults.setObject(configurationData, forKey: "mobile server configuration data")
-                            defaults.setObject(NSDate(), forKey: "mobile server configuration refresh date")
+                            defaults.set(Date(), forKey: "mobile server configuration refresh date")
                         }
                         
                     }
@@ -629,24 +679,24 @@ class ConfigurationManager: NSObject {
         return true
     }
     
-    class func doesMobileServerSupportVersion(version: String) -> Bool {
+    @available(iOS 9, *)
+    class func doesMobileServerSupportVersion(_ version: String) -> Bool {
         
         let defaults = AppGroupUtilities.userDefaults()!
-        if let mobileServerCodebaseVersion = defaults.stringForKey("mobileServerCodebaseVersion") {
+        if let mobileServerCodebaseVersion = defaults.string(forKey: "mobileServerCodebaseVersion") {
             if version == mobileServerCodebaseVersion {
                 return true
             }
-            let askedVersion = version.componentsSeparatedByString(".")
+            let askedVersion = version.components(separatedBy: ".")
                 .map {
                     Int.init($0) ?? 0
             }
-            let serverVersion = mobileServerCodebaseVersion.componentsSeparatedByString(".")
+            let serverVersion = mobileServerCodebaseVersion.components(separatedBy: ".")
                 .map {
                     Int.init($0) ?? 0
             }
-            return askedVersion.lexicographicalCompare(serverVersion)
+            return askedVersion.lexicographicallyPrecedes(serverVersion)
         }
         return false //unknown
     }
-    
 }

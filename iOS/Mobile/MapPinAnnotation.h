@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <MapKit/MapKit.h>
-#import "MapPOI.h"
+#import "Ellucian_GO-Swift.h"
 
 @interface MapPinAnnotation : NSObject<MKAnnotation> {
 

@@ -13,21 +13,21 @@ class AboutVersionPageController: WKInterfaceController {
     
     @IBOutlet var clientVersionLabel: WKInterfaceLabel!
     @IBOutlet var serverVersionLabel: WKInterfaceLabel!
-    override func awakeWithContext(context: AnyObject?) {
-        if let clientVersion = NSBundle.mainBundle().objectForInfoDictionaryKey("CFBundleVersion") as? String {
+    override func awake(withContext context: Any?) {
+        if let clientVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String {
             self.clientVersionLabel.setText(clientVersion)
         }
         
-        if let urlString = AppGroupUtilities.userDefaults()?.stringForKey("about-version-url") {
-            let url = NSURL(string: urlString)
-            let task =  NSURLSession.sharedSession().dataTaskWithURL(url!, completionHandler : {data, response, error -> Void in
-                if let httpRes = response as? NSHTTPURLResponse {
-                    if let data = data where httpRes.statusCode == 200 {
+        if let urlString = AppGroupUtilities.userDefaults()?.string(forKey: "about-version-url") {
+            let url = URL(string: urlString)
+            let task =  URLSession.shared.dataTask(with: url!, completionHandler : {data, response, error -> Void in
+                if let httpRes = response as? HTTPURLResponse {
+                    if let data = data , httpRes.statusCode == 200 {
                         let json = JSON(data: data)
                         let application = json["application"]
                         let version = application["version"].stringValue
                         
-                        dispatch_async(dispatch_get_main_queue(), {
+                        DispatchQueue.main.async(execute: {
                             self.serverVersionLabel.setText(version)
                         })
                     }

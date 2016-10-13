@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"
-           xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
+    xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
 
 
     <!-- Main -->
@@ -75,25 +75,29 @@
     <string name="label_date">Fecha</string>
     <string name="label_location">Ubicación</string>
     <string name="label_done">Hecho</string>
+    <string name="content_desc_warning">Alerta</string>
+    <string name="services_feature_not_supported">Característica no soportada por este dispositivo.</string>
 
     <string name="label_format">
-        <xliff:g id="label" example="Name">%1$s</xliff:g>:
-    </string>
-    <string name="label_string_content_format">
-        <xliff:g id="label" example="Name">%1$s</xliff:g>: <xliff:g id="content" example="John Smith">%2$s</xliff:g>
-    </string>
-    <string name="label_integer_content_format">
-        <xliff:g id="label" example="Room">%1$s</xliff:g>: <xliff:g id="content" example="201">%2$d</xliff:g>
-    </string>
-    <string name="label_float_content_format">
-        <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="content" example="3.00">%2$.2f</xliff:g>
-    </string>
-    <string name="label_with_count_format">
-        <xliff:g id="label" example="Cart">%1$s</xliff:g> (<xliff:g id="count" example="5">%2$d</xliff:g>)
-    </string>
+	    <xliff:g id="label" example="Name">%1$s</xliff:g>:
+	</string>
+	<string name="label_string_content_format">
+	    <xliff:g id="label" example="Name">%1$s</xliff:g>: <xliff:g id="content" example="John Smith">%2$s</xliff:g>
+	</string>
+	<string name="label_integer_content_format">
+	    <xliff:g id="label" example="Room">%1$s</xliff:g>: <xliff:g id="content" example="201">%2$d</xliff:g>
+	</string>
+	<string name="label_float_content_format">
+	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="content" example="3.00">%2$.2f</xliff:g>
+	</string>
+	<string name="label_with_count_format">
+	    <xliff:g id="label" example="Cart">%1$s</xliff:g> (<xliff:g id="count" example="5">%2$d</xliff:g>)
+	</string>
 
     <string name="dialog_sign_in">Acceder</string>
     <string name="dialog_sign_in_title">Acceder</string>
+    <string name="dialog_use_fingerprint">Utilizar huella digital para desbloquear</string>
+    <string name="dialog_use_fingerprint_summary">Permítame acceder con mi huella digital</string>
     <string name="dialog_stay_signed_in">Seguir conectado</string>
     <string name="dialog_username">Nombre de usuario</string>
     <string name="dialog_password">Contraseña</string>
@@ -102,15 +106,24 @@
     <string name="dialog_signed_in">Ya está conectado.</string>
     <string name="dialog_signed_out">Se ha cerrado la sesión.</string>
     <string name="dialog_idle_sign_out">Ha estado inactivo demasiado tiempo y se ha cerrado la sesión.</string>
+
+    <!-- Fingerprint Authentication -->
+    <string name="fingerprint_cancel">Anular</string>
+    <string name="fingerprint_use_password">Utilizar contraseña</string>
+    <string name="fingerprint_description">Confirme la huella digital para continuar</string>
+    <string name="fingerprint_hint">Sensor táctil</string>
+    <string name="fingerprint_not_recognized">Huella digital no reconocida. Intente de nuevo</string>
+    <string name="fingerprint_success">Huella digital reconocida</string>
+
     <string name="dialog_select_categories">Seleccionar categorías</string>
     <!-- Keep &#8230; as is to follow Android best practice of using the horizontal ellipse character -->
     <string name="dialog_re_authenticate">Autenticando nuevamente, por favor espere&#8230;</string>
-    <string name="dialog_continue">Continuar</string>
-    <string name="dialog_go_back">Regresar</string>
-    <string name="dialog_security_warning">Alerta de seguridad</string>
-    <string name="dialog_cert_warning_statement">"Hay problemas con el certificado de seguridad para este sitio."</string>
-    <string name="dialog_field_empty">El campo no puede estar vacío</string>
-    <string name="unauthorized_feature">No tiene permiso para usar esta característica.</string>
+	<string name="dialog_continue">Continuar</string>
+	<string name="dialog_go_back">Regresar</string>
+	<string name="dialog_security_warning">Alerta de seguridad</string>
+	<string name="dialog_cert_warning_statement">"Hay problemas con el certificado de seguridad para este sitio."</string>
+	<string name="dialog_field_empty">El campo no puede estar vacío</string>
+	<string name="unauthorized_feature">No tiene permiso para usar esta característica.</string>
 
     <string name="row_category_label">\u2022</string>  <!-- This is a bullet -->
     <string name="row_contact_label">Contacto:</string>
@@ -138,49 +151,49 @@
     <string name="loading_message">Cargando&#8230;</string>
 
     <string name="date_to_date_format">
-        <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> - <xliff:g id="endDate" example="10-12-14">%2$s</xliff:g>
-    </string>
-    <string name="date_all_day_event_format">
-        <xliff:g id="startDate" example="10-8-14">%s</xliff:g> Evento de todo el día
-    </string>
-    <string name="date_time_format">
-        <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="time" example="11:00 AM">%2$s</xliff:g>
-    </string>
-    <string name="date_time_to_time_format">
-        <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
-    </string>
-    <string name="date_time_to_date_time_format">
-        <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="12:00 PM">%2$s</xliff:g> - <xliff:g id="endDate" example="10-8-15">%3$s</xliff:g> <xliff:g id="endTime" example="12:00 PM">%4$s</xliff:g>
-    </string>
-    <string name="time_to_time_format">
-        <xliff:g id="startTime" example="11:00 AM">%1$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%2$s</xliff:g>
-    </string>
+	    <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> - <xliff:g id="endDate" example="10-12-14">%2$s</xliff:g>
+	</string>
+	<string name="date_all_day_event_format">
+	    <xliff:g id="startDate" example="10-8-14">%s</xliff:g> Evento de todo el día
+	</string>
+	<string name="date_time_format">
+	    <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="time" example="11:00 AM">%2$s</xliff:g>
+	</string>
+	<string name="date_time_to_time_format">
+	    <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
+	</string>
+	<string name="date_time_to_date_time_format">
+	    <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="12:00 PM">%2$s</xliff:g> - <xliff:g id="endDate" example="10-8-15">%3$s</xliff:g> <xliff:g id="endTime" example="12:00 PM">%4$s</xliff:g>
+	</string>
+	<string name="time_to_time_format">
+	    <xliff:g id="startTime" example="11:00 AM">%1$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%2$s</xliff:g>
+	</string>
 
-    <string name="default_first_last_name_format">
-        <xliff:g id="firstName" example="John">%1$s</xliff:g> <xliff:g id="lastName" example="Smith">%2$s</xliff:g>
-    </string>
-    <string name="default_last_name_first_initial_format">
-        <xliff:g id="lastName" example="Smith">%1$s</xliff:g>, <xliff:g id="firstInitial" example="J">%2$s</xliff:g>
-    </string>
-    <string name="default_course_section_format">
-        <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g>
-    </string>
-    <string name="default_course_section_title_format">
-        <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g> - <xliff:g id="sectionTitle" example="American History">%3$s</xliff:g>
-    </string>
-    <string name="default_building_and_room_format">
-        <xliff:g id="buildingName" example="Main Hall">%1$s</xliff:g>, <xliff:g id="roomNumber" example="122">%2$s</xliff:g>
-    </string>
-    <string name="default_meeting_days_and_times_format">
-        <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
-    </string>
-    <string name="default_meeting_days_times_and_type_format">
-        <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g> | <xliff:g id="meetingType" example="Lab">%4$s</xliff:g>
-    </string>
-    <string name="default_two_string_separator_format">
-        <xliff:g id="string" example="stringOne">%1$s</xliff:g> | <xliff:g id="string" example="stringTwo">%2$s</xliff:g>
-    </string>
-    <string name="default_phone_with_extension_format">
+	<string name="default_first_last_name_format">
+	    <xliff:g id="firstName" example="John">%1$s</xliff:g> <xliff:g id="lastName" example="Smith">%2$s</xliff:g>
+	</string>
+	<string name="default_last_name_first_initial_format">
+	    <xliff:g id="lastName" example="Smith">%1$s</xliff:g>, <xliff:g id="firstInitial" example="J">%2$s</xliff:g>
+	</string>
+	<string name="default_course_section_format">
+	    <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g>
+	</string>
+	<string name="default_course_section_title_format">
+	    <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g> - <xliff:g id="sectionTitle" example="American History">%3$s</xliff:g>
+	</string>
+	<string name="default_building_and_room_format">
+	    <xliff:g id="buildingName" example="Main Hall">%1$s</xliff:g>, <xliff:g id="roomNumber" example="122">%2$s</xliff:g>
+	</string>
+	<string name="default_meeting_days_and_times_format">
+	    <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
+	</string>
+	<string name="default_meeting_days_times_and_type_format">
+	    <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g> | <xliff:g id="meetingType" example="Lab">%4$s</xliff:g>
+	</string>
+	<string name="default_two_string_separator_format">
+	    <xliff:g id="string" example="stringOne">%1$s</xliff:g> | <xliff:g id="string" example="stringTwo">%2$s</xliff:g>
+	</string>
+	<string name="default_phone_with_extension_format">
         <xliff:g id="phoneNumber" example="123-123-1234">%1$s</xliff:g> ext. <xliff:g id="phoneExtension" example="7890">%2$s</xliff:g>
     </string>
 
@@ -244,11 +257,19 @@
     <string name="course_events">Eventos</string>
     <string name="course_details_no_directory">No hay módulo de directorio instalado</string>
     <string name="course_details_no_maps">No hay módulo de mapas instalado</string>
+    <string name="course_details_no_faculty">No hay instructores asignados</string>
+    <string name="course_details_no_meetings">No hay horas de reunión indicadas</string>
     <string name="course_assignments_no_assignments">No hay asignaciones</string>
     <string name="course_assignments_due">Vencimiento:</string>
     <string name="course_assignments_none_assigned">Ninguno asignado</string>
     <string name="label_left_button">Botón izquierdo</string>
-    <string name="label_right_button">Botón derecho</string>
+	<string name="label_right_button">Botón derecho</string>
+    <string name="course_details_date_time">
+        <xliff:g id="dateString" example="12/16/2016 - 12/28/2016">%1$s</xliff:g> <xliff:g id="timeString" example="10:00 AM - 11:30 AM">%2$s</xliff:g>
+    </string>
+    <string name="course_details_date_time_type">
+        <xliff:g id="dateAndTime" example="12/16/2016 - 12/28/2016 10:00 AM - 11:30 AM">%1$s</xliff:g> | <xliff:g id="instructionalType" example="TR">%2$s</xliff:g>
+    </string>
 
     <!-- Directory -->
 
@@ -319,11 +340,19 @@
     <string name="ilp_events_none_today">No hay eventos programados para hoy</string>
     <string name="ilp_announcements_none_today">No hay anuncios para hoy</string>
 
+    <!-- Location Awareness -->
+    <string name="title_activity_launchModule">Lanzar módulo</string>
+    <string name="location_permissions_title">Acceso a ubicación desactivado</string>
+    <string name="location_permissions_message">Los servicios de ubicación se utilizan en su institución para prevenirle cuando está cerca de servicios o información específica a la ubicación. Por favor permita el acceso a la ubicación en los ajustes de su aparato.</string>
+    <string name="bluetooth_permissions_title">Bluetooth desactivado</string>
+    <string name="bluetooth_permissions_message">El Bluetooth se utiliza en su institución para prevenirle cuando está cerca de servicios o información específica a la ubicación. Por favor active el Bluetooth en los ajustes de su aparato.</string>
+    <string name="location_notification_action_mute">Silenciar para siempre</string>
+    <string name="location_notification_action_mute_for_today">Silenciar hoy</string>
 
     <!-- Maps -->
 
     <string name="title_activity_maps">Mapas</string>
-    <string name="maps_campus_selection_title">Elegir campus</string>
+    <string name="maps_campus_selection_title">Seleccionar campus</string>
     <string name="maps_get_directions_label">Indicaciones</string>
     <string name="maps_show_details_label">Mostrar detalles</string>
     <string name="maps_map_view_label">Vista de mapa</string>
@@ -335,7 +364,6 @@
     <string name="maps_show_map">Mapa</string>
     <string name="maps_building_image_label">Imagen de edificio</string>
     <string name="maps_no_buildings_message">No hay edificios a desplegar.</string>
-    <string name="maps_blank"></string>
     <string name="search_results_label">Resultados de búsqueda</string>
     <string name="searchable_buildings_hint">Buscar edificios</string>
     <string name="searchable_buildings_label">Buscar edificios</string>
@@ -345,11 +373,8 @@
     <string name="maps_type_satellite">Satélite</string>
     <string name="maps_type_terrain">Relieve</string>
     <string name="legal">Legal</string>
-    <string name="maps_feature_not_supported">Característica no soportada por este dispositivo.</string>
     <string name="maps_building_additional_services_label">Servicios adicionales:</string>
-    <string name="maps_storage_alert_title">Permiso solicitado</string>
-    <string name="maps_storage_alert_message">Para usar mapas en esta aplicación, el API de mapas requiere acceso a los datos con base en los mapas de su dispositivo. Por favor habilite los ajustes de "Almacenamiento"</string>
-    <string name="maps_storage_not_granted">No se despliegan mapas sin permiso de almacenamiento para esta aplicación.</string>
+    <string name="maps_enable_location_services">Active los servicios de ubicación para definir su ubicación</string>
 
     <!-- Multimedia -->
 
@@ -440,37 +465,52 @@
     <string name="registration_drop">Eliminar</string>
 
     <string name="registration_added_to_cart_success_format">
-        <xliff:g id="courseName" example="HIST-205">%1$s</xliff:g>-<xliff:g id="courseSectionNumber" example="01">%2$s</xliff:g> agregado al carrito.
-    </string>
+	    <xliff:g id="courseName" example="HIST-205">%1$s</xliff:g>-<xliff:g id="courseSectionNumber" example="01">%2$s</xliff:g> agregado al carrito.
+	</string>
     <string name="registration_added_to_cart_failed_format">
         <xliff:g id="courseName" example="HIST-205">%1$s</xliff:g>-<xliff:g id="courseSectionNumber" example="01">%2$s</xliff:g> falló al agregar al carrito. Faltan datos o la sección ya existe en el carrito.
     </string>
     <string name="registration_row_credits_format">
-        <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g>
-    </string>
-    <string name="registration_row_credits_with_type_format">
-        <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g> | <xliff:g id="creditType" example="Audit">%3$s</xliff:g>
-    </string>
+	    <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g>
+	</string>
+	<string name="registration_row_credits_with_type_format">
+	    <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g> | <xliff:g id="creditType" example="Audit">%3$s</xliff:g>
+	</string>
     <string name="registration_row_credits_min_max_format">
-        <xliff:g id="minimumCredits" example="1.0">%1$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%3$s</xliff:g>
-    </string>
-    <string name="registration_label_credits_with_ceus_format">
-        <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="credits" example="3.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="CEUs">%3$s</xliff:g>
-    </string>
-    <string name="registration_label_credits_min_max_format">
-        <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="minimumCredits" example="1.0">%2$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%3$.2f</xliff:g>
-    </string>
+	    <xliff:g id="minimumCredits" example="1.0">%1$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%3$s</xliff:g>
+	</string>
+	<string name="registration_label_credits_with_ceus_format">
+	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="credits" example="3.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="CEUs">%3$s</xliff:g>
+	</string>
+	<string name="registration_label_credits_min_max_format">
+	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="minimumCredits" example="1.0">%2$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%3$.2f</xliff:g>
+	</string>
     <string name="available_seats">Lugares disponibles:</string>
     <string name="remaining_capacity">
-        <xliff:g id="remaining" example="15">%1$s</xliff:g>/<xliff:g id="capacity" example="30">%2$s</xliff:g>
+	    <xliff:g id="remaining" example="15">%1$d</xliff:g>/<xliff:g id="capacity" example="30">%2$d</xliff:g>
     </string>
+    <string name="registration_approval_required">Aprobación de docente requerida</string>
+    <string name="registration_auth_code">Código de autorización</string>
+    <string name="registration_auth_code_dialog_title">Ingrese su código de autorización.</string>
 
+    <!-- Settings Module -->
 
-    <!-- Versioning -->
-    <string name="version_upgrade">Actualización</string>
-    <string name="version_outdated">Obsoleto</string>
-    <string name="version_outdated_message">Una nueva versión está disponible.</string>
-    <string name="version_force_upgrade_message">Debe actualizar la aplicación a la versión más reciente.</string>
+    <string name="title_activity_settings">Ajustes</string>
+    <string name="settings_category_security">Seguridad</string>
+    <string name="settings_category_location">Detección de ubicación</string>
+    <string name="settings_reset_locations_title">Activar todas las ubicaciones</string>
+    <string name="settings_reset_locations_summary">Usted recibirá notificaciones en todas las ubicaciones</string>
+    <string name="settings_reset_locations_dialog_message">¿Está seguro? Usted recibirá notificaciones en todas las ubicaciones que tengan información o servicios asociados.</string>
+    <string name="settings_reset_locations_reset_button">Reiniciar</string>
+    <string name="settings_reset_locations_cancel_button">Anular</string>
+    <string name="settings_location_disabled_title">Acceso a ubicación desactivado</string>
+    <string name="settings_location_disabled_summary">Toque para activar habilitar ubicación</string>
+
+	<!-- Versioning -->
+	<string name="version_upgrade">Actualización</string>
+	<string name="version_outdated">Obsoleto</string>
+	<string name="version_outdated_message">Una nueva versión está disponible.</string>
+	<string name="version_force_upgrade_message">Debe actualizar la aplicación a la versión más reciente.</string>
 
     <!-- Widget -->
     <string name="widget_no_ilp">Asignaciones no están disponibles para su institución</string>

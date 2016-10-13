@@ -14,10 +14,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="0"
-        android:paddingLeft="4dp"
         android:paddingStart="4dp"
         android:paddingTop="2dp"
-        tools:ignore="NewApi,RtlSymmetry" />
+        tools:ignore="RtlSymmetry" />
     
     <EditText 
         android:id="@+id/input"
@@ -25,9 +24,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:inputType="text"
-        android:paddingLeft="4dp"
         android:paddingStart="4dp"
         android:paddingTop="2dp"
-        tools:ignore="NewApi,RtlSymmetry" />
+        tools:ignore="RtlSymmetry" />
 
 </LinearLayout>

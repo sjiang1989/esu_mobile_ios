@@ -7,11 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "EllucianUITableViewController.h"
 #import "DetailSelectionDelegate.h"
+#import "EllucianSectionedUITableViewController.h"
+#import "Ellucian_GO-Swift.h"
 
 @class Module;
-@interface RegistrationSearchResultsViewController : EllucianUITableViewController<UITableViewDataSource, UITableViewDelegate, UISplitViewControllerDelegate, UIAlertViewDelegate>
+@interface RegistrationSearchResultsViewController : EllucianUITableViewController <UITableViewDataSource, UITableViewDelegate, UISplitViewControllerDelegate, UITextFieldDelegate>
 
 @property (strong, nonatomic) Module *module;
 

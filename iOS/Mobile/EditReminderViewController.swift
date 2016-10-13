@@ -8,10 +8,10 @@
 
 import Foundation
 
-public class EditReminderViewController: UITableViewController, UIAlertViewDelegate, UIActionSheetDelegate {
+public class EditReminderViewController: UITableViewController {
     
     var reminderTitle : String?
-    var reminderDate : NSDate?
+    var reminderDate : Date?
     var reminderNotes : String?
     
     @IBOutlet var titleLabel: UILabel!
@@ -35,14 +35,14 @@ public class EditReminderViewController: UITableViewController, UIAlertViewDeleg
         if let date = reminderDate {
             datePicker.date = date
         }
-        eventStore.requestAccessToEntityType(.Reminder) {
+        eventStore.requestAccess(to: .reminder) {
             granted, error in
             if (granted) && (error == nil) {
                 self.selectedCalendar = self.eventStore.defaultCalendarForNewReminders()
                 self.didChangeCalendar()
             } else {
                 self.showPermissionNotGrantedAlert()
-                self.dismissViewControllerAnimated(true, completion: {});
+                self.dismiss(animated: true, completion: {});
             }
         };
         didChangeDate()
@@ -50,7 +50,7 @@ public class EditReminderViewController: UITableViewController, UIAlertViewDeleg
     }
     
     @IBAction func didChangeDate() {
-        dateLabel.text = NSDateFormatter.localizedStringFromDate(datePicker.date, dateStyle: .ShortStyle, timeStyle: .ShortStyle)
+        dateLabel.text = DateFormatter.localizedString(from: datePicker.date, dateStyle: .short, timeStyle: .short)
     }
     
     func didChangeCalendar() {
@@ -59,18 +59,18 @@ public class EditReminderViewController: UITableViewController, UIAlertViewDeleg
         }
     }
     
-    @IBAction func add(sender: AnyObject) {
-        eventStore.requestAccessToEntityType(.Reminder) {
+    @IBAction func add(_ sender: AnyObject) {
+        eventStore.requestAccess(to: .reminder) {
             granted, error in
             if granted {
                 let reminder:EKReminder = EKReminder(eventStore: self.eventStore)
                 reminder.title = self.titleLabel.text!
                 reminder.calendar = self.selectedCalendar!
                 
-                if self.reminderSwitch.on {
+                if self.reminderSwitch.isOn {
                     
-                    let calendar = NSCalendar.currentCalendar()
-                    let dueDateComponents = calendar.components([.Era, .Year, .Month, .Day, .Hour, .Minute, .Second] , fromDate: self.datePicker.date)
+                    let calendar = Calendar.current
+                    let dueDateComponents = calendar.dateComponents([.era, .year, .month, .day, .hour, .minute, .second] , from: self.datePicker.date)
                     reminder.dueDateComponents = dueDateComponents
                     let alarm:EKAlarm = EKAlarm(absoluteDate: self.datePicker.date)
                     reminder.alarms = [alarm]
@@ -78,38 +78,38 @@ public class EditReminderViewController: UITableViewController, UIAlertViewDeleg
                 reminder.notes = self.notesTextView.text
 
                 do {
-                    try self.eventStore.saveReminder(reminder, commit: true)
+                    try self.eventStore.save(reminder, commit: true)
                 } catch  {
                 }
-                self.dismissViewControllerAnimated(true, completion: {});
+                self.dismiss(animated: true, completion: {});
             } else {
                 self.showPermissionNotGrantedAlert()
             }
         }
     }
     
-    @IBAction func cancel(sender: AnyObject) {
-        self.dismissViewControllerAnimated(true, completion: {});
+    @IBAction func cancel(_ sender: AnyObject) {
+        self.dismiss(animated: true, completion: {});
     }
     
-    public override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        switch (indexPath.section, indexPath.row) {
+    public override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        switch ((indexPath as NSIndexPath).section, (indexPath as NSIndexPath).row) {
         case (1, 1):
-            tableView.deselectRowAtIndexPath(indexPath, animated: false)
+            tableView.deselectRow(at: indexPath, animated: false)
             toggleDatePicker()
         case (2, 0):
-            tableView.deselectRowAtIndexPath(indexPath, animated: false)
+            tableView.deselectRow(at: indexPath, animated: false)
             showCalendarList()
         default:
             ()
         }
     }
     
-    public override func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
-        if datePickerHidden && indexPath.section == 1 && indexPath.row == 2 {
+    public override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if datePickerHidden && (indexPath as NSIndexPath).section == 1 && (indexPath as NSIndexPath).row == 2 {
             return 0
         } else {
-            return super.tableView(tableView, heightForRowAtIndexPath: indexPath)
+            return super.tableView(tableView, heightForRowAt: indexPath)
         }
     }
     
@@ -121,8 +121,8 @@ public class EditReminderViewController: UITableViewController, UIAlertViewDeleg
         tableView.endUpdates()
     }
     
-    public override func tableView(tableView: UITableView, shouldHighlightRowAtIndexPath indexPath: NSIndexPath) -> Bool {
-        switch (indexPath.section, indexPath.row) {
+    public override func tableView(_ tableView: UITableView, shouldHighlightRowAt indexPath: IndexPath) -> Bool {
+        switch ((indexPath as NSIndexPath).section, (indexPath as NSIndexPath).row) {
         case (1, 1), (2, 0):
             return true
         default:
@@ -134,30 +134,24 @@ public class EditReminderViewController: UITableViewController, UIAlertViewDeleg
     private func showCalendarList() {
         
         
-        let alertController = UIAlertController(title: NSLocalizedString("Reminder List", comment: "title of reminder list alert picker"), message: NSLocalizedString("Select the name of the reminder list to use.", comment: "Title of the action sheet to select a reminder list to save the reminder"), preferredStyle: .ActionSheet)
+        let alertController = UIAlertController(title: NSLocalizedString("Reminder List", comment: "title of reminder list alert picker"), message: NSLocalizedString("Select the name of the reminder list to use.", comment: "Title of the action sheet to select a reminder list to save the reminder"), preferredStyle: .actionSheet)
         
-        let calendars = eventStore.calendarsForEntityType(.Reminder)
+        let calendars = eventStore.calendars(for: .reminder)
         for calendar in calendars {
-            let action = UIAlertAction(title: calendar.title, style: .Default) { value in
+            let action = UIAlertAction(title: calendar.title, style: .default) { value in
                 self.setCalendarWithName(value.title!)
             }
             alertController.addAction(action)
         }
-        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel"), style: .Cancel, handler: nil)
+        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel"), style: .cancel, handler: nil)
         alertController.addAction(cancelAction)
-        presentViewController(alertController, animated: true, completion: nil)
+        present(alertController, animated: true, completion: nil)
         
         
     }
     
-    public func actionSheet(actionSheet: UIActionSheet, clickedButtonAtIndex buttonIndex: Int) {
-        let calendarName = actionSheet.buttonTitleAtIndex(buttonIndex)
-        
-        setCalendarWithName(calendarName!)
-    }
-    
-    private func setCalendarWithName(calendarName: String) {
-        let calendars = eventStore.calendarsForEntityType(.Reminder)
+    private func setCalendarWithName(_ calendarName: String) {
+        let calendars = eventStore.calendars(for: .reminder)
         let filteredCalendars = calendars.filter({ (calendar: AnyObject) -> Bool in
             return calendar.title == calendarName
         })
@@ -170,21 +164,21 @@ public class EditReminderViewController: UITableViewController, UIAlertViewDeleg
     private func showPermissionNotGrantedAlert() {
         
         
-        let alertController = UIAlertController(title: NSLocalizedString("Permission not granted", comment: "Permission not granted title"), message: NSLocalizedString("You must give permission in Settings to allow access", comment: "Permission not granted message"), preferredStyle: .Alert)
+        let alertController = UIAlertController(title: NSLocalizedString("Permission not granted", comment: "Permission not granted title"), message: NSLocalizedString("You must give permission in Settings to allow access", comment: "Permission not granted message. Settings application is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages"), preferredStyle: .alert)
         
         
-        let settingsAction = UIAlertAction(title: NSLocalizedString("Settings", comment: "Settings application name"), style: .Default) { value in
-            let settingsUrl = NSURL(string: UIApplicationOpenSettingsURLString)
+        let settingsAction = UIAlertAction(title: NSLocalizedString("Settings", comment: "Settings application name. This is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages"), style: .default) { value in
+            let settingsUrl = URL(string: UIApplicationOpenSettingsURLString)
             if let url = settingsUrl {
-                UIApplication.sharedApplication().openURL(url)
+                UIApplication.shared.openURL(url)
             }
         }
-        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel"), style: .Default, handler: nil)
+        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel"), style: .default, handler: nil)
         alertController.addAction(settingsAction)
         alertController.addAction(cancelAction)
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
             () -> Void in
-            self.presentViewController(alertController, animated: true, completion: nil)
+            self.present(alertController, animated: true, completion: nil)
             
         }
         

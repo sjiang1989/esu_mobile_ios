@@ -4,6 +4,9 @@
 
 package com.ellucian.mobile.android.util;
 
+import android.util.Base64;
+
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
@@ -23,17 +26,40 @@ import javax.crypto.spec.SecretKeySpec;
 
 
 public class Encrypt {
-	
-    public static String encrypt(String seed, String cleartext) throws Exception {
-        byte[] rawKey = getRawKey(seed.getBytes());
-        byte[] result = encrypt(rawKey, cleartext.getBytes());
-        return toHex(result);
+
+    public static String encrypt(SecretKey key, String cleartext) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encrypted = cipher.doFinal(cleartext.getBytes());
+        return toHex(encrypted);
     }
 
-    public static String decrypt(String seed, String encrypted) throws Exception {
-        byte[] rawKey = getRawKey(seed.getBytes());
+    public static String decrypt(SecretKey key, String encrypted) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] decrypted = cipher.doFinal(toByte(encrypted));
+        return new String(decrypted);
+    }
+
+    /*
+    http://android-developers.blogspot.com/2013/02/using-cryptography-to-store-credentials.html
+     */
+    public static SecretKey generateKey() throws NoSuchAlgorithmException {
+        // Generate a 256-bit key
+        final int outputKeyLength = 256;
+
+        SecureRandom secureRandom = new SecureRandom();
+        // Do *not* seed secureRandom! Automatically seeded from system entropy.
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(outputKeyLength, secureRandom);
+        SecretKey key = keyGenerator.generateKey();
+        return key;
+    }
+
+    public static String legacyDecrypt(String encrypted) throws Exception {
+        byte[] rawKey = getRawKey("userMaster".getBytes());
         byte[] enc = toByte(encrypted);
-        byte[] result = decrypt(rawKey, enc);
+        byte[] result = legacyDecrypt(rawKey, enc);
         return new String(result);
     }
 
@@ -47,16 +73,7 @@ public class Encrypt {
     	return raw;
     }
 
-
-    private static byte[] encrypt(byte[] raw, byte[] clear) throws Exception {
-    	SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
-        byte[] encrypted = cipher.doFinal(clear);
-        return encrypted;
-    }
-
-    private static byte[] decrypt(byte[] raw, byte[] encrypted) throws Exception {
+    private static byte[] legacyDecrypt(byte[] raw, byte[] encrypted) throws Exception {
     	SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.DECRYPT_MODE, skeySpec);
@@ -64,9 +81,7 @@ public class Encrypt {
         return decrypted;
     }
 
-    public static String toHex(String txt) {
-        return toHex(txt.getBytes());
-    }		
+
     public static String fromHex(String hex) {
         return new String(toByte(hex));
     }
@@ -79,7 +94,16 @@ public class Encrypt {
         return result;
     }
 
-    private static String toHex(byte[] buf) {
+    public static String keyToString(SecretKey key) {
+        return Base64.encodeToString(key.getEncoded(), Base64.DEFAULT);
+    }
+
+    public static SecretKey stringToKey(String keyString) {
+        byte[] encodedKey = Base64.decode(keyString, Base64.DEFAULT);
+        return new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
+    }
+
+    public static String toHex(byte[] buf) {
         if (buf == null)
         	return "";
         StringBuffer result = new StringBuffer(2*buf.length);

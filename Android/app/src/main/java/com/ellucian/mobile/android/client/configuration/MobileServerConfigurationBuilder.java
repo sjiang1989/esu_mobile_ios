@@ -10,6 +10,7 @@ import android.util.Log;
 
 import com.ellucian.mobile.android.client.ContentProviderOperationBuilder;
 import com.ellucian.mobile.android.provider.EllucianContract;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import org.json.JSONException;
@@ -37,10 +38,10 @@ public class MobileServerConfigurationBuilder extends ContentProviderOperationBu
         try {
             // Add Mobile Server's last updated date and codebase version as user preferences
             if (jsonConfiguration.has("lastUpdated")) {
-                Utils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_LAST_UPDATE, jsonConfiguration.getString("lastUpdated"));
+                PreferencesUtils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_LAST_UPDATE, jsonConfiguration.getString("lastUpdated"));
             }
             if (jsonConfiguration.has("codebaseVersion")) {
-                Utils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.MOBILESERVER_CODEBASE_VERSION, jsonConfiguration.getString("codebaseVersion"));
+                PreferencesUtils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.MOBILESERVER_CODEBASE_VERSION, jsonConfiguration.getString("codebaseVersion"));
             }
 
             // Additional Directory Info to be saved to content provider

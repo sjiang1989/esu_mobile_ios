@@ -31,6 +31,7 @@ import com.ellucian.mobile.android.client.services.CoursesFullScheduleIntentServ
 import com.ellucian.mobile.android.courses.CoursesTabListener;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseTerms;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.util.ArrayList;
 
@@ -51,13 +52,13 @@ public class CoursesFullScheduleActivity extends EllucianActivity {
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-        tabLayout.setSelectedTabIndicatorColor(Utils.getColorHelper(this, R.color.tab_indicator_color));
+        tabLayout.setSelectedTabIndicatorColor(VersionSupportUtils.getColorHelper(this, R.color.tab_indicator_color));
 
         TabLayout.Tab dailyView =  tabLayout.newTab().setText(R.string.courses_menu_daily_schedule);
         TabLayout.Tab fullView =  tabLayout.newTab().setText(R.string.courses_menu_full_schedule);
         tabLayout.addTab(dailyView, CoursesTabListener.DAILY_VIEW_TAB_INDEX, false);
         tabLayout.addTab(fullView, CoursesTabListener.FULL_VIEW_TAB_INDEX, true);
-        tabLayout.setOnTabSelectedListener(new CoursesTabListener(this, getIntent()));
+        tabLayout.addOnTabSelectedListener(new CoursesTabListener(this, getIntent()));
 
         viewPager = (ViewPager) findViewById(R.id.courses_full_schedule_pager);
 
@@ -102,12 +103,12 @@ public class CoursesFullScheduleActivity extends EllucianActivity {
             LoaderManager.LoaderCallbacks<Cursor> {
 		ArrayList<String> lists = new ArrayList<>();
 		ArrayList<Fragment> fragments = new ArrayList<>();
+		private boolean justInitialized;
 
 		public TabAdapter(FragmentManager fragmentManager) {
 			super(fragmentManager);
-
+			justInitialized = true;
 			CoursesFullScheduleActivity.this.getSupportLoaderManager().initLoader(0, null, this);
-
 		}
 
 		@Override
@@ -133,7 +134,7 @@ public class CoursesFullScheduleActivity extends EllucianActivity {
 
 		@Override
 		public void onLoadFinished(Loader<Cursor> arg0, Cursor c) {
-			if (c.moveToFirst()) {
+			if (c.moveToFirst() && !justInitialized) {
 				lists = new ArrayList<>();
 				fragments = new ArrayList<>();
 				do {
@@ -158,13 +159,13 @@ public class CoursesFullScheduleActivity extends EllucianActivity {
             tabLayout.setVisibility(View.VISIBLE);
             tabLayout.setupWithViewPager(viewPager);
             tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-            tabLayout.setSelectedTabIndicatorColor(Utils.getColorHelper(CoursesFullScheduleActivity.this, R.color.transparent));
+            tabLayout.setSelectedTabIndicatorColor(VersionSupportUtils.getColorHelper(CoursesFullScheduleActivity.this, R.color.transparent));
+			justInitialized = false;
 
         }
 
 		@Override
 		public void onLoaderReset(Loader<Cursor> arg0) {
-
 		}
 	}
 
@@ -199,11 +200,11 @@ public class CoursesFullScheduleActivity extends EllucianActivity {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Utils.hideProgressIndicator(activity);
             boolean updated = intent.getBooleanExtra(CoursesFullScheduleIntentService.PARAM_OUT_DATABASE_UPDATED, false);
             Log.d("FullScheduleReceiver", "onReceive: database updated = " + updated);
             if(updated) {
                 Log.d("FullScheduleReceiver.onReceive", "Courses retrieved and database updated");
-                Utils.hideProgressIndicator(activity);
             }
         }
 

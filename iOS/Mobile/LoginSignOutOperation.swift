@@ -8,10 +8,10 @@
 
 import UIKit
 
-class LoginSignOutOperation: NSOperation {
+class LoginSignOutOperation: Operation {
 
     override func main() {
-        CurrentUser.sharedInstance().logout(true)
-        NSNotificationCenter.defaultCenter().postNotificationName(kSignInReturnToHomeNotification, object: nil)
+        CurrentUser.sharedInstance.logout( true)
+        NotificationCenter.default.post(name: CurrentUser.SignInReturnToHomeNotification, object: nil)
     }
 }

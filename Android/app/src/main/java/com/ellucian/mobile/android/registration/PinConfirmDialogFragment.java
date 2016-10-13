@@ -1,11 +1,12 @@
-// Copyright 2014 Ellucian Company L.P and its affiliates.
+// Copyright 2014-2016 Ellucian Company L.P and its affiliates.
 
 package com.ellucian.mobile.android.registration;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -31,7 +32,7 @@ public class PinConfirmDialogFragment extends EllucianDialogFragment {
 	public String action;
 	
 	@Override
-	public void onAttach(Activity activity) {
+	public void onAttach(Context activity) {
 		super.onAttach(activity);
 		try {
 			registrationActivity = (RegistrationActivity) activity;
@@ -46,7 +47,9 @@ public class PinConfirmDialogFragment extends EllucianDialogFragment {
 		setRetainInstance(true);
 	}
 
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
+	@Override
+    @NonNull
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());
 
@@ -55,8 +58,8 @@ public class PinConfirmDialogFragment extends EllucianDialogFragment {
 		final Button okButton = (Button) mainLayout.findViewById(R.id.ok_button);
 		final Button cancelButton = (Button) mainLayout.findViewById(R.id.cancel_button);
 		final LinearLayout rowsContainer = (LinearLayout) mainLayout.findViewById(R.id.pin_rows_layout);
-		final List<TextView> labelViews = new ArrayList<TextView>();
-		final List<EditText> inputViews = new ArrayList<EditText>();
+		final List<TextView> labelViews = new ArrayList<>();
+		final List<EditText> inputViews = new ArrayList<>();
 		
 		
 		title.setText(R.string.registration_dialog_pin_message);
@@ -80,7 +83,7 @@ public class PinConfirmDialogFragment extends EllucianDialogFragment {
 
 			@Override
 			public void onClick(View v) {
-				HashMap<String, String> pinMap = new HashMap<String, String>();
+				HashMap<String, String> pinMap = new HashMap<>();
 				
 				
 				for (int i = 0; i < inputViews.size(); i ++) {

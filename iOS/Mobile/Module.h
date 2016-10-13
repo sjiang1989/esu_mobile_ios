@@ -22,6 +22,7 @@
 @property (nonatomic, retain) NSSet *properties;
 @property (nonatomic, retain) NSSet *roles;
 @property (nonatomic, retain) NSNumber * homeScreenOrder;
+@property (nonatomic) BOOL displayInMenu;
 @end
 
 @interface Module (CoreDataGeneratedAccessors)

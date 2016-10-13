@@ -8,11 +8,11 @@
 
 import Foundation
 
-class ILPAssignmentsFetchOperation: NSOperation {
+class ILPAssignmentsFetchOperation: Operation {
     private let internalKey: String
     private let url: String
     
-    var assignments: [[String: AnyObject]] = []
+    var assignments: [[String: Any]] = []
     
     init(internalKey: String, url: String) {
         self.internalKey = internalKey
@@ -22,17 +22,17 @@ class ILPAssignmentsFetchOperation: NSOperation {
     override func main() {
 
         // ensure user is logged in
-        if CurrentUser.sharedInstance().isLoggedIn {
+        if CurrentUser.sharedInstance.isLoggedIn {
             // load assignments from server
-            AssignmentsFetcher.fetch(CoreDataManager.shared.managedObjectContext, url: self.url)
+            AssignmentsFetcher.fetch(CoreDataManager.sharedInstance.managedObjectContext, url: self.url)
             
-            let request = NSFetchRequest(entityName: "CourseAssignment")
+            let request = NSFetchRequest<CourseAssignment>(entityName: "CourseAssignment")
             request.sortDescriptors = [NSSortDescriptor(key: "dueDate", ascending: true)]
             
             do {
-                let assignmentModels = try CoreDataManager.shared.managedObjectContext.executeFetchRequest(request)
-                for assignment in assignmentModels as! [CourseAssignment] {
-                    var assignmentDictionary: [String: AnyObject] = [:]
+                let assignmentModels = try CoreDataManager.sharedInstance.managedObjectContext.fetch(request)
+                for assignment in assignmentModels {
+                    var assignmentDictionary: [String: Any] = [:]
                     if (assignment.sectionId != nil) {
                         assignmentDictionary["sectionId"] = assignment.sectionId
                     }
@@ -58,7 +58,7 @@ class ILPAssignmentsFetchOperation: NSOperation {
                     assignments.append(assignmentDictionary)
                 }
             } catch {
-                NSLog("Unable to query Assignments")
+                print("Unable to query Assignments")
             }
         }
     }

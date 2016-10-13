@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -13,9 +13,9 @@
         style="@style/sectionHeaderStyle"
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:singleLine="true"
         android:textIsSelectable="false"
-        android:visibility="gone"/>
+        android:visibility="gone"
+        android:maxLines="1" />
 
 
     <LinearLayout
@@ -29,7 +29,7 @@
             style="@style/newsEventsListTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:singleLine="true"
+            android:maxLines="1"
             android:textIsSelectable="false"/>
 
         <LinearLayout
@@ -69,7 +69,6 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:singleLine="false"
             android:textIsSelectable="false"/>
 
         <TextView

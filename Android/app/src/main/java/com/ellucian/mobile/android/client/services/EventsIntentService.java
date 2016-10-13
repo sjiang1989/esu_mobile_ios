@@ -53,15 +53,16 @@ public class EventsIntentService extends IntentService {
 				}
 				Log.d("EventsIntentService", "Batch executed.");
 				
-				LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
-				Intent broadcastIntent = new Intent();
-				broadcastIntent.setAction(ACTION_FINISHED);
-				broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
-				bm.sendBroadcast(broadcastIntent);
 			}
 		} else {
 			Log.d("EventsIntentService", "Response Object was null");
 		}
-	}
+
+        LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_FINISHED);
+        broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
+        bm.sendBroadcast(broadcastIntent);
+    }
 
 }

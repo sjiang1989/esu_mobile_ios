@@ -22,7 +22,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:singleLine="true"
             android:maxLines="1"
             android:ellipsize="end"
             android:textAppearance="?android:attr/textAppearanceMedium" />
@@ -36,7 +35,6 @@
             android:ellipsize="none"
             android:maxLines="1"
             android:clickable="true"
-            android:paddingLeft="3dp"
             android:paddingStart="3dp"
             android:paddingTop="3dp"/>
 
@@ -54,7 +52,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:singleLine="true"
             android:maxLines="1"
             android:ellipsize="end" />
 
@@ -72,7 +69,6 @@
             android:text="@string/ilp_remind_me"
             android:visibility="gone"
             android:clickable="true"
-            android:drawableRight="@drawable/icon_reminder"
             android:drawableEnd="@drawable/icon_reminder"
             android:drawablePadding="4dp"/>
 

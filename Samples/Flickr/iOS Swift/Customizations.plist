@@ -12,6 +12,10 @@
 	<string>https://mobile.elluciancloud.com/mobilecloud/api/applicationConfigurationByName</string>
 	<key>Allow Switch School</key>
 	<true/>
+	<key>App Group</key>
+	<string></string>
+	<key>URL Scheme</key>
+	<string></string>
 	<key>Custom Modules</key>
 	<dict>
 		<key>flickr</key>
@@ -21,17 +25,17 @@
 				<key>apiKey</key>
 				<string></string>
 			</dict>
-			<key>iPhone Storyboard Name</key>
-			<string>SwiftFlickrStoryboard_iPhone</string>
-			<key>iPad Storyboard Name</key>
-			<string>SwiftFlickrStoryboard_iPad</string>
-			<key>iPad Storyboard Identifier</key>
-			<string>flickr</string>
-			<key>iPhone Storyboard Identifier</key>
+			<key>Storyboard Name</key>
+			<string>SwiftFlickrStoryboard</string>
+			<key>Storyboard Identifier</key>
 			<string>flickr</string>
 			<key>Needs Authentication</key>
 			<false/>
 		</dict>
 	</dict>
+	<key>Watch Menu Title</key>
+	<string>Ellucian GO</string>
+	<key>iOS Application Name</key>
+	<string>Ellucian GO</string>
 </dict>
 </plist>

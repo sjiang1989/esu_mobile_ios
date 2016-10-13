@@ -12,7 +12,7 @@ class NotificationsEmptyViewController : UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.navigationController?.topViewController?.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem()
+        self.navigationController?.topViewController?.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
         self.navigationController?.topViewController?.navigationItem.leftItemsSupplementBackButton = true
     }
 }

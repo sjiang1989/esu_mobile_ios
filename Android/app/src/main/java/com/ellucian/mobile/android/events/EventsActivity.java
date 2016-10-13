@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.events;
@@ -22,7 +22,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
-import android.text.Html;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -45,7 +45,9 @@ import com.ellucian.mobile.android.provider.EllucianContract.EventsCategories;
 import com.ellucian.mobile.android.provider.EllucianContract.Modules;
 import com.ellucian.mobile.android.provider.EllucianDatabase;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -149,7 +151,7 @@ public class EventsActivity extends EllucianActivity implements LoaderManager.Lo
     private void handleIntent(Intent intent) {
     	resetListPosition = false;
   
-        String categoriesString = Utils.getStringFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, "");
+        String categoriesString = PreferencesUtils.getStringFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, "");
         if (!TextUtils.isEmpty(categoriesString)) {
         	filteredCategories = categoriesString.split(",");
         } else {
@@ -193,9 +195,9 @@ public class EventsActivity extends EllucianActivity implements LoaderManager.Lo
 	        	}
 	        	categoriesString.append(filteredCategories[i]);
 	        }
-	        Utils.addStringToPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, categoriesString.toString());
+	        PreferencesUtils.addStringToPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, categoriesString.toString());
     	} else {
-	        Utils.removeValuesFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES);
+	        PreferencesUtils.removeValuesFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES);
     	}
     	
     	if (dialogFragment != null) {
@@ -469,7 +471,7 @@ public class EventsActivity extends EllucianActivity implements LoaderManager.Lo
                             .replaceAll("<br>", "")
                             .replaceAll("<br/>", "")
                             .replaceAll("</br>", "");
-                    String asHtml = Html.fromHtml((String) description).toString();
+                    Spanned asHtml = VersionSupportUtils.fromHtml(description);
                     ((TextView) view).setText(asHtml);
                 } else {
                     ((TextView) view).setText(null);
@@ -525,11 +527,11 @@ public class EventsActivity extends EllucianActivity implements LoaderManager.Lo
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Utils.hideProgressIndicator(activity);
             boolean updated = intent.getBooleanExtra(EventsIntentService.PARAM_OUT_DATABASE_UPDATED, false);
             Log.d("EventsIntentServiceReceiver", "onReceive: database updated = " + updated);
             if (updated) {
                 Log.d("EventsIntentServiceReceiver.onReceive", "All events retrieved and database updated");
-                Utils.hideProgressIndicator(activity);
             }
         }
 

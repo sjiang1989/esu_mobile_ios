@@ -13,8 +13,8 @@ import UIKit
 class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelegate, NSFetchedResultsControllerDelegate
 {
     var assignmentTableView: UITableView!
-    var assignmentController: NSFetchedResultsController?
-    var myDatetimeOutputFormatter: NSDateFormatter?
+    var assignmentController: NSFetchedResultsController<CourseAssignment>?
+    var myDatetimeOutputFormatter: DateFormatter?
     var assignmentTableHeightConstraint: NSLayoutConstraint!
     var assignmentTableWidthConstraint: NSLayoutConstraint!
     var module: Module!
@@ -24,7 +24,7 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
     var todayGreen:UIColor?
     var lightGray:UIColor?
     
-    init(tableView: UITableView, resultsController: NSFetchedResultsController, heightConstraint: NSLayoutConstraint, widthConstraint: NSLayoutConstraint, parentModule:Module, viewController: ILPViewController) {
+    init(tableView: UITableView, resultsController: NSFetchedResultsController<CourseAssignment>, heightConstraint: NSLayoutConstraint, widthConstraint: NSLayoutConstraint, parentModule:Module, viewController: ILPViewController) {
         
         assignmentTableView = tableView
         assignmentController = resultsController
@@ -47,22 +47,22 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
     /* called first
     begins update to `UITableView`
     ensures all updates are animated simultaneously */
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         assignmentTableView.beginUpdates()
     }
 
     /* helper method to configure a `UITableViewCell`
     ask `NSFetchedResultsController` for the model */
-    func configureCell(cell: UITableViewCell,
-        atIndexPath indexPath: NSIndexPath) {
+    func configureCell(_ cell: UITableViewCell,
+        atIndexPath indexPath: IndexPath) {
             
-            let assignment = assignmentController!.objectAtIndexPath(indexPath) as! CourseAssignment
+            let assignment = assignmentController!.object(at: indexPath)
             let nameLabel = cell.viewWithTag(100) as! UILabel
             if assignment.name != nil {
                 nameLabel.text = assignment.name
             }
             
-            let sectionName = self.tableView(assignmentTableView, titleForHeaderInSection: indexPath.section)
+            let sectionName = self.tableView(assignmentTableView, titleForHeaderInSection: (indexPath as NSIndexPath).section)
             
             if sectionName == NSLocalizedString("OVERDUE", comment:"overdue assignment indicator for ilp module") {
                 nameLabel.textColor = overdueRed
@@ -72,7 +72,7 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
             
             if assignment.dueDate != nil {
                 if let assignmentDate = assignment.dueDate {
-                    dueDateLabel.text = self.datetimeOutputFormatter()!.stringFromDate(assignmentDate)
+                    dueDateLabel.text = self.datetimeOutputFormatter()!.string(from: assignmentDate)
                 } else {
                     dueDateLabel.text = ""
                 }
@@ -91,40 +91,40 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
     - when a new model is created
     - when an existing model is updated
     - when an existing model is deleted */
-    func controller(controller: NSFetchedResultsController,
-        didChangeObject object: AnyObject,
-        atIndexPath indexPath: NSIndexPath?,
-        forChangeType type: NSFetchedResultsChangeType,
-        newIndexPath: NSIndexPath?)  {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>,
+        didChange object: Any,
+        at indexPath: IndexPath?,
+        for type: NSFetchedResultsChangeType,
+        newIndexPath: IndexPath?)  {
             
             switch type {
-            case .Insert:
-                assignmentTableView.insertRowsAtIndexPaths([newIndexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Update:
-                let cell = self.assignmentTableView.cellForRowAtIndexPath(indexPath as NSIndexPath!)
-                configureCell(cell!, atIndexPath: indexPath as NSIndexPath!)
-                assignmentTableView.reloadRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Delete:
-                assignmentTableView.deleteRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
+            case .insert:
+                assignmentTableView.insertRows(at: [newIndexPath as IndexPath!], with: .fade)
+            case .update:
+                let cell = self.assignmentTableView.cellForRow(at: indexPath as IndexPath!)
+                configureCell(cell!, atIndexPath: indexPath as IndexPath!)
+                assignmentTableView.reloadRows(at: [indexPath as IndexPath!], with: .fade)
+            case .delete:
+                assignmentTableView.deleteRows(at: [indexPath as IndexPath!], with: .fade)
             default:
                 break
             }
     }
     
-    func controller(controller: NSFetchedResultsController,
-        didChangeSection sectionInfo: NSFetchedResultsSectionInfo,
-        atIndex sectionIndex: Int,
-        forChangeType type: NSFetchedResultsChangeType)
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>,
+        didChange sectionInfo: NSFetchedResultsSectionInfo,
+        atSectionIndex sectionIndex: Int,
+        for type: NSFetchedResultsChangeType)
     {
         switch(type) {
             
-        case .Insert:
-            assignmentTableView.insertSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
+        case .insert:
+            assignmentTableView.insertSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
             
-        case .Delete:
-            assignmentTableView.deleteSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
+        case .delete:
+            assignmentTableView.deleteSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
             
         default:
             break
@@ -133,7 +133,7 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
     
     /* called last
     tells `UITableView` updates are complete */
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         
         var totalRowHeight:CGFloat = 0.0
         
@@ -147,27 +147,25 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
 
         assignmentTableHeightConstraint.constant = totalRowHeight + (CGFloat(assignmentController!.sections!.count) * 30.0) + 50.0
         assignmentTableView.endUpdates()
-        
-        myViewController.showDetailForRequestedAssignment()
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        let cell = tableView.dequeueReusableCellWithIdentifier("Daily Assignment Cell", forIndexPath: indexPath) as UITableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Assignment Cell", for: indexPath) as UITableViewCell
         configureCell(cell, atIndexPath:indexPath)
         return cell
     }
     
-    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
     {
         return 50.0
     }
 
-    func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 30.0
     }
     
-    func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
         let headerView = UIView(frame: CGRect(x:0,y:0, width:assignmentTableWidthConstraint.constant, height:30.0))
         
@@ -176,16 +174,16 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
         constrainedView.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(constrainedView)
         
-        headerView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
-        headerView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
+        headerView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
+        headerView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
         
         
         
         let title = UILabel(frame:CGRect(x:0,y:0,width:assignmentTableWidthConstraint.constant, height:30.0))
-        title.font = UIFont.boldSystemFontOfSize(14)
+        title.font = UIFont.boldSystemFont(ofSize: 14)
         title.numberOfLines = 1;
-        title.lineBreakMode = NSLineBreakMode.ByTruncatingTail
-        title.textAlignment = NSTextAlignment.Left
+        title.lineBreakMode = NSLineBreakMode.byTruncatingTail
+        title.textAlignment = NSTextAlignment.left
         title.text = self.tableView(tableView, titleForHeaderInSection: section)
         
         if title.text == NSLocalizedString("OVERDUE", comment:"overdue assignment indicator for ilp module") {
@@ -200,8 +198,8 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
         title.translatesAutoresizingMaskIntoConstraints = false
         constrainedView.addSubview(title)
         
-        constrainedView.addConstraint(NSLayoutConstraint(item:title, attribute:NSLayoutAttribute.CenterY, relatedBy:NSLayoutRelation.Equal, toItem:constrainedView,
-            attribute:NSLayoutAttribute.CenterY, multiplier:1.0, constant:0.0))
+        constrainedView.addConstraint(NSLayoutConstraint(item:title, attribute:NSLayoutAttribute.centerY, relatedBy:NSLayoutRelation.equal, toItem:constrainedView,
+            attribute:NSLayoutAttribute.centerY, multiplier:1.0, constant:0.0))
         
         if title.text == NSLocalizedString("OVERDUE", comment:"overdue assignment indicator for ilp module") {
             let warningIcon:UIImage! = UIImage(named: "ilp-overdue-warning")
@@ -210,18 +208,18 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
             imageView.translatesAutoresizingMaskIntoConstraints = false
             constrainedView.addSubview(imageView)
             
-            constrainedView.addConstraint(NSLayoutConstraint(item:imageView, attribute:NSLayoutAttribute.CenterY, relatedBy:NSLayoutRelation.Equal, toItem:constrainedView, attribute:NSLayoutAttribute.CenterY, multiplier:1.0, constant:0.0))
-            constrainedView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-10-[warning]", options: NSLayoutFormatOptions.AlignAllCenterY, metrics: nil, views: ["warning" : imageView]))
-            constrainedView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("[warning]-10-[label]", options: NSLayoutFormatOptions.AlignAllCenterY, metrics: nil, views: ["warning":imageView, "label" : title]))
-            constrainedView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("[label]->=10-|", options: NSLayoutFormatOptions.AlignAllCenterY, metrics: nil, views: ["label" : title]))
+            constrainedView.addConstraint(NSLayoutConstraint(item:imageView, attribute:NSLayoutAttribute.centerY, relatedBy:NSLayoutRelation.equal, toItem:constrainedView, attribute:NSLayoutAttribute.centerY, multiplier:1.0, constant:0.0))
+            constrainedView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-10-[warning]", options: NSLayoutFormatOptions.alignAllCenterY, metrics: nil, views: ["warning" : imageView]))
+            constrainedView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "[warning]-10-[label]", options: NSLayoutFormatOptions.alignAllCenterY, metrics: nil, views: ["warning":imageView, "label" : title]))
+            constrainedView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "[label]->=10-|", options: NSLayoutFormatOptions.alignAllCenterY, metrics: nil, views: ["label" : title]))
         } else {
-            constrainedView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-10-[label]-10-|", options: NSLayoutFormatOptions.AlignAllCenterY, metrics: nil, views: ["label" : title]))
+            constrainedView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-10-[label]-10-|", options: NSLayoutFormatOptions.alignAllCenterY, metrics: nil, views: ["label" : title]))
         }
         
         return headerView
     }
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         let numberOfSections = assignmentController!.sections?.count
         
         if numberOfSections == 0 {
@@ -233,13 +231,13 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
         return numberOfSections!
     }
     
-     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         let numberOfRowsInSection = assignmentController!.sections?[section].numberOfObjects
         
         return numberOfRowsInSection!
     }
         
-     func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         if let sections = assignmentController!.sections {
             return sections[section].name
         } else {
@@ -247,12 +245,12 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
         }
     }
     
-    func datetimeOutputFormatter() -> NSDateFormatter? {
+    func datetimeOutputFormatter() -> DateFormatter? {
         
         if (myDatetimeOutputFormatter == nil) {
-            myDatetimeOutputFormatter = NSDateFormatter()
-            myDatetimeOutputFormatter!.timeStyle = .ShortStyle
-            myDatetimeOutputFormatter!.dateStyle = .ShortStyle
+            myDatetimeOutputFormatter = DateFormatter()
+            myDatetimeOutputFormatter!.timeStyle = .short
+            myDatetimeOutputFormatter!.dateStyle = .short
         }        
         return myDatetimeOutputFormatter
     }
@@ -265,28 +263,28 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
             constrainedView.translatesAutoresizingMaskIntoConstraints = false
             myNoDataView?.addSubview(constrainedView)
 
-            myNoDataView?.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
-            myNoDataView?.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
+            myNoDataView?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
+            myNoDataView?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
             
             let noMatchesLabel = UILabel(frame:CGRect(x:0,y:0,width:assignmentTableWidthConstraint.constant, height:40.0))
-            noMatchesLabel.font = UIFont.systemFontOfSize(14)
+            noMatchesLabel.font = UIFont.systemFont(ofSize: 14)
             noMatchesLabel.numberOfLines = 1;
-            noMatchesLabel.lineBreakMode = NSLineBreakMode.ByTruncatingTail
-            noMatchesLabel.textAlignment = NSTextAlignment.Left
+            noMatchesLabel.lineBreakMode = NSLineBreakMode.byTruncatingTail
+            noMatchesLabel.textAlignment = NSTextAlignment.left
             noMatchesLabel.text = NSLocalizedString("No assignments due today", comment:"no assignments due today message")
             
-            constrainedView.backgroundColor = UIColor.whiteColor()
-            myNoDataView?.hidden = true
+            constrainedView.backgroundColor = UIColor.white
+            myNoDataView?.isHidden = true
             noMatchesLabel.translatesAutoresizingMaskIntoConstraints = false
             constrainedView.addSubview(noMatchesLabel)
             constrainedView.addConstraint(NSLayoutConstraint(item:noMatchesLabel,
-                attribute:NSLayoutAttribute.CenterY,
-                relatedBy:NSLayoutRelation.Equal,
+                attribute:NSLayoutAttribute.centerY,
+                relatedBy:NSLayoutRelation.equal,
                 toItem:constrainedView,
-                attribute:NSLayoutAttribute.CenterY,
+                attribute:NSLayoutAttribute.centerY,
                 multiplier:1.0,
                 constant:0.0))
-            constrainedView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-10-[label]-10-|", options: NSLayoutFormatOptions.AlignAllCenterY, metrics: nil, views: ["label" : noMatchesLabel]))
+            constrainedView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-10-[label]-10-|", options: NSLayoutFormatOptions.alignAllCenterY, metrics: nil, views: ["label" : noMatchesLabel]))
             
             assignmentTableView.insertSubview(myNoDataView!, belowSubview:assignmentTableView)
             assignmentTableHeightConstraint.constant = 90.0
@@ -299,12 +297,12 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
         if ( myNoDataView == nil ) {
             myNoDataView = noDataView()
         }
-        self.myNoDataView?.hidden = false
+        self.myNoDataView?.isHidden = false
     }
     
     func hideNoDataView()
     {
-        self.myNoDataView?.hidden = true
+        self.myNoDataView?.isHidden = true
     }
 
 }

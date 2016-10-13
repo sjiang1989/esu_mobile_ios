@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client.courses.overview;
@@ -16,11 +16,8 @@ import com.ellucian.mobile.android.client.courses.Section;
 import com.ellucian.mobile.android.client.courses.Term;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseCourses;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseInstructors;
-import com.ellucian.mobile.android.provider.EllucianContract.CourseMeetings;
 import com.ellucian.mobile.android.provider.EllucianContract.CoursePatterns;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseTerms;
-import com.ellucian.mobile.android.provider.EllucianContract.MapsBuildings;
-import com.ellucian.mobile.android.provider.EllucianContract.MapsCampuses;
 
 import java.util.ArrayList;
 
@@ -32,7 +29,7 @@ public class CourseDetailsBuilder extends ContentProviderOperationBuilder<Course
 	
 	@Override
 	public ArrayList<ContentProviderOperation> buildOperations(CoursesResponse response) {
-		final ArrayList<ContentProviderOperation> batch = new ArrayList<ContentProviderOperation>();
+		final ArrayList<ContentProviderOperation> batch = new ArrayList<>();
 		
 		if (response.terms != null && response.terms.length > 0) {
 			Term term = response.terms[0];
@@ -54,11 +51,6 @@ public class CourseDetailsBuilder extends ContentProviderOperationBuilder<Course
 						  .newDelete(CoursePatterns.CONTENT_URI)
 						  .withSelection(courseIdSelection, courseIdArgs)
 						  .build());
-				batch.add(ContentProviderOperation
-						  .newDelete(CourseMeetings.CONTENT_URI)
-						  .withSelection(courseIdSelection, courseIdArgs)
-						  .build());
-				
 				
 				// add detailed course information
 				
@@ -73,6 +65,8 @@ public class CourseDetailsBuilder extends ContentProviderOperationBuilder<Course
 						.withValue(CourseCourses.COURSE_IS_INSTRUCTOR, section.isInstructor ? 1 : 0)
 						.withValue(CourseCourses.COURSE_LEARNING_PROVIDER, section.learningProvider)
 						.withValue(CourseCourses.COURSE_LEARNING_PROVIDER_SITE_ID, section.learningProviderSiteId)
+                        .withValue(CourseCourses.COURSE_FIRST_MEETING_DATE, section.firstMeetingDate)
+                        .withValue(CourseCourses.COURSE_LAST_MEETING_DATE, section.lastMeetingDate)
 						.build());
 				
 				for (Instructor instructor : section.instructors) {
@@ -105,22 +99,16 @@ public class CourseDetailsBuilder extends ContentProviderOperationBuilder<Course
 							.newInsert(CoursePatterns.CONTENT_URI)
 							.withValue(CourseCourses.COURSE_ID, section.sectionId)
 							.withValue(CoursePatterns.PATTERN_DAYS, daysString)
+                            .withValue(CoursePatterns.PATTERN_START_DATE, pattern.startDate)
+                            .withValue(CoursePatterns.PATTERN_END_DATE, pattern.endDate)
 							.withValue(CoursePatterns.PATTERN_START_TIME, startTime)
 							.withValue(CoursePatterns.PATTERN_END_TIME, endTime)
 							.withValue(CoursePatterns.PATTERN_ROOM, pattern.room)
 							.withValue(CoursePatterns.PATTERN_LOCATION, pattern.building)
-							.withValue(MapsBuildings.BUILDING_BUILDING_ID, pattern.buildingId)
-							.withValue(MapsCampuses.CAMPUS_ID, pattern.campusId)
-							.withValue(CoursePatterns.PATTERN_INSTRUCTIONAL_METHOD, pattern.instructionalMethodCode)
-							.build());
-					
-					batch.add(ContentProviderOperation
-							.newInsert(CourseMeetings.CONTENT_URI)
-							.withValue(CourseCourses.COURSE_ID, section.sectionId)
-							.withValue(CourseMeetings.MEETING_LOCATION, pattern.building)
-							.withValue(CourseMeetings.MEETING_SUMMARY, pattern.instructionalMethodCode)
-							.withValue(CourseMeetings.MEETING_START, pattern.startDate)
-							.withValue(CourseMeetings.MEETING_END, pattern.endDate)
+							.withValue(CoursePatterns.PATTERN_BUILDING_ID, pattern.buildingId)
+							.withValue(CoursePatterns.PATTERN_CAMPUS_ID, pattern.campusId)
+                            .withValue(CoursePatterns.PATTERN_CAMPUS_NAME, pattern.campus)
+                            .withValue(CoursePatterns.PATTERN_INSTRUCTIONAL_METHOD, pattern.instructionalMethodCode)
 							.build());
 				}
 			}

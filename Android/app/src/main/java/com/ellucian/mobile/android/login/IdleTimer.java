@@ -5,12 +5,12 @@
 package com.ellucian.mobile.android.login;
 
 import android.content.Context;
-import android.content.Intent;
 import android.util.Log;
 
 import com.ellucian.mobile.android.EllucianApplication;
-import com.ellucian.mobile.android.MainActivity;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
+import com.ellucian.mobile.android.util.PreferencesUtils;
+import com.ellucian.mobile.android.util.UserUtils;
 
 public class IdleTimer extends Thread {
 	
@@ -46,11 +46,8 @@ public class IdleTimer extends Thread {
                 // Make sure to reset the menu adapter so the navigation drawer will 
 				// display correctly for a non-authenticated user
                 application.resetModuleMenuAdapter();
-                
-                Intent mainIntent = new Intent(context, MainActivity.class);
-                mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(mainIntent);
+
+                PreferencesUtils.addBooleanToPreferences(application, UserUtils.USER, UserUtils.USER_TIMED_OUT, true);
                 stop=true;
             }
         }

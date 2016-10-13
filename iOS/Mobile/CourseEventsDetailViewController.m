@@ -7,15 +7,11 @@
 //
 
 #import "CourseEventsDetailViewController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
-#import "AppearanceChanger.h"
 #import "Ellucian_GO-Swift.h"
 
 @interface CourseEventsDetailViewController ()
-@property (nonatomic, strong) UIActionSheet *actionSheet;
 @property (nonatomic, strong) EKEventStore *eventStore;
 @property (nonatomic, strong) NSDateFormatter *dateFormatterShare;
-@property (nonatomic, strong) UIPopoverController *popover;
 @end
 
 @implementation CourseEventsDetailViewController
@@ -39,22 +35,13 @@
     }
     self.navigationController.navigationBar.translucent = NO;
     
-    if([AppearanceChanger isIOS8AndRTL]) {
-        self.titleLabel.textAlignment = NSTextAlignmentRight;
-        self.locationLabel.textAlignment = NSTextAlignmentRight;
-        self.descriptionTextView.textAlignment = NSTextAlignmentRight;
-        self.startDateLabelLabel.textAlignment = NSTextAlignmentRight;
-        self.endDateLabelLabel.textAlignment = NSTextAlignmentRight;
-        self.locationLabelLabel.textAlignment = NSTextAlignmentRight;
-    }
-    
     UIBarButtonItem *addCalendarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"toolbar-add-to-calendar-icon"] style:UIBarButtonItemStylePlain target:self action:@selector(addToMyCalendar:)];
     
     UIBarButtonItem *shareButtonItem = [[UIBarButtonItem alloc]  initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(share:)];
     
     UIBarButtonItem *flexibleSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
     
-    if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad) {
+    if ((UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad) && self.eventTitle != nil) {
         if ([MFMailComposeViewController canSendMail]){
             self.toolbarItems = [ NSArray arrayWithObjects: addCalendarButtonItem, flexibleSpace, shareButtonItem, nil ];
         } else {
@@ -109,10 +96,10 @@
     self.locationLabel.text = self.location;
     self.descriptionTextView.text = self.eventDescription;
     
-    self.backgroundView.backgroundColor = [UIColor accentColor];
-    self.titleLabel.textColor = [UIColor subheaderTextColor];
-    self.courseNameLabel.textColor = [UIColor subheaderTextColor];
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionSearch withLabel:@"ILP Assignments Detail" withValue:nil forModuleNamed:self.module.name];
+    self.backgroundView.backgroundColor = [UIColor accent];
+    self.titleLabel.textColor = [UIColor subheaderText];
+    self.courseNameLabel.textColor = [UIColor subheaderText];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Search label:@"ILP Assignments Detail" moduleName:self.module.name];
     
 }
 
@@ -130,17 +117,16 @@
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Course events detail" forModuleNamed:self.module.name];
+    [self sendView:@"Course events detail" moduleName:self.module.name];
 }
 
 - (IBAction) addToMyCalendar:(id)sender {
-    
-    [self closePopover];
-    
-    [self.eventStore requestAccessToEntityType:EKEntityTypeEvent completion:^(BOOL granted, NSError *error)
-     {
-         [self performSelectorOnMainThread:@selector(addEventToCalendar) withObject:nil waitUntilDone:YES];
-     }];
+    if (self.eventTitle != nil) {
+        [self.eventStore requestAccessToEntityType:EKEntityTypeEvent completion:^(BOOL granted, NSError *error)
+         {
+             [self performSelectorOnMainThread:@selector(addEventToCalendar) withObject:nil waitUntilDone:YES];
+         }];
+    }
 }
 
 -(void) addEventToCalendar
@@ -195,65 +181,37 @@
 }
 
 -(IBAction)share:(id)sender {
-    
-    NSString* eventDate = [self.dateFormatterShare stringFromDate:self.startDate];
+    if (self.eventTitle != nil) {
+        NSString* eventDate = [self.dateFormatterShare stringFromDate:self.startDate];
 
-    NSString *text = @"";
-    if (eventDate && self.location) {
-        text = [NSString stringWithFormat:@"%@\n%@\n%@\n%@", self.titleLabel.text, eventDate, self.location, self.eventDescription];
-    } else if (eventDate) {
-        text = [NSString stringWithFormat:@"%@\n%@\n%@", self.titleLabel.text, eventDate, self.eventDescription];
-    } else if (self.location) {
-        text = [NSString stringWithFormat:@"%@\n%@\n%@", self.titleLabel.text, self.location, self.eventDescription];
-    } else {
-        text = [NSString stringWithFormat:@"%@\n%@", self.titleLabel.text, self.eventDescription];
-    }
+        NSString *text = @"";
+        if (eventDate && self.location) {
+            text = [NSString stringWithFormat:@"%@\n%@\n%@\n%@", self.titleLabel.text, eventDate, self.location, self.eventDescription];
+        } else if (eventDate) {
+            text = [NSString stringWithFormat:@"%@\n%@\n%@", self.titleLabel.text, eventDate, self.eventDescription];
+        } else if (self.location) {
+            text = [NSString stringWithFormat:@"%@\n%@\n%@", self.titleLabel.text, self.location, self.eventDescription];
+        } else {
+            text = [NSString stringWithFormat:@"%@\n%@", self.titleLabel.text, self.eventDescription];
+        }
 
-    NSArray *activityItems = [NSArray arrayWithObjects:text, nil];
-    
-    UIActivityViewController *avc = [[UIActivityViewController alloc]
-                                     initWithActivityItems: activityItems applicationActivities:nil];
-    [avc setCompletionWithItemsHandler:^(NSString *activityType, BOOL completed, NSArray *returnedItems, NSError *activityError) {
-        NSString *label = [NSString stringWithFormat:@"Tap Share Icon - %@", activityType];
-        [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionInvoke_Native withLabel:label withValue:nil forModuleNamed:self.module.name];
-        self.popover = nil;
-    }];
-    
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+        NSArray *activityItems = [NSArray arrayWithObjects:text, nil];
+        
+        UIActivityViewController *avc = [[UIActivityViewController alloc]
+                                         initWithActivityItems: activityItems applicationActivities:nil];
+        [avc setCompletionWithItemsHandler:^(NSString *activityType, BOOL completed, NSArray *returnedItems, NSError *activityError) {
+            if (completed) {
+                NSString *label = [NSString stringWithFormat:@"Tap Share Icon - %@", activityType];
+                [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Invoke_Native label:label moduleName:self.module.name];
+            }
+        }];
+        
+        UIBarButtonItem *buttonItem = (UIBarButtonItem *) sender;
+        avc.popoverPresentationController.barButtonItem = buttonItem;
         [self presentViewController:avc animated:YES completion:nil];
     }
-    else if (self.popover) {
-        //The filter picker popover is showing. Hide it.
-        [self.popover dismissPopoverAnimated:YES];
-        self.popover = nil;
-    }
-    else {
-        self.popover = [[UIPopoverController alloc] initWithContentViewController:avc];
-        self.popover.delegate = self;
-        self.popover.passthroughViews = nil;
-        [self.popover presentPopoverFromBarButtonItem:(UIBarButtonItem *)sender
-                             permittedArrowDirections:UIPopoverArrowDirectionDown animated:YES];
-    }
-    
-}
-- (void)popoverControllerDidDismissPopover:(UIPopoverController *)popoverController
-{
-    self.popover = nil;
 }
 
-- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
-{
-    [self closePopover];
-}
-
-- (void)closePopover
-{
-    if (self.popover)
-    {
-        [self.popover dismissPopoverAnimated:YES];
-        self.popover = nil;
-    }
-}
 
 -(void)selectedDetail:(id)newCourseEvent withIndex:(NSIndexPath*)myIndex withModule:(Module*)myModule withController:(id)myController
 {

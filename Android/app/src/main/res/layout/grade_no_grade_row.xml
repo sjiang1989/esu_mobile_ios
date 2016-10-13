@@ -15,14 +15,12 @@
         android:id="@+id/grade_row_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:paddingLeft="@dimen/section_header_padding"
         android:paddingStart="@dimen/section_header_padding"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textIsSelectable="true"
-        tools:ignore="NewApi,RtlSymmetry">
+        tools:ignore="RtlSymmetry">
     </TextView>
 
 </RelativeLayout>

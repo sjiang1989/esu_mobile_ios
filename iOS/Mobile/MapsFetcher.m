@@ -7,10 +7,7 @@
 //
 
 #import "MapsFetcher.h"
-#import "Map.h"
-#import "MapPOIType.h"
-#import "MapCampus.h"
-#import "MapPOI.h"
+#import "Ellucian_GO-Swift.h"
 
 @implementation MapsFetcher
 

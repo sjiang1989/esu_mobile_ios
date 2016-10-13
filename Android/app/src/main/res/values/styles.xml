@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
@@ -30,17 +30,14 @@
     <!-- LISTS -->
     <style name="listContainer">
         <!-- <item name="android:scrollbarStyle">outsideInset</item> -->
-        
     </style>
+
     <style name="listRow">
         <item name="android:orientation">vertical</item>
         <item name="android:paddingBottom">@dimen/list_row_padding_bottom</item>
         <item name="android:paddingTop">@dimen/list_row_padding_top</item>
-        <!-- <item name="android:background">?android:attr/activatedBackgroundIndicator</item> -->
         <item name="android:background">@drawable/dual_pane_list_selector</item>
         <item name="android:padding">10dp</item>
-        
-        
     </style>
     <style name="listTitle">
         <item name="android:textSize">@dimen/list_title_text_size</item>
@@ -329,6 +326,25 @@
         <item name="android:textStyle">bold</item>
     </style>
 
+    <style name="approvalRequiredHeaderLeftText">
+        <item name="android:textSize">@dimen/section_header_text_size</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textIsSelectable">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="approvalRequiredText">
+        <item name="android:textSize">@dimen/section_header_text_size</item>
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textIsSelectable">false</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
     <!-- HOME SCREEN -->
     <style name="homeScreenShortcutText">
         <item name="android:textColor">#ffffff</item>
@@ -350,6 +366,15 @@
         <item name="android:shadowDx">0</item>
         <item name="android:shadowDy">1</item>
         <item name="android:shadowRadius">1</item>
+    </style>
+
+    <!-- WIDGET -->
+    <style name="widgetMediumText" parent="@android:style/TextAppearance.Medium">
+        <item name="android:textColor">@android:color/primary_text_dark</item>
+    </style>
+
+    <style name="widgetSmallText" parent="@android:style/TextAppearance.Small">
+        <item name="android:textColor">@android:color/secondary_text_dark</item>
     </style>
 
 </resources>

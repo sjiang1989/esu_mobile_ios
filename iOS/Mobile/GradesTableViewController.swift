@@ -8,16 +8,16 @@
 
 import Foundation
 
-class GradesTableViewController : UITableViewController , NSFetchedResultsControllerDelegate {
+class GradesTableViewController : UITableViewController , NSFetchedResultsControllerDelegate, EllucianMobileLaunchableControllerProtocol {
 
-    var module : Module?
-    let dateFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    var module : Module!
+    let dateFormatter : DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
         }()
-    let datetimeFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    let datetimeFormatter : DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
         return formatter
         }()
@@ -36,52 +36,58 @@ class GradesTableViewController : UITableViewController , NSFetchedResultsContro
             let currentSection = sections[0] as NSFetchedResultsSectionInfo
             let count = currentSection.numberOfObjects
             if count > 0 {
-                self.tableView.selectRowAtIndexPath(NSIndexPath(forRow: 0, inSection: 0), animated: true, scrollPosition: UITableViewScrollPosition.None)
-                self.performSegueWithIdentifier("Show Term", sender: nil)
+                self.tableView.selectRow(at: IndexPath(row: 0, section: 0), animated: true, scrollPosition: UITableViewScrollPosition.none)
+                self.performSegue(withIdentifier: "Show Term", sender: nil)
             } else {
                 initiallyEmpty = true
             }
         }
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        sendView("Grades List", forModuleNamed: self.module?.name)
+        sendView("Grades List", moduleName: self.module?.name)
     }
     
     // MARK: data retrieval
     func fetchGrades() {
         let operation = GradesFetchOperation(module: module, view: self)
-        NSOperationQueue.mainQueue().addOperation(operation)
+
         
         if self.fetchedResultsController.fetchedObjects!.count <= 0 {
-            let hud = MBProgressHUD.showHUDAddedTo(self.view, animated: true)
-            hud.labelText = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            operation.completionBlock = {
+                DispatchQueue.main.async(execute: {() -> Void in
+                    MBProgressHUD.hide(for: self.view, animated: true)
+                })
+            }
         }
+        
+        OperationQueue.main.addOperation(operation)
     }
     
     //MARK: segue
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "Show Term" {
             
-            let detailController = (segue.destinationViewController as! UINavigationController).topViewController as! GradesTermTableViewController
-            let term = fetchedResultsController.objectAtIndexPath(self.tableView.indexPathForSelectedRow!) as! GradeTerm
+            let detailController = (segue.destination as! UINavigationController).topViewController as! GradesTermTableViewController
+            let term = fetchedResultsController.object(at: self.tableView.indexPathForSelectedRow!)
             detailController.term = term
             detailController.module = self.module
         }
     }
     
     // MARK: fetch
-    var fetchedResultsController: NSFetchedResultsController {
+    var fetchedResultsController: NSFetchedResultsController<GradeTerm> {
         // return if already initialized
         if self._fetchedResultsController != nil {
             return self._fetchedResultsController!
         }
-        let managedObjectContext = CoreDataManager.shared.managedObjectContext
+        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
         
-        let request = NSFetchRequest()
-        request.entity = NSEntityDescription.entityForName("GradeTerm", inManagedObjectContext: managedObjectContext)
+        let request = NSFetchRequest<GradeTerm>(entityName: "GradeTerm")
         request.sortDescriptors = [NSSortDescriptor(key: "startDate", ascending: false)]
         
         let aFetchedResultsController = NSFetchedResultsController(fetchRequest: request, managedObjectContext: managedObjectContext, sectionNameKeyPath: nil, cacheName: nil)
@@ -97,47 +103,53 @@ class GradesTableViewController : UITableViewController , NSFetchedResultsContro
         
         return self._fetchedResultsController!
     }
-    var _fetchedResultsController: NSFetchedResultsController?
+    var _fetchedResultsController: NSFetchedResultsController<GradeTerm>?
     
     //MARK :UITable
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
 
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let sections = fetchedResultsController.sections {
             let currentSection = sections[section] as NSFetchedResultsSectionInfo
             return currentSection.numberOfObjects
         }
         
-        return 0
+        return 1
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Term Cell", forIndexPath: indexPath) as UITableViewCell
-        let term = fetchedResultsController.objectAtIndexPath(indexPath) as! GradeTerm
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let titleLabel = cell.viewWithTag(1) as! UILabel
-        
-        titleLabel.text = term.name
-        return cell
+        if self.fetchedResultsController.fetchedObjects!.count > 0 {
+
+            let cell = tableView.dequeueReusableCell(withIdentifier: "Term Cell", for: indexPath) as UITableViewCell
+            let term = fetchedResultsController.object(at: indexPath)
+            
+            let titleLabel = cell.viewWithTag(1) as! UILabel
+            
+            titleLabel.text = term.name
+            return cell
+        } else {
+            return tableView.dequeueReusableCell(withIdentifier: "No Grades Cell", for: indexPath) as UITableViewCell
+        }
     }
     
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.beginUpdates()
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         switch type{
-        case NSFetchedResultsChangeType.Insert:
-            self.tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: UITableViewRowAnimation.Top)
+        case NSFetchedResultsChangeType.insert:
+            self.tableView.insertRows(at: [newIndexPath!], with: UITableViewRowAnimation.top)
             break
-        case NSFetchedResultsChangeType.Delete:
-            self.tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: UITableViewRowAnimation.Left)
+        case NSFetchedResultsChangeType.delete:
+            self.tableView.deleteRows(at: [indexPath!], with: UITableViewRowAnimation.left)
             break
-        case NSFetchedResultsChangeType.Update:
-            self.tableView.cellForRowAtIndexPath(indexPath!)?.setNeedsLayout()
+        case NSFetchedResultsChangeType.update:
+            self.tableView.cellForRow(at: indexPath!)?.setNeedsLayout()
             break
         default:
             return
@@ -145,21 +157,21 @@ class GradesTableViewController : UITableViewController , NSFetchedResultsContro
     }
 
     
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.endUpdates()
         
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
             self._fetchedResultsController = nil
             self.tableView.reloadData()
             if self.initiallyEmpty {
                 let currentSection = self.fetchedResultsController.sections![0] as NSFetchedResultsSectionInfo
                 let count = currentSection.numberOfObjects
                 if count > 0 {
-                    self.tableView.selectRowAtIndexPath(NSIndexPath(forRow: 0, inSection: 0), animated: false, scrollPosition: UITableViewScrollPosition.None)
-                    self.performSegueWithIdentifier("Show Term", sender: nil)
+                    self.tableView.selectRow(at: IndexPath(row: 0, section: 0), animated: false, scrollPosition: UITableViewScrollPosition.none)
+                    self.performSegue(withIdentifier: "Show Term", sender: nil)
                 }
             }
-            MBProgressHUD.hideHUDForView(self.view, animated: true)
+            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
 }

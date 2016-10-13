@@ -23,7 +23,7 @@ class MapsController: WKInterfaceController {
     
     var cache: DefaultsCache?
     
-    override func awakeWithContext(context: AnyObject?) {
+    override func awake(withContext context: Any?) {
         let dictionary = context! as! Dictionary<String, AnyObject>
         self.internalKey = dictionary["internalKey"] as? String
         self.setTitle(dictionary["title"] as? String)
@@ -34,7 +34,7 @@ class MapsController: WKInterfaceController {
         fetchMaps()
     }
     
-    override func contextForSegueWithIdentifier(segueIdentifier: String, inTable table: WKInterfaceTable, rowIndex: Int) -> AnyObject? {
+    override func contextForSegue(withIdentifier segueIdentifier: String, in table: WKInterfaceTable, rowIndex: Int) -> Any? {
         if (segueIdentifier == "maps buildings list") {
             return self.campuses![rowIndex]
         }
@@ -47,13 +47,13 @@ class MapsController: WKInterfaceController {
         
         var haveMapsData = false
         
-        self.campuses.sortInPlace() {
+        self.campuses.sort() {
             return ($0["name"] as! String) < ($1["name"] as! String)
         }
 
-        for (index, campus) in campuses.enumerate() {
+        for (index, campus) in campuses.enumerated() {
             haveMapsData = true
-            let row = mapsTable.rowControllerAtIndex(index) as! CampusTableRowController
+            let row = mapsTable.rowController(at: index) as! CampusTableRowController
             row.campusNameLabel.setText(campus["name"] as! String!)
         }
         
@@ -62,13 +62,13 @@ class MapsController: WKInterfaceController {
     
     func fetchMaps() {
         
-        var data: [String: AnyObject] = [:]
+        var data: [String: String] = [:]
         
-        if urlString != nil {
-            data["url"] = self.urlString
+        if let urlString = self.urlString {
+            data["url"] = urlString
         }
-        if internalKey != nil {
-            data["internalKey"] = self.internalKey
+        if let internalKey = self.internalKey {
+            data["internalKey"] = internalKey
         }
         
         if let campuses = cache?.fetch() as! [[String:AnyObject]]? {
@@ -85,10 +85,10 @@ class MapsController: WKInterfaceController {
             self.spinner.setHidden(false)
         }
         
-        WatchConnectivityManager.instance.sendActionMessage("fetch maps", data: data, replyHandler: {
+        WatchConnectivityManager.sharedInstance.sendActionMessage("fetch maps", data: data, replyHandler: {
             (data) -> Void in
             
-            dispatch_async(dispatch_get_main_queue(), {
+            DispatchQueue.main.async(execute: {
                 self.retrievingDataLabel.setHidden(true)
                 self.spinner.stopAnimating()
                 self.spinner.setHidden(true)
@@ -100,7 +100,7 @@ class MapsController: WKInterfaceController {
             }, errorHandler: {
                 (error) -> Void in
                 
-                dispatch_async(dispatch_get_main_queue(), {
+                DispatchQueue.main.async(execute: {
                     self.retrievingDataLabel.setHidden(true)
                     self.spinner.stopAnimating()
                     self.spinner.setHidden(true)

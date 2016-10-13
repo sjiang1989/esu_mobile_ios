@@ -11,16 +11,16 @@
 "QDk-e4-sea.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "S9z-en-YRW"; */
-"S9z-en-YRW.text" = "Étiquette";
+"S9z-en-YRW.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "VT2-PR-xvS"; */
-"VT2-PR-xvS.text" = "Étiquette";
+"VT2-PR-xvS.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "a8G-NC-b7W"; */
-"a8G-NC-b7W.text" = "Étiquette";
+"a8G-NC-b7W.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "fBu-lQ-Gwj"; */
-"fBu-lQ-Gwj.text" = "Étiquette";
+"fBu-lQ-Gwj.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "nAk-hS-pQL"; */
 "nAk-hS-pQL.text" = "Libellé";
@@ -32,5 +32,5 @@
 "uYE-gp-c8N.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "ycg-LE-bfs"; */
-"ycg-LE-bfs.text" = "Étiquette";
+"ycg-LE-bfs.text" = "Libellé";
 

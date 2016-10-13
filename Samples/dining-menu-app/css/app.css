@@ -369,6 +369,12 @@ header, footer {
 	padding:20px;
 }
 
+.int-page-content h2 {
+	padding:10px;
+	margin-bottom:10px;
+	font-size:1rem;
+}
+
 .mon > div,
 .tue > div,
 .wed > div,
@@ -499,8 +505,22 @@ header, footer {
   	transition: all .3s ease-out;
 }
 
+/* internal pages scroll mechanism */
+article {
+	background-color:#fff;
+	height:calc(100vh - 60px);
+	overflow:scroll;
+}
+
 article {
 	line-height:1.6rem;
+}
+
+
+article.embedded {
+	background-color:#fff;
+	height:100vh;
+	overflow:scroll;
 }
 
 .content-list {

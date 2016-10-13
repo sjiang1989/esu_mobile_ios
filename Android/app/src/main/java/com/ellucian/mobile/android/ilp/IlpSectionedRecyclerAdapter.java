@@ -4,11 +4,9 @@
 
 package com.ellucian.mobile.android.ilp;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.os.Build;
 import android.provider.CalendarContract;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -21,6 +19,7 @@ import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.adapter.SectionedItemHolderRecyclerAdapter;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.util.Date;
 
@@ -43,7 +42,6 @@ public class IlpSectionedRecyclerAdapter extends SectionedItemHolderRecyclerAdap
         return new ItemViewHolder(this, v, null);
     }
 
-    @SuppressLint("NewApi")
     public void onBindHeaderViewHolder(RecyclerView.ViewHolder holder, int position) {
         IlpHeaderHolder headerHolder = (IlpHeaderHolder) getItem(position);
 
@@ -51,26 +49,15 @@ public class IlpSectionedRecyclerAdapter extends SectionedItemHolderRecyclerAdap
 
         TextView dayView = (TextView) headerContainer.findViewById(R.id.day);
         dayView.setText(headerHolder.day);
-        int build = Build.VERSION.SDK_INT;
 
         String overdueText = context.getResources().getString(R.string.ilp_overdue);
         if (headerHolder.day.equals(overdueText)) {
-            if (build >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                dayView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.icon_warning_black, 0, 0, 0);
-            } else {
-                dayView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_warning_black, 0, 0, 0);
-            }
+            dayView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.icon_warning_black, 0, 0, 0);
             dayView.setCompoundDrawablePadding(12);
         } else {
             // unset drawable in case recycled
-            if (build >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                if (dayView.getCompoundDrawablesRelative()[0] != null) {
-                    dayView.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null);
-                }
-            } else {
-                if (dayView.getCompoundDrawables()[0] != null) {
-                    dayView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
-                }
+            if (dayView.getCompoundDrawablesRelative()[0] != null) {
+                dayView.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null);
             }
         }
 
@@ -111,7 +98,7 @@ public class IlpSectionedRecyclerAdapter extends SectionedItemHolderRecyclerAdap
                 Date now = new Date();
                 if (dueDate.before(now)) {
                     displayDate = CalendarUtils.getDefaultDateTimeString(context, dueDate);
-                    titleView.setTextColor(Utils.getColorHelper(context, R.color.warning_text_color));
+                    titleView.setTextColor(VersionSupportUtils.getColorHelper(context, R.color.warning_text_color));
                 } else {
                     displayDate = CalendarUtils.getDefaultTimeString(context, dueDate);
                     // reset the color in case recycled

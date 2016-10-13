@@ -35,6 +35,7 @@ public class RegistrationCartListFragment extends EllucianDefaultListFragment {
 	private View eligibilityErrorView;
 	private boolean showEligibilityError;
 	private String errorMessages;
+    private View authRequiredHeader;
 	
 	public RegistrationCartListFragment () {	
 	}
@@ -56,6 +57,7 @@ public class RegistrationCartListFragment extends EllucianDefaultListFragment {
 		rootView = inflater.inflate(R.layout.fragment_registration_cart_list, container, false);
 		registerButton = (Button) rootView.findViewById(R.id.register);
 		eligibilityErrorView = rootView.findViewById(R.id.eligibility_error_message_view);
+        authRequiredHeader = rootView.findViewById(R.id.registration_auth_req_top_header);
 		
 		registerButton.setBackgroundColor(Utils.getPrimaryColor(activity));
 		registerButton.setTextColor(Utils.getHeaderTextColor(activity));
@@ -102,7 +104,13 @@ public class RegistrationCartListFragment extends EllucianDefaultListFragment {
 		}
 
 		showEligibilityErrorView(showEligibilityError);
-		
+
+        CheckableSectionedListAdapter checkableSectionedListAdapter = (CheckableSectionedListAdapter) getListAdapter();
+        for (String identifier : checkableSectionedListAdapter.identifiers) {
+            if (TextUtils.equals(identifier, RegistrationActivity.AUTH_CODE_REQUIRED)) {
+                showAuthRequiredHeader();
+            }
+        }
 	}
 	
 
@@ -188,6 +196,13 @@ public class RegistrationCartListFragment extends EllucianDefaultListFragment {
 		}	
 		
 	}
+
+    public void showAuthRequiredHeader() {
+        if (!authRequiredHeader.isShown()) {
+            authRequiredHeader.setVisibility(View.VISIBLE);
+        }
+    }
+
 	
 	protected void setRegisterButtonEnabled(boolean enabled) {
 		registerButton.setEnabled(enabled);

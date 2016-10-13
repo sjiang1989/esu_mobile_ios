@@ -7,12 +7,9 @@ if (EllucianMobile.isEmbeddedInEllucianMobile) {
 		.restaurant, .restaurant-embedded, .int-page-title {\
 			background-color: ' + EllucianMobile.accentColor() + ';\
 		}\
-		h1#home, .int-page-title h1 {\
+		.int-page-title h1 {\
 			color:' + EllucianMobile.subheaderTextColor() + ';\
 			padding:10px 20px 10px 20px;\
-		}\
-		.name {\
-			color:' + EllucianMobile.subheaderTextColor() + ';\
 		}\
 		.restaurant {\
 			top:0px;\
@@ -35,6 +32,10 @@ if (EllucianMobile.isEmbeddedInEllucianMobile) {
 		}\
 		.menu-bar, .menu-bar-home {\
 			display: block;\
+		}\
+		.int-page-content h2 {\
+			background-image: linear-gradient(to right,' + EllucianMobile.primaryColor() + ', #fff);\
+			color:' + EllucianMobile.headerTextColor() + ';\
 		}\
 		'
 	EllucianMobile.addCssToHead(css)

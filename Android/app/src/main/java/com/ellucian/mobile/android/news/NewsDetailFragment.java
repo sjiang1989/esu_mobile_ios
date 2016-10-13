@@ -94,13 +94,6 @@ public class NewsDetailFragment extends EllucianDefaultDetailFragment {
         }
         if (args.containsKey(Extra.CONTENT) && args.getString(Extra.CONTENT) != null) {
             String content = args.getString(Extra.CONTENT).replace("\n", "<br/>");
-            // Replace TextView with WebView.
-//	        TextView contentView = (TextView) rootView.findViewById(R.id.news_detail_content);
-//	        URLImageParser parser = new URLImageParser(contentView, activity);
-//	        Spanned formattedHtml = Html.fromHtml(content, parser, null);
-//	        contentView.setText(formattedHtml, TextView.BufferType.SPANNABLE);
-//	        contentView.setMovementMethod(LinkMovementMethod.getInstance());
-
             WebView webContentView = (WebView) rootView.findViewById((R.id.news_detail_web_content));
             // Use CSS to set webView's body to have no padding/margins and images not to exceed view width.
             webContentView.loadDataWithBaseURL(null, "<style>html,body{margin:0px;padding:0px;} img{display: inline;height: auto;max-width: 100%;}</style>" + content, "text/html", "UTF-8", null);
@@ -163,7 +156,7 @@ public class NewsDetailFragment extends EllucianDefaultDetailFragment {
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
-        shareIntent.putExtra(Intent.EXTRA_TEXT, text); //Html.fromHtml(text)
+        shareIntent.putExtra(Intent.EXTRA_TEXT, text);
         return shareIntent;
     }
     

@@ -14,22 +14,19 @@
         android:id="@+id/assignment_widget_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textAppearance="@style/widgetSmallText"
         android:layout_weight="1"
-
         android:paddingBottom="18dp"
         android:paddingTop="13dp"
-        android:paddingLeft="13dp"
         android:paddingStart="13dp"
-        tools:ignore="NewApi,RtlSymmetry" />
+        tools:ignore="RtlSymmetry" />
 
     <TextView xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/assignment_widget_section"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textAppearance="@style/widgetSmallText"
         android:paddingEnd="14dp"
-        android:paddingRight="14dp"
         tools:ignore="RtlSymmetry" />
 
 </LinearLayout>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.provider;
@@ -22,6 +22,7 @@ public class EllucianContract {
 	static final String PATH_MODULES = "modules";
 	private static final String PATH_MODULES_PROPERTIES = "properties";
 	private static final String PATH_MODULES_ROLES = "roles";
+    private static final String PATH_MODULES_BEACONS = "beacons";
 	private static final String PATH_MODULES_URLS = "urls";
 	static final String PATH_SEARCH = "search";
 	
@@ -35,8 +36,10 @@ public class EllucianContract {
 		String MODULE_TYPE = "module_type";
 		String MODULE_SECURE ="module_secure";
 		String MODULE_SUB_TYPE = "module_sub_type";
+		String MODULE_DISPLAY_IN_MENU = "module_display_in_menu";
 		String MODULE_LOCK = "module_lock"; //pseudo column not in database
 		String MODULE_RIGHT_TEXT = "module_right_text"; //pseudo column not in database
+        String MODULE_USE_BEACON_TO_LAUNCH = "module_use_beacon_to_launch";
 	}
 	
 	interface ModulesPropertiesColumns {
@@ -46,6 +49,14 @@ public class EllucianContract {
 	
 	interface ModulesRolesColumns {
 		String MODULE_ROLES_NAME = "moduleroles_name";
+	}
+
+	interface ModulesBeaconsColumns {
+		String MODULES_BEACONS_UUID = "modules_beacons_uuid";
+        String MODULES_BEACONS_MAJOR = "modules_beacons_major";
+        String MODULES_BEACONS_MINOR = "modules_beacons_minor";
+        String MODULES_BEACONS_DISTANCE = "modules_beacons_distance";
+        String MODULES_BEACONS_MESSAGE = "modules_beacons_message";
 	}
 
 	interface GradeTermsColumns {
@@ -93,7 +104,6 @@ public class EllucianContract {
 		String BUILDING_LONGITUDE = "mapsbuildings_long";
 		String BUILDING_ADDITIONAL_SERVICES = "mapsbuildings_additional_services";
 		String BUILDING_CATEGORIES = "mapsbuildings_categories";
-		
 	}
 	
 	interface MapsBuildingsCategoriesColumns {
@@ -165,6 +175,8 @@ public class EllucianContract {
 		String COURSE_IS_INSTRUCTOR = "coursecourses_is_instructor";
 		String COURSE_LEARNING_PROVIDER = "coursecourses_learning_provider";
 		String COURSE_LEARNING_PROVIDER_SITE_ID = "coursecourses_learning_provider_site_id";
+        String COURSE_FIRST_MEETING_DATE = "coursecourses_first_meeting_date";
+        String COURSE_LAST_MEETING_DATE = "coursecourses_last_meeting_date";
 	}
 
 	interface CourseInstructorsColumns {
@@ -178,19 +190,18 @@ public class EllucianContract {
 	
 	interface CoursePatternsColumns {
 		String PATTERN_DAYS = "coursepatterns_days";
-		String PATTERN_START_TIME = "corusepaterns_start_time"; // typo in db - leave it
+        String PATTERN_START_DATE = "coursepatterns_start_date";
+        String PATTERN_END_DATE = "coursepatterns_end_date";
+		String PATTERN_START_TIME = "coursepatterns_start_time";
 		String PATTERN_END_TIME = "coursepatterns_end_time";
 		String PATTERN_LOCATION = "coursepatterns_location";
 		String PATTERN_ROOM = "coursepatterns_room";
-		String PATTERN_INSTRUCTIONAL_METHOD = "coursepatterns_instructional_method";
+        String PATTERN_BUILDING_ID = "coursepatterns_building_id";
+        String PATTERN_CAMPUS_ID = "coursepatterns_campus_id";
+        String PATTERN_CAMPUS_NAME = "coursepatterns_campus";
+        String PATTERN_INSTRUCTIONAL_METHOD = "coursepatterns_instructional_method";
 	}
 	
-	interface CourseMeetingsColumns {
-		String MEETING_SUMMARY = "meeting_summary";
-		String MEETING_LOCATION = "meeting_location";
-		String MEETING_START = "meeting_start";
-		String MEETING_END = "meeting_end";
-	}
 	
 	interface CourseRosterColumns {
 		String ROSTER_STUDENT_ID = "roster_student_id";
@@ -266,7 +277,7 @@ public class EllucianContract {
     }
 
     public static class Modules implements ModulesColumns, BaseColumns {
-		public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MODULES).build();
+        public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MODULES).build();
 		
 		public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.ellucian.module";
 		
@@ -283,9 +294,13 @@ public class EllucianContract {
         public static Uri buildPropertiesUri(String id) {
             return CONTENT_URI.buildUpon().appendPath(id).appendPath(PATH_MODULES_PROPERTIES).build();
         }
-        
+
         public static Uri buildRolesUri(String id) {
             return CONTENT_URI.buildUpon().appendPath(id).appendPath(PATH_MODULES_ROLES).build();
+        }
+
+        public static Uri buildBeaconsUri(String id) {
+            return CONTENT_URI.buildUpon().appendPath(id).appendPath(PATH_MODULES_BEACONS).build();
         }
 
 		public static Uri buildUrlsUri(String id) {
@@ -315,7 +330,7 @@ public class EllucianContract {
 			return uri.getPathSegments().get(1);
 		}
 	}
-	
+
 	static final String PATH_MODULESROLES = "modules_roles";
 	public static class ModulesRoles implements ModulesRolesColumns, BaseColumns {
 		public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MODULESROLES).build();
@@ -323,9 +338,9 @@ public class EllucianContract {
 		public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.ellucian.module_roles";
 		
 		public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.ellucian.module_roles";
-		
+
 		public static final String DEFAULT_SORT = ModulesRolesColumns.MODULE_ROLES_NAME + " ASC";
-		
+
         public static Uri buildRoleUri(String id) {
             return CONTENT_URI.buildUpon().appendPath(id).build();
         }
@@ -334,6 +349,25 @@ public class EllucianContract {
 			return uri.getPathSegments().get(1);
 		}
 	}
+
+    static final String PATH_MODULESBEACONS = "modules_beacons";
+    public static class ModulesBeacons implements ModulesBeaconsColumns, BaseColumns {
+        public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MODULESBEACONS).build();
+
+        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.ellucian.module_beacons";
+
+        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.ellucian.module_beacons";
+
+        public static final String DEFAULT_SORT = ModulesBeaconsColumns.MODULES_BEACONS_MINOR + " ASC";
+
+        public static Uri buildBeaconUri(String id) {
+            return CONTENT_URI.buildUpon().appendPath(id).build();
+        }
+
+        public static String getBeaconId(Uri uri) {
+            return uri.getPathSegments().get(1);
+        }
+    }
 
 
 	static final String PATH_GRADETERMS = "grade_terms";
@@ -657,25 +691,6 @@ public class EllucianContract {
         }
         
 		public static String getPatternId(Uri uri) {
-			return uri.getPathSegments().get(1);
-		}
-	}
-
-	static final String PATH_COURSEMEETINGS = "course_meetings";
-	public static class CourseMeetings implements CourseMeetingsColumns, BaseColumns {
-		public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_COURSEMEETINGS).build();
-		
-		public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.ellucian.course_meetings";
-		
-		public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.ellucian.course_meetings";
-		
-		public static final String DEFAULT_SORT = CourseMeetingsColumns.MEETING_START + " ASC";
-		
-        public static Uri buildMeetingUri(String id) {
-            return CONTENT_URI.buildUpon().appendPath(id).build();
-        }
-        
-		public static String getMeetingId(Uri uri) {
 			return uri.getPathSegments().get(1);
 		}
 	}

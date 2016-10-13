@@ -23,7 +23,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:singleLine="true"
             android:maxLines="1"
             android:ellipsize="end"
             android:textAppearance="?android:attr/textAppearanceMedium" />
@@ -36,10 +35,9 @@
             android:layout_weight="0"
             android:ellipsize="none"
             android:maxLines="1"
-            android:paddingLeft="3dp"
             android:paddingStart="3dp"
             android:paddingTop="3dp"
-            tools:ignore="NewApi,RtlSymmetry" />
+            tools:ignore="RtlSymmetry" />
 
 
     </LinearLayout>
@@ -55,7 +53,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:singleLine="true"
             android:maxLines="1"
             android:ellipsize="end" />
 

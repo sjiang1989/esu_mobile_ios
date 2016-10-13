@@ -51,16 +51,16 @@ public class NumbersIntentService extends IntentService {
 					Log.e("NumbersIntentService", "OperationApplicationException applying batch:" + e.getLocalizedMessage());
 				}
 				Log.d("NumbersIntentService", "Batch executed.");
-				
-				LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
-				Intent broadcastIntent = new Intent();
-				broadcastIntent.setAction(ACTION_FINISHED);
-				broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
-				bm.sendBroadcast(broadcastIntent);
 			}
 		} else {
 			Log.d("NumbersIntentService", "Response Object was null");
 		}
-	}
+
+        LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_FINISHED);
+        broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
+        bm.sendBroadcast(broadcastIntent);
+    }
 
 }

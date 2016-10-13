@@ -54,70 +54,54 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentTop="true"
-                            android:layout_toLeftOf="@+id/about_app_version"
                             android:layout_toStartOf="@+id/about_app_version"
                             android:minWidth="96dp"
                             android:paddingEnd="4dp"
-                            android:paddingLeft="8dp"
-                            android:paddingRight="4dp"
                             android:paddingStart="8dp"
                             android:paddingTop="8dp"
                             android:text="@string/about_app_version"
-                            android:textSize="12sp"
-                            tools:ignore="NewApi" />
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/about_app_version"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
-                            android:layout_alignParentRight="true"
                             android:layout_alignParentTop="true"
                             android:minWidth="60dp"
                             android:paddingEnd="8dp"
-                            android:paddingLeft="4dp"
-                            android:paddingRight="8dp"
                             android:paddingStart="4dp"
                             android:paddingTop="8dp"
                             android:textIsSelectable="true"
-                            android:textSize="12sp"
-                            tools:ignore="NewApi" />
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/about_server_version_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_below="@+id/about_app_version_label"
-                            android:layout_toLeftOf="@+id/about_app_version"
                             android:layout_toStartOf="@+id/about_app_version"
                             android:minWidth="96dp"
                             android:paddingBottom="2dp"
                             android:paddingEnd="4dp"
-                            android:paddingLeft="8dp"
-                            android:paddingRight="4dp"
                             android:paddingStart="8dp"
                             android:paddingTop="2dp"
                             android:text="@string/about_server_version"
-                            android:textSize="12sp"
-                            tools:ignore="NewApi" />
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/about_server_version"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
-                            android:layout_alignParentRight="true"
                             android:layout_below="@+id/about_app_version"
                             android:minWidth="60dp"
                             android:paddingBottom="3dp"
                             android:paddingEnd="8dp"
-                            android:paddingLeft="4dp"
-                            android:paddingRight="8dp"
                             android:paddingStart="4dp"
                             android:paddingTop="2dp"
                             android:textIsSelectable="true"
-                            android:textSize="12sp"
-                            tools:ignore="NewApi" />
+                            android:textSize="12sp" />
                     </RelativeLayout>
 
                     <TableLayout
@@ -299,7 +283,6 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical|end"
                         android:paddingEnd="3dp"
-                        android:paddingRight="3dp"
                         android:text="@string/about_powered_by"
                         android:textColor="@android:color/white"
                         android:textSize="12sp"

@@ -15,7 +15,7 @@ protocol FeedFilterDelegate : class {
 class FeedFilterViewController : UITableViewController {
     
     var startingHiddenCategories : NSMutableSet?
-    var categories : NSArray?
+    var categories = [String]()
     
     var feedModule : FeedModule?
     var hiddenCategories : NSMutableSet?
@@ -26,51 +26,50 @@ class FeedFilterViewController : UITableViewController {
         self.startingHiddenCategories = self.hiddenCategories
     }
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.initializeCategories()
     }
     
     //MARK table view data source
     
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
     
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.categories!.count
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return self.categories.count
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Feed Filter Cell", forIndexPath: indexPath) as UITableViewCell
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Feed Filter Cell", for: indexPath) as UITableViewCell
         
-        let category = self.categories?.objectAtIndex(indexPath.row) as! String
-        
+        let category = self.categories[indexPath.row]        
         let textLabel = cell.viewWithTag(1) as! UILabel
         textLabel.text = category
-        if (self.hiddenCategories!.containsObject(category) ) {
-            cell.accessoryType = UITableViewCellAccessoryType.None
+        if (self.hiddenCategories!.contains(category) ) {
+            cell.accessoryType = UITableViewCellAccessoryType.none
         } else {
-            cell.accessoryType = .Checkmark
+            cell.accessoryType = .checkmark
         }
         
         return cell
     }
     
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        let cell = tableView.cellForRowAtIndexPath(indexPath)
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let cell = tableView.cellForRow(at: indexPath)
         let textLabel = cell?.viewWithTag(1) as! UILabel
         
-        if cell?.accessoryType == .Checkmark {
-            cell?.accessoryType = .None
-            self.hiddenCategories?.addObject(textLabel.text!)
+        if cell?.accessoryType == .checkmark {
+            cell?.accessoryType = .none
+            self.hiddenCategories?.add(textLabel.text!)
         } else {
-            cell?.accessoryType = .Checkmark
+            cell?.accessoryType = .checkmark
             //self.hiddenCategories = self.hiddenCategories!.filter() { $0 as? String != textLabel.text }
-            self.hiddenCategories?.removeObject(textLabel.text!)
+            self.hiddenCategories?.remove(textLabel.text!)
         }
         
-        tableView.deselectRowAtIndexPath(indexPath, animated: true)
+        tableView.deselectRow(at: indexPath, animated: true)
         
         self.updateCategories()
         self.delegate?.reloadData()
@@ -78,13 +77,13 @@ class FeedFilterViewController : UITableViewController {
     
     func updateCategories() {
         if hiddenCategories!.count > 0 {
-            self.feedModule?.hiddenCategories = (hiddenCategories!.allObjects as! [String]).joinWithSeparator(",")
+            self.feedModule?.hiddenCategories = (hiddenCategories!.allObjects as! [String]).joined(separator: ",")
         } else {
             self.feedModule?.hiddenCategories = nil
         }
         
         if self.startingHiddenCategories!.isEqual(self.hiddenCategories) {
-            sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionList_Select, withLabel: "Filter changed", withValue: nil, forModuleNamed: self.module?.name)
+            sendEventToTracker1(category: .ui_Action, action: .list_Select, label: "Filter changed", moduleName: self.module?.name)
         }
         do {
             try feedModule?.managedObjectContext?.save()
@@ -93,20 +92,20 @@ class FeedFilterViewController : UITableViewController {
         }
     }
     
-    @IBAction func dismiss(sender: AnyObject) {
+    @IBAction func dismiss(_ sender: AnyObject) {
         updateCategories()
-        dismissViewControllerAnimated(true, completion: nil)
+        self.dismiss(animated: true, completion: nil)
     }
     func initializeCategories() {
 
         do {
-            let request = NSFetchRequest(entityName: "FeedCategory")
+            let request = NSFetchRequest<FeedCategory>(entityName: "FeedCategory")
             request.predicate = NSPredicate(format: "moduleName = %@", self.module!.name)
-            let results = try self.module?.managedObjectContext?.executeFetchRequest(request) as! [FeedCategory]
+            let results = try self.module!.managedObjectContext!.fetch(request)
             let categories = results.map {
-                    return $0.name
+                    return $0.name!
             }
-            self.categories = categories.sort { $0.localizedCaseInsensitiveCompare($1) == NSComparisonResult.OrderedDescending }
+            self.categories = categories.sorted { $0.localizedCaseInsensitiveCompare($1) == ComparisonResult.orderedAscending }
         } catch {
             
         }

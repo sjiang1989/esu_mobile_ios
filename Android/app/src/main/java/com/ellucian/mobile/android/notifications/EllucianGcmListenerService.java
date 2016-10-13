@@ -47,5 +47,7 @@ public class EllucianGcmListenerService extends GcmListenerService{
     	Notification notification = deviceNotifications.buildGcmNotification(message, extras);
     	
     	deviceNotifications.makeNotificationActive(uuid, notification);
+
+        app.startNotifications();
     }
 }

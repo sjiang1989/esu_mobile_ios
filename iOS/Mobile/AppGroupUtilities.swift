@@ -11,16 +11,16 @@ import Foundation
 @objc
 class AppGroupUtilities : NSObject {
 
-    @objc class func userDefaults() -> NSUserDefaults? {
-        if NSBundle.mainBundle().bundleIdentifier!.hasPrefix("com.ellucian.elluciangoenterprise") {
-            return NSUserDefaults()
+    @objc class func userDefaults() -> UserDefaults? {
+        if Bundle.main.bundleIdentifier!.hasPrefix("com.ellucian.elluciangoenterprise") {
+            return UserDefaults()
         }
-        return NSUserDefaults(suiteName: lookupAppGroup()!)
+        return UserDefaults(suiteName: lookupAppGroup()!)
     }
     
     class func lookupAppGroup() -> String? {
         var plistDictionary: NSDictionary?
-        if let path = NSBundle.mainBundle().pathForResource("Customizations", ofType: "plist") {
+        if let path = Bundle.main.path(forResource: "Customizations", ofType: "plist") {
             plistDictionary = NSDictionary(contentsOfFile: path)
         }
         if plistDictionary != nil && plistDictionary!["App Group"] != nil {
@@ -29,17 +29,17 @@ class AppGroupUtilities : NSObject {
                 return appGroup
             }
         }
-        if NSBundle.mainBundle().bundleIdentifier!.hasPrefix("com.ellucian.elluciangoenterprise") {
+        if Bundle.main.bundleIdentifier!.hasPrefix("com.ellucian.elluciangoenterprise") {
             return "group.com.ellucian.elluciangoenterprise"
         }
-        if NSBundle.mainBundle().bundleIdentifier!.hasPrefix("com.ellucian.elluciango") {
+        if Bundle.main.bundleIdentifier!.hasPrefix("com.ellucian.elluciango") {
             return "group.com.ellucian.elluciango"
         }
 
         return nil;
     }
     
-    @objc class func applicationDocumentsDirectory() -> NSURL? {
-        return NSFileManager.defaultManager().containerURLForSecurityApplicationGroupIdentifier(lookupAppGroup()!)
+    @objc class func applicationDocumentsDirectory() -> URL? {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: lookupAppGroup()!)
     }
 }

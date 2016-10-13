@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.provider;
@@ -21,7 +21,6 @@ import com.ellucian.mobile.android.provider.EllucianContract.CourseAssignments;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseCourses;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseEvents;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseInstructors;
-import com.ellucian.mobile.android.provider.EllucianContract.CourseMeetings;
 import com.ellucian.mobile.android.provider.EllucianContract.CoursePatterns;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseRoster;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseTerms;
@@ -41,6 +40,7 @@ import com.ellucian.mobile.android.provider.EllucianContract.MapsCampuses;
 import com.ellucian.mobile.android.provider.EllucianContract.Modules;
 import com.ellucian.mobile.android.provider.EllucianContract.ModulesProperties;
 import com.ellucian.mobile.android.provider.EllucianContract.ModulesRoles;
+import com.ellucian.mobile.android.provider.EllucianContract.ModulesBeacons;
 import com.ellucian.mobile.android.provider.EllucianContract.News;
 import com.ellucian.mobile.android.provider.EllucianContract.NewsCategories;
 import com.ellucian.mobile.android.provider.EllucianContract.Notifications;
@@ -66,12 +66,14 @@ public class EllucianProvider extends ContentProvider {
 	private	boolean isBatch;
 	
 	private static final UriMatcher sUriMatcher = buildUriMatcher();
-	
+
 	private static final int MODULES = 100;
 	private static final int MODULESPROPERTIES = 110;
 	private static final int MODULESPROPERTIES_ID = 111;
 	private static final int MODULESROLES = 120;
 	private static final int MODULESROLES_ID = 121;
+	private static final int MODULESBEACONS = 130;
+	private static final int MODULESBEACONS_ID = 131;
 	private static final int GRADETERMS = 200;
 	private static final int GRADETERMS_ID = 201;
 	private static final int GRADETERMS_ID_GRADECOURSES = 202;
@@ -106,8 +108,6 @@ public class EllucianProvider extends ContentProvider {
 	private static final int COURSEINSTRUCTORS_ID = 1301;
 	private static final int COURSEPATTERNS = 1400;
 	private static final int COURSEPATTERNS_ID = 1401;
-	private static final int COURSEMEETINGS = 1500;
-	private static final int COURSEMEETINGS_ID = 1501;
 	private static final int COURSEROSTER = 1600;
 	private static final int COURSEROSTER_ID = 1601;
 	private static final int EVENTS = 1700;
@@ -139,6 +139,8 @@ public class EllucianProvider extends ContentProvider {
 		matcher.addURI(authority, EllucianContract.PATH_MODULESPROPERTIES+"/*", MODULESPROPERTIES_ID);
 		matcher.addURI(authority, EllucianContract.PATH_MODULESROLES, MODULESROLES);
 		matcher.addURI(authority, EllucianContract.PATH_MODULESROLES+"/*", MODULESROLES_ID);
+        matcher.addURI(authority, EllucianContract.PATH_MODULESBEACONS, MODULESBEACONS);
+        matcher.addURI(authority, EllucianContract.PATH_MODULESBEACONS+"/*", MODULESBEACONS_ID);
 		matcher.addURI(authority, EllucianContract.PATH_GRADETERMS, GRADETERMS);
 		matcher.addURI(authority, EllucianContract.PATH_GRADETERMS+"/*", GRADETERMS_ID);
 		matcher.addURI(authority, 
@@ -181,8 +183,6 @@ public class EllucianProvider extends ContentProvider {
 		matcher.addURI(authority, EllucianContract.PATH_COURSEINSTRUCTORS+"/*", COURSEINSTRUCTORS_ID);
 		matcher.addURI(authority, EllucianContract.PATH_COURSEPATTERNS, COURSEPATTERNS);
 		matcher.addURI(authority, EllucianContract.PATH_COURSEPATTERNS+"/*", COURSEPATTERNS_ID);
-		matcher.addURI(authority, EllucianContract.PATH_COURSEMEETINGS, COURSEMEETINGS);
-		matcher.addURI(authority, EllucianContract.PATH_COURSEMEETINGS+"/*", COURSEMEETINGS_ID);
 		matcher.addURI(authority, EllucianContract.PATH_COURSEROSTER, COURSEROSTER);
 		matcher.addURI(authority, EllucianContract.PATH_COURSEROSTER+"/*", COURSEROSTER_ID);
 		matcher.addURI(authority, EllucianContract.PATH_COURSEASSIGNMENTS, COURSEASSIGNMENTS);
@@ -246,7 +246,8 @@ public class EllucianProvider extends ContentProvider {
 		delete(GradeTerms.CONTENT_URI);
 		delete(CourseCourses.CONTENT_URI);
 		delete(CourseInstructors.CONTENT_URI);
-		delete(CourseMeetings.CONTENT_URI);
+        delete(CoursePatterns.CONTENT_URI);
+        delete(CourseTerms.CONTENT_URI);
 		delete(Notifications.CONTENT_URI);
 	}
 
@@ -268,7 +269,11 @@ public class EllucianProvider extends ContentProvider {
 				return ModulesRoles.CONTENT_TYPE;
 			case MODULESROLES_ID:
 				return ModulesRoles.CONTENT_ITEM_TYPE;
-			case GRADETERMS:
+            case MODULESBEACONS:
+                return ModulesBeacons.CONTENT_TYPE;
+            case MODULESBEACONS_ID:
+                return ModulesBeacons.CONTENT_ITEM_TYPE;
+            case GRADETERMS:
 				return GradeTerms.CONTENT_TYPE;	
 			case GRADETERMS_ID:
 				return GradeTerms.CONTENT_ITEM_TYPE;
@@ -337,10 +342,6 @@ public class EllucianProvider extends ContentProvider {
 				return CoursePatterns.CONTENT_TYPE;
 			case COURSEPATTERNS_ID:
 				return CoursePatterns.CONTENT_ITEM_TYPE;
-			case COURSEMEETINGS:
-				return CourseMeetings.CONTENT_TYPE;
-			case COURSEMEETINGS_ID:
-				return CourseMeetings.CONTENT_ITEM_TYPE;
 			case COURSEROSTER:
 				return CourseRoster.CONTENT_TYPE;
 			case COURSEROSTER_ID:
@@ -407,6 +408,11 @@ public class EllucianProvider extends ContentProvider {
 				notifyChange(uri);
 				return ModulesRoles.buildRoleUri(values.getAsString(Long.toString(id)));
 			}
+            case MODULESBEACONS: {
+                long id = db.insertOrThrow(Tables.MODULES_BEACONS, null, values);
+                notifyChange(uri);
+                return ModulesBeacons.buildBeaconUri(values.getAsString(Long.toString(id)));
+            }
 			case GRADETERMS:
 				db.insertOrThrow(Tables.GRADE_TERMS, null, values);
 				notifyChange(uri);
@@ -489,11 +495,6 @@ public class EllucianProvider extends ContentProvider {
 				long id = db.insertOrThrow(Tables.COURSE_PATTERNS, null, values);
 				notifyChange(uri);
 				return CoursePatterns.buildPatternUri(Long.toString(id));
-			}
-			case COURSEMEETINGS: {
-				long id = db.insertOrThrow(Tables.COURSE_MEETINGS, null, values);
-				notifyChange(uri);
-				return CourseMeetings.buildMeetingUri(Long.toString(id));
 			}
 			case COURSEROSTER: {
 				long id = db.insertOrThrow(Tables.COURSE_ROSTER, null, values);
@@ -643,6 +644,13 @@ public class EllucianProvider extends ContentProvider {
 				return builder.table(Tables.MODULES_ROLES)
 						.where(ModulesRoles._ID + "=?", id);
 			}
+            case MODULESBEACONS:
+                return builder.table(Tables.MODULES_BEACONS);
+            case MODULESBEACONS_ID: {
+                final String id = ModulesBeacons.getBeaconId(uri);
+                return builder.table(Tables.MODULES_BEACONS)
+                        .where(ModulesBeacons._ID + "=?", id);
+            }
 			case GRADETERMS:
 				return builder.table(Tables.GRADE_TERMS);
 			case GRADETERMS_ID: {
@@ -770,13 +778,6 @@ public class EllucianProvider extends ContentProvider {
 				return builder.table(Tables.COURSE_PATTERNS)
 						.where(CoursePatterns._ID + "=?", patternId);
 			}
-			case COURSEMEETINGS:
-				return builder.table(Tables.COURSE_MEETINGS);
-			case COURSEMEETINGS_ID: {
-				final String meetingId = CourseMeetings.getMeetingId(uri);
-				return builder.table(Tables.COURSE_MEETINGS)
-						.where(CourseMeetings._ID + "=?", meetingId);
-			}
 			case COURSEROSTER:
 				return builder.table(Tables.COURSE_ROSTER);
 			case COURSEROSTER_ID: {
@@ -867,6 +868,13 @@ public class EllucianProvider extends ContentProvider {
 			return builder.table(Tables.MODULES_ROLES)
 					.where(ModulesRoles._ID + "=?", id);
 		}
+        case MODULESBEACONS:
+            return builder.table(Tables.MODULES_BEACONS);
+        case MODULESBEACONS_ID: {
+            final String id = ModulesBeacons.getBeaconId(uri);
+            return builder.table(Tables.MODULES_BEACONS)
+                    .where(ModulesBeacons._ID + "=?", id);
+        }
 		case GRADETERMS:
 			return builder.table(Tables.GRADE_TERMS);
 		case GRADETERMS_ID:
@@ -1007,13 +1015,6 @@ public class EllucianProvider extends ContentProvider {
 			final String patternId = CoursePatterns.getPatternId(uri);
 			return builder.table(Tables.COURSE_PATTERNS)
 					.where(CoursePatterns._ID + "=?", patternId);
-		}
-		case COURSEMEETINGS:
-			return builder.table(Tables.COURSE_MEETINGS);
-		case COURSEMEETINGS_ID: {
-			final String meetingId = CourseMeetings.getMeetingId(uri);
-			return builder.table(Tables.COURSE_MEETINGS)
-					.where(CourseMeetings._ID + "=?", meetingId);
 		}
 		case COURSEROSTER:
 			return builder.table(Tables.COURSE_ROSTER);

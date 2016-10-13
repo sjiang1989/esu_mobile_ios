@@ -14,7 +14,7 @@ import CoreData
 class AboutContactPageController: WKInterfaceController {
     
     @IBOutlet var contactLabel: WKInterfaceLabel!
-    override func awakeWithContext(context: AnyObject?) {
-        self.contactLabel.setText(AppGroupUtilities.userDefaults()?.stringForKey("about-contact"))
+    override func awake(withContext context: Any?) {
+        self.contactLabel.setText(AppGroupUtilities.userDefaults()?.string(forKey: "about-contact"))
     }
 }

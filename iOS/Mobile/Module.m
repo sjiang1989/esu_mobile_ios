@@ -22,5 +22,6 @@
 @dynamic properties;
 @dynamic roles;
 @dynamic homeScreenOrder;
+@dynamic displayInMenu;
 
 @end

@@ -66,15 +66,15 @@ static const NSUInteger DAY_IN_MINUTES = 1440;
     if (self == event)
         return YES;
     
-    if (![self.line1 isEqual:[event line1]])
+    if (!([self.line1 isEqual:[event line1]] || (!self.line1 && ![event line1])))
         return NO;
-    if (![self.line2 isEqual:[event line2]])
+    if (!([self.line2 isEqual:[event line2]] || (!self.line2 && ![event line2])))
         return NO;
-    if (![self.line3 isEqual:[event line3]])
+    if (!([self.line3 isEqual:[event line3]] || (!self.line3 && ![event line3])))
         return NO;
-    if (![self.start isEqualToDate:[event start]])
+    if (!([self.start isEqualToDate:[event start]] || (!self.start && ![event start])))
         return NO;
-    if (![self.end isEqualToDate:[event end]])
+    if (!([self.end isEqualToDate:[event end]] || (!self.end && ![event end])))
         return NO;
     if (self.allDay != [event allDay])
         return NO;

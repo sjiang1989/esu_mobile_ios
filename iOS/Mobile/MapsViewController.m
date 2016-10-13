@@ -7,23 +7,15 @@
 //
 
 #import "MapsViewController.h"
-#import "Map.h"
-#import "Module+Attributes.h"
-#import "MapCampus.h"
-#import "MapPOI.h"
 #import "MapPinAnnotation.h"
 #import "POIListViewController.h"
 #import "POIDetailViewController.h"
-#import "MapPOIType.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
-//#import "SlidingViewController.h"
 #import "Ellucian_GO-Swift.h"
 
 @interface MapsViewController ()
 
 @property (strong, nonatomic) NSArray *campuses;
 @property (strong, nonatomic) MapCampus *selectedCampus;
-@property (nonatomic, strong) UIActionSheet *actionSheet;
 @property (nonatomic, strong) CLLocationManager *locationManager;
 
 @end
@@ -34,21 +26,22 @@
 {
     [super viewDidLoad];
     
+    [self startTrackingLocation];
+    
     if(!self.locationManager) {
         self.locationManager = [[CLLocationManager alloc] init];
         self.locationManager.delegate = self;
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest;
     }
-    
-    self.zoomWithCurrentLocationButton.enabled = NO;
-    
     self.mapView.delegate = self;
     
     self.title = self.module.name;
     self.navigationController.navigationBar.translucent = NO;
-    self.searchDisplayController.searchBar.translucent = NO;
     self.toolbar.translucent = NO;
     
+    self.searchBar.delegate = self;
+    self.definesPresentationContext = YES;
+
     [self fetchCachedMaps];
     if ([self.campuses count] == 0) {
         [self fetchMaps];
@@ -61,15 +54,18 @@
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Map of campus" forModuleNamed:self.module.name];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuOpened:) name:kSlidingViewOpenMenuAppearsNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuClosed:) name:kSlidingViewTopResetNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(didBecomeActive:)
-                                                 name:UIApplicationDidBecomeActiveNotification object:nil];
+    [self sendView:@"Map of campus" moduleName:self.module.name];
+    //TODO use the notification names instead of strings after converting this to swift
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuOpened:) name:@"SlidingViewOpenMenuAppearsNotification" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuClosed:) name:@"SlidingViewTopResetNotification"  object:nil];
+}
 
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
     [self startTrackingLocation];
+    
+    // Send notification to ensure that POI searchController will not persist
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"MapsViewWillAppear" object:nil];
 }
 
 - (void)viewWillDisappear:(BOOL)animated{
@@ -82,52 +78,39 @@
 
 - (IBAction)campusSelector:(id)sender {
 
-    [self sendEventWithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionButton_Press withLabel:@"Tap campus selector" withValue:nil forModuleNamed:self.module.name];
-    if([self.actionSheet isVisible]) {
-        [self.actionSheet dismissWithClickedButtonIndex:[self.actionSheet cancelButtonIndex] animated:YES];
-        
-        self.actionSheet.delegate = nil;
-        self.actionSheet = nil;
-        
-        return;
-    }
+    [self sendEventWithCategory:Analytics.UI_Action action:Analytics.Button_Press label:@"Tap campus selector" moduleName:self.module.name];
     
-    if(nil == self.actionSheet) {
-        self.actionSheet = [[UIActionSheet alloc] initWithTitle:NSLocalizedString(@"Select Campus", @"title of action sheet for user to select which campus to see on the map")
-                                                                 delegate:self
-                                                        cancelButtonTitle:nil
-                                                   destructiveButtonTitle:nil
-                                                        otherButtonTitles:nil];
+    if([self.campuses count] > 0) {
         
-      
-        if(![self shouldPresentActionSheet:self.actionSheet]) {
-            self.actionSheet = nil;
-            return;
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Select Campus", @"title of action sheet for user to select which campus to see on the map")
+                                                                             message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        
+        UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Cancel", comment: @"Cancel") style:UIAlertActionStyleCancel handler:nil];
+        [alertController addAction:cancelAction];
+       
+        for(MapCampus *campus in self.campuses) {
+            UIAlertAction *campusAction = [UIAlertAction actionWithTitle:campus.name style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Invoke_Native label:@"Select campus" moduleName:self.module.name];
+                NSUserDefaults *userDefaults = [AppGroupUtilities userDefaults];
+                NSString *key = [NSString stringWithFormat:@"%@-%@", @"mapLastCampus", self.module.internalKey ];
+                [userDefaults setObject:campus.campusId forKey:key];
+                [self showCampus:campus];
+            }];
+            [alertController addAction:campusAction];
         }
         
+        if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+            alertController.popoverPresentationController.barButtonItem = self.campusSelectionButton;
+        } else {
+            alertController.popoverPresentationController.sourceView = self.navigationController.toolbar;
+            alertController.popoverPresentationController.sourceRect = self.navigationController.toolbar.bounds;
+        }
         
-        [self.actionSheet setCancelButtonIndex:[self.actionSheet addButtonWithTitle:NSLocalizedString(@"Cancel", @"Cancel")]];
-        
-    }
-    
-    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-        [self.actionSheet showFromBarButtonItem:self.campusSelectionButton animated:YES];
-    } else {
-        [self.actionSheet showFromToolbar:self.navigationController.toolbar];
-    }
-     
-}
 
--(void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-    if (buttonIndex == actionSheet.cancelButtonIndex) { return; }
-    
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionInvoke_Native withLabel:@"Select campus" withValue:nil forModuleNamed:self.module.name];
-    MapCampus *campus = [self.campuses objectAtIndex:buttonIndex];
-    NSUserDefaults *userDefaults = [AppGroupUtilities userDefaults];
-    NSString *key = [NSString stringWithFormat:@"%@-%@", @"mapLastCampus", self.module.internalKey ];
-    [userDefaults setObject:campus.campusId forKey:key];
-    [self showCampus:campus];
+        [self presentViewController:alertController animated:YES completion:nil];
+
+        
+    }
 }
 
 -(void) showCampus:(MapCampus *)campus
@@ -154,7 +137,15 @@
         [self.mapView setRegion:region animated:YES];
     }
     
-    for(MapPOI *poi in campus.points) {
+    NSArray *filtered = campus.points.allObjects;
+    NSString *searchText = self.searchBar.text;
+    if (searchText.length > 0) {
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"moduleInternalKey = %@ AND (name CONTAINS[cd] %@ OR ANY types.name CONTAINS[cd] %@ OR campus.name CONTAINS[cd] %@)", self.module.internalKey, searchText, searchText, searchText];
+        filtered = [campus.points.allObjects filteredArrayUsingPredicate:predicate];
+    }
+    
+    for(MapPOI *poi in filtered) {
+
         MapPinAnnotation *annotation = [[MapPinAnnotation alloc] initWithMapPOI:poi];
         [self.mapView addAnnotation:annotation];
     }
@@ -172,7 +163,6 @@
 		if (!pinView) {
 			// If an existing pin view was not available, create one
 			MKPinAnnotationView* customPinView = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pinAnnotationIdentifier];
-			customPinView.pinColor = MKPinAnnotationColorRed;
 			customPinView.animatesDrop = YES;
 			customPinView.canShowCallout = YES;
             
@@ -191,7 +181,7 @@
 
 - (void)mapView:(MKMapView *)_mapView annotationView:(MKAnnotationView *)view calloutAccessoryControlTapped:(UIControl *)control {
     if ([view.annotation isKindOfClass:[MapPinAnnotation class]]) {
-        [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionButton_Press withLabel:@"Select Map Pin" withValue:nil forModuleNamed:self.module.name];
+        [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Button_Press label:@"Select Map Pin" moduleName:self.module.name];
         MapPinAnnotation *annotation = view.annotation;
         [self performSegueWithIdentifier:@"Show POI" sender:annotation.poi];
     }
@@ -201,7 +191,7 @@
 {
     if ([[segue identifier] isEqualToString:@"Show POI List"])
     {
-        [self sendEventWithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionButton_Press withLabel:@"Tap building icon" withValue:nil forModuleNamed:self.module.name];
+        [self sendEventWithCategory:Analytics.UI_Action action:Analytics.Button_Press label:@"Tap building icon" moduleName:self.module.name];
         POIListViewController *vc = (POIListViewController *) [segue destinationViewController];
         vc.module = self.module;
     }  else if ([[segue identifier] isEqualToString:@"Show POI"])
@@ -225,23 +215,41 @@
     }
 }
 
--(BOOL)shouldPresentActionSheet:(UIActionSheet *)actionSheet
-{
-    if(actionSheet == self.actionSheet) {
-        if([self.campuses count] == 0) {
-            return NO;
-        }
-        for(MapCampus *campus in self.campuses) {
-            [self.actionSheet addButtonWithTitle:campus.name];
-        }
-                
-    }
-    return YES;
-}
-
 - (IBAction)showMyLocation:(id)sender {
     
-    [self sendEventWithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionInvoke_Native withLabel:@"Geolocate user" withValue:nil forModuleNamed:self.module.name];
+    CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
+    if (status == kCLAuthorizationStatusNotDetermined) {
+        [self.locationManager requestWhenInUseAuthorization];
+    }
+    else if (status == kCLAuthorizationStatusAuthorizedWhenInUse || status == kCLAuthorizationStatusAuthorizedAlways) {
+        [self showLocationOnMap];
+    } else if (status == kCLAuthorizationStatusDenied) {
+        UIAlertController * alert=   [UIAlertController
+                                      alertControllerWithTitle:NSLocalizedString(@"Location Access Disabled", @"Location Access Disabled")
+                                      message:NSLocalizedString(@"Location services are used at your institution to alert you when you are near location specific information or services. Please allow location access \"Always\" in your device settings.", @"Description shown to user if location access disabled.  The text in quotes is the label used by iOS. Arabic=دائما Spanish=Siempre French=Tourjous Portuguese=Sempre")
+                                      preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction* settingsAction = [UIAlertAction
+                             actionWithTitle:NSLocalizedString(@"Settings", "Settings application name. This is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages")
+                             style:UIAlertActionStyleDefault
+                             handler:^(UIAlertAction * action)
+                             {
+                                 [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+                                 
+                             }];
+        UIAlertAction* cancel = [UIAlertAction
+                                 actionWithTitle:NSLocalizedString(@"Cancel", @"Cancel")
+                                 style:UIAlertActionStyleCancel
+                                 handler:nil];
+        
+        [alert addAction:settingsAction];
+        [alert addAction:cancel];
+        [self presentViewController:alert animated:YES completion:nil];
+    }
+}
+
+-(void) showLocationOnMap {
+
+    [self sendEventWithCategory:Analytics.UI_Action action:Analytics.Invoke_Native label:@"Geolocate user" moduleName:self.module.name];
     
     MKUserLocation *userLocation = self.mapView.userLocation;
     
@@ -268,7 +276,7 @@
 }
 
 - (IBAction)mapTypeChanged:(id)sender {
-    [self sendEventWithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionInvoke_Native withLabel:@"Change map view" withValue:nil forModuleNamed:self.module.name];
+    [self sendEventWithCategory:Analytics.UI_Action action:Analytics.Invoke_Native label:@"Change map view" moduleName:self.module.name];
     UISegmentedControl *segmentedControl = (UISegmentedControl *)sender;
 	switch([segmentedControl selectedSegmentIndex]) {
         case 0: {
@@ -508,25 +516,10 @@
     return _searchFetchRequest;
 }
 
--(void)searchForText:(NSString *)searchText
-{
-    //NSPredicate *predicate = [NSPredicate predicateWithFormat:@"modname CONTAINS[cd] %@", searchText];
-    self.searchFetchRequest.predicate = [NSPredicate predicateWithFormat:@"moduleInternalKey = %@ AND (name CONTAINS[cd] %@ OR ANY types.name CONTAINS[cd] %@ OR campus.name CONTAINS[cd] %@)", self.module.internalKey, searchText, searchText, searchText];
-    
-    NSError *error;
-    self.filteredList = [self.module.managedObjectContext executeFetchRequest:self.searchFetchRequest error:&error];
-}
-
 -(void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
     self.searchFetchRequest = nil;
-}
-
-- (BOOL) searchDisplayController:(UISearchDisplayController *)controller shouldReloadTableForSearchString:(NSString *)searchString
-{
-    [self searchForText:searchString];
-    return YES;
 }
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -562,7 +555,27 @@
 
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar
 {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionSearch withLabel:@"Search" withValue:nil forModuleNamed:nil];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Search label:@"Search" moduleName:nil];
+    [searchBar setShowsCancelButton:YES animated:YES];
+}
+
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar
+{
+    [searchBar resignFirstResponder];
+    [[searchBar valueForKey:@"_cancelButton"] setEnabled:YES];
+}
+
+- (void)searchBar:(UISearchBar *)searchBar
+    textDidChange:(NSString *)searchText {
+    [self showCampus:self.selectedCampus];
+}
+
+- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar
+{
+    [searchBar setShowsCancelButton:NO animated:YES];
+    searchBar.text = @"";
+    [searchBar resignFirstResponder];
+    [self showCampus:self.selectedCampus];
 }
 
 -(void) menuOpened:(id)sender
@@ -583,10 +596,8 @@
     }
     else if (status == kCLAuthorizationStatusAuthorizedWhenInUse || status == kCLAuthorizationStatusAuthorizedAlways) {
         [self.locationManager startUpdatingLocation];
-        self.zoomWithCurrentLocationButton.enabled = YES;
         self.mapView.showsUserLocation = YES;
     } else if (status == kCLAuthorizationStatusDenied) {
-        self.zoomWithCurrentLocationButton.enabled = NO;
     }
 }
 
@@ -604,17 +615,6 @@
         default:
             break;
     }
-}
-
--(void) didBecomeActive:(id)sender
-{
-    CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
-    if (status == kCLAuthorizationStatusAuthorizedWhenInUse || status == kCLAuthorizationStatusAuthorizedAlways) {
-        self.zoomWithCurrentLocationButton.enabled = YES;
-    } else if (status == kCLAuthorizationStatusDenied) {
-        self.zoomWithCurrentLocationButton.enabled = NO;
-    }
-
 }
 
 @end

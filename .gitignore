@@ -18,8 +18,6 @@ Mobile.xccheckout
 **/.DS_Store
 Android/.gradle
 Android/local.properties
-Android/.idea/workspace.xml
-Android/.idea/libraries
 Android/app/build
 .idea
-Android/build/intermediates
+Android/build

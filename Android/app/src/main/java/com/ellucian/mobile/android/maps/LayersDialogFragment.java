@@ -40,12 +40,18 @@ public class LayersDialogFragment extends DialogFragment implements
 		this.listener = listener;
 	}
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        this.setCancelable(false);
+        setRetainInstance(true);
+        super.onCreate(savedInstanceState);
+    }
+
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		int type = getArguments().getInt("type");
 
 		return new AlertDialog.Builder(getActivity())
-				.setIcon(android.R.drawable.ic_dialog_alert)
 				.setTitle(getString(R.string.layers))
 				.setSingleChoiceItems(R.array.map_types, type,
 						new DialogInterface.OnClickListener() {
@@ -65,4 +71,12 @@ public class LayersDialogFragment extends DialogFragment implements
 		listener.setLayer(selected);
 		
 	}
+
+    @Override
+    public void onDestroyView() {
+        if (getDialog() != null && getRetainInstance()) {
+            getDialog().setDismissMessage(null);
+        }
+        super.onDestroyView();
+    }
 }

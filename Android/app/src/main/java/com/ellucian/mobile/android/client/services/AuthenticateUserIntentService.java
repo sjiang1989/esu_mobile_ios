@@ -13,6 +13,8 @@ import android.util.Log;
 import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.client.MobileClient;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
+import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import org.json.JSONArray;
@@ -27,8 +29,6 @@ public class AuthenticateUserIntentService extends IntentService {
 	public static final String ACTION_SUCCESS = "com.ellucian.mobile.android.client.services.AuthenticateUserIntentService.action.success";
 	private static final String ACTION_FAILED = "com.ellucian.mobile.android.client.services.AuthenticateUserIntentService.action.failed";
 	private static final String TAG = AuthenticateUserIntentService.class.getSimpleName();
-	
-	private EllucianApplication ellucianApp;
 
 	public AuthenticateUserIntentService() {
 		super("AuthenticateUserIntentService");
@@ -37,12 +37,13 @@ public class AuthenticateUserIntentService extends IntentService {
 
 	@Override
 	protected void onHandleIntent(Intent intent) {
-		ellucianApp = (EllucianApplication)this.getApplication();
+		EllucianApplication ellucianApp = (EllucianApplication) this.getApplication();
 		
-		String securityUrl = Utils.getStringFromPreferences(this, Utils.SECURITY, Utils.SECURITY_URL, "");
+		String securityUrl = PreferencesUtils.getStringFromPreferences(this, Utils.SECURITY, Utils.SECURITY_URL, "");
 		String loginUsername = intent.getStringExtra(Extra.LOGIN_USERNAME);
 		String loginPassword = intent.getStringExtra(Extra.LOGIN_PASSWORD);
 		boolean saveUser = intent.getBooleanExtra(Extra.LOGIN_SAVE_USER, false);
+		boolean useFingerprint = intent.getBooleanExtra(Extra.LOGIN_USE_FINGERPRINT, false);
 		boolean backgroundAuth = intent.getBooleanExtra(Extra.LOGIN_BACKGROUND, false);
 		boolean refreshOnly = intent.getBooleanExtra(Extra.REFRESH, false);
 		
@@ -61,7 +62,7 @@ public class AuthenticateUserIntentService extends IntentService {
 
 		if (!TextUtils.isEmpty(response)) {
 			JSONObject userInfoJson;
-			String status = null;
+			String status;
 			try {
 				userInfoJson = new JSONObject(response);
 				status = userInfoJson.getString("status");
@@ -70,7 +71,7 @@ public class AuthenticateUserIntentService extends IntentService {
 
 					String userId = userInfoJson.getString("userId");
 					String username = userInfoJson.getString("authId");
-					ArrayList<String> roleList = new ArrayList<String>();
+					ArrayList<String> roleList = new ArrayList<>();
 					if (userInfoJson.has("roles")) {
 						JSONArray roles = userInfoJson.getJSONArray("roles");
 						if (roles != null) {
@@ -87,9 +88,9 @@ public class AuthenticateUserIntentService extends IntentService {
 							roleList);
 
 					// Save User Info into shared preferences if the user chooses to.
-					if (saveUser) {
-						Utils.saveUserInfo(this, userId, username,
-								loginPassword, roleList);
+					if (saveUser || useFingerprint) {
+						UserUtils.saveUserInfo(this, userId, username,
+								loginPassword, roleList, useFingerprint);
 
 					}
 					success = true;

@@ -28,17 +28,17 @@ class CoursesPageSelectionViewController : UITableViewController {
         
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        sendView("Term List", forModuleNamed: self.module?.name)
+        sendView("Term List", moduleName: self.module?.name)
     }
     
     //MARK :UITable
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
     
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let terms = terms {
             return terms.count
         } else {
@@ -46,19 +46,19 @@ class CoursesPageSelectionViewController : UITableViewController {
         }
     }
     
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let delegate = self.coursesChangePageDelegate {
-            delegate.selectedTerm = indexPath.row
+            delegate.selectedTerm = (indexPath as NSIndexPath).row
             delegate.loadSchedule()
-            self.dismissViewControllerAnimated(true, completion: nil)
+            self.dismiss(animated: true, completion: nil)
             
         }
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Courses Term Selection Cell", forIndexPath: indexPath) as UITableViewCell
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Courses Term Selection Cell", for: indexPath) as UITableViewCell
         
-        let term = terms![indexPath.row]
+        let term = terms![(indexPath as NSIndexPath).row]
         
         let titleLabel = cell.viewWithTag(1) as? UILabel
         
@@ -66,7 +66,7 @@ class CoursesPageSelectionViewController : UITableViewController {
         return cell
     }
     
-    override func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return UITableViewAutomaticDimension
     }
 }

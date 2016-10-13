@@ -43,8 +43,6 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:layout_marginEnd="20dp"
-                    android:layout_marginLeft="30dp"
-                    android:layout_marginRight="20dp"
                     android:layout_marginStart="30dp"
                     android:layout_weight="1"
                     android:clickable="true"
@@ -81,7 +79,6 @@
                         android:id="@+id/courses_daily_ruler"
                         android:layout_width="fill_parent"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentLeft="true"
                         android:layout_alignParentStart="true"
                         android:layout_alignParentTop="true"
                         app:labelTextSize="@dimen/list_description_text_size" />

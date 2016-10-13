@@ -19,30 +19,29 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "reload", name: kSignInNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.reload), name: CurrentUser.SignInNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.applicationDidBecomeActive(_:)), name: CurrentUser.SignInNotification, object: nil)
 
-        tableView .registerClass(MenuTableViewHeaderFooterView.self, forHeaderFooterViewReuseIdentifier: "Header")
-        tableView .registerClass(MenuTableViewHeaderFooterView.self, forHeaderFooterViewReuseIdentifier: "CollapseableHeader")
+        tableView .register(MenuTableViewHeaderFooterView.self, forHeaderFooterViewReuseIdentifier: "Header")
+        tableView .register(MenuTableViewHeaderFooterView.self, forHeaderFooterViewReuseIdentifier: "CollapseableHeader")
         
         readCustomizationsPropertyList()
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "registerObservers", name: "Mobile Server Configuration Load Succeeded", object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.registerObservers), name: ConfigurationManager.ConfigurationLoadSucceededNotification, object: nil)
         
     }
     
-    deinit {
-        NSNotificationCenter.defaultCenter().removeObserver(self)
-    }
-    
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        reload()
         
-        dispatch_async(dispatch_get_global_queue(0, 0), {() -> Void in
+        NotificationCenter.default.post(name: UIViewController.SlidingViewOpenMenuAppearsNotification, object: nil)
+        
+        reload()
+        DispatchQueue.global(qos: .userInteractive).async (execute: {() -> Void in
 
             //Ellucian Mobile 4.0 -> 4.1 upgrade... if configurationUrl was known but doesn't have it cached in new structure, go refresh
-            let configurationManager = ConfigurationManager.instance
+            let configurationManager = ConfigurationManager.shared
             let defaults = AppGroupUtilities.userDefaults()
-            let configurationUrl = defaults?.stringForKey("configurationUrl")
+            let configurationUrl = defaults?.string(forKey: "configurationUrl")
             
             if configurationManager.isConfigurationLoaded() || configurationUrl != nil {
                 // trigger refresh if needed
@@ -50,68 +49,73 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     (result) -> Void in
                     
                     if configurationManager.isConfigurationLoaded() {
-                        dispatch_async(dispatch_get_main_queue()) {
-                            AppearanceChanger.applyAppearanceChanges(self.view)
+                        DispatchQueue.main.async {
+                            AppearanceChanger.applyAppearanceChanges()
                             self.reload()
                         }
                     } else {
                         if self.loaded {
-                            NSNotificationCenter.defaultCenter().postNotificationName(kConfigurationFetcherError, object: nil)
+                            NotificationCenter.default.post(name: ConfigurationFetcher.ConfigurationFetcherErrorNotification, object: nil)
                         }
                     }
                 }
             } else {
-                NSOperationQueue.mainQueue().addOperation(OpenModuleConfigurationSelectionOperation())
+                OperationQueue.main.addOperation(OpenModuleConfigurationSelectionOperation())
             }
         })
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        NotificationCenter.default.post(name: UIViewController.SlidingViewTopResetNotification, object: nil)
     }
     
     // MARK: - Observers
     
     func registerObservers() {
         self.loaded = true
-        NSNotificationCenter.defaultCenter().removeObserver(self)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "outdated:", name: "VersionCheckerOutdatedNotification", object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "updateAvailable:", name: "VersionCheckerUpdateAvailableNotification", object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "applicationDidBecomeActive:", name: UIApplicationDidBecomeActiveNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "respondToSignOut:", name: "SignOutNotification", object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "notificationsUpdated:", name: "NotificationsUpdated", object: nil)
+        NotificationCenter.default.removeObserver(self)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.outdated(_:)), name: VersionChecker.VersionCheckerOutdatedNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.updateAvailable(_:)), name: VersionChecker.VersionCheckerUpdateAvailableNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.applicationDidBecomeActive(_:)), name: NSNotification.Name.UIApplicationDidBecomeActive, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.respondToSignOut(_:)), name: CurrentUser.SignOutNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MenuViewController.notificationsUpdated(_:)), name: NotificationsFetcher.NotificationsUpdatedNotification, object: nil)
     }
     
-    func outdated(notification: NSNotification) {
-        dispatch_async(dispatch_get_main_queue()) {
-            let alert = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("The application must be upgraded to the latest version.", comment: "Force update alert message"), preferredStyle: UIAlertControllerStyle.Alert)
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .Default, handler: { action in
+    func outdated(_ notification: Notification) {
+        DispatchQueue.main.async {
+            let alert = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("The application must be upgraded to the latest version.", comment: "Force update alert message"), preferredStyle: UIAlertControllerStyle.alert)
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .default, handler: { action in
                  self.openITunes()
             }))
-            self.presentViewController(alert, animated: true, completion: nil)
+            self.present(alert, animated: true, completion: nil)
         }
     }
     
-    func updateAvailable(notification: NSNotification) {
-        dispatch_async(dispatch_get_main_queue()) {
-            let alert = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("A new version is available.", comment: "Outdated alert message"), preferredStyle: UIAlertControllerStyle.Alert)
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .Default, handler: { action in
+    func updateAvailable(_ notification: Notification) {
+        DispatchQueue.main.async {
+            let alert = UIAlertController(title: NSLocalizedString("Outdated", comment: "Outdated alert title"), message: NSLocalizedString("A new version is available.", comment: "Outdated alert message"), preferredStyle: UIAlertControllerStyle.alert)
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Upgrade", comment: "Upgrade software button label"), style: .default, handler: { action in
                 self.openITunes()
             }))
-            alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .Cancel, handler: nil))
+            alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .cancel, handler: nil))
 
-            self.presentViewController(alert, animated: true, completion: nil)
+            self.present(alert, animated: true, completion: nil)
         }
     }
     
-    func applicationDidBecomeActive(notification: NSNotification) {
+    func applicationDidBecomeActive(_ notification: Notification) {
         reload()
-        NotificationsFetcher.fetchNotifications(CoreDataManager.shared.managedObjectContext)
+        NotificationsFetcher.fetchNotifications(managedObjectContext: CoreDataManager.sharedInstance.managedObjectContext)
     }
     
-    func respondToSignOut(notification: NSNotification) {
+    func respondToSignOut(_ notification: Notification) {
         if let rows = tableView.indexPathsForVisibleRows {
-            self.tableView.reloadRowsAtIndexPaths(rows, withRowAnimation: .None)
+            self.tableView.reloadRows(at: rows, with: .none)
         }
     }
     
-    func notificationsUpdated(notifcation: NSNotification) {
+    func notificationsUpdated(_ notifcation: Notification) {
         reload()
     }
 
@@ -120,39 +124,39 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
         buildMenuOperation.completionBlock = {
             let modules = buildMenuOperation.modules
             self.drawMenu(modules)
-            dispatch_async(dispatch_get_main_queue(),{
+            DispatchQueue.main.async(execute: {
                 self.tableView.reloadData()
                 
             })
         }
-        NSOperationQueue.mainQueue().addOperation(buildMenuOperation)
+        OperationQueue.main.addOperation(buildMenuOperation)
     }
     
     // MARK: - iTunes
     
     func openITunes () {
-        let delegate : AppDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
+        let delegate : AppDelegate = UIApplication.shared.delegate as! AppDelegate
         delegate.reset()
         
         let iTunesLink = "http://appstore.com/elluciango"
-        if let url = NSURL(string: iTunesLink) {
-            UIApplication.sharedApplication().openURL(url)
+        if let url = URL(string: iTunesLink) {
+            UIApplication.shared.openURL(url)
         }
     }
     
     // MARK: protocol UITableViewDataSource
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if isActionSection(section) {
-            return useSwitchSchool ? 4 : 3
+            return useSwitchSchool ? 5 : 4
         }
         let menuSectionInfo = self.menuSectionInfo![section]
         if menuSectionInfo.collapsed { return 0 }
         return menuSectionInfo.modules.count
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let section = indexPath.section
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let section = (indexPath as NSIndexPath).section
         if isActionSection(section) {
             return cellForActionsRow(indexPath)
         } else {
@@ -160,7 +164,7 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
         }
     }
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int
+    func numberOfSections(in tableView: UITableView) -> Int
     {
         guard let _ = self.menuSectionInfo else { return 0 }
         return self.menuSectionInfo!.count
@@ -170,23 +174,23 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // Section header & footer information. Views are preferred over title should you decide to provide both
     
-    func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let menuSectionInfo = self.menuSectionInfo![section]
         
         let sectionHeaderView : MenuTableViewHeaderFooterView
         if menuSectionInfo.collapseable {
             sectionHeaderView =
-                 tableView.dequeueReusableHeaderFooterViewWithIdentifier("CollapseableHeader") as! MenuTableViewHeaderFooterView
+                 tableView.dequeueReusableHeaderFooterView(withIdentifier: "CollapseableHeader") as! MenuTableViewHeaderFooterView
             
-            var collapsedHeaders : [String]? = AppGroupUtilities.userDefaults()?.stringArrayForKey("menu-collapsed")
+            var collapsedHeaders : [String]? = AppGroupUtilities.userDefaults()?.stringArray(forKey: "menu-collapsed")
             if collapsedHeaders == nil {
                 collapsedHeaders = []
             }
             let collapsed = (collapsedHeaders?.contains(menuSectionInfo.headerTitle!))!
-            sectionHeaderView.collapsibleButton!.selected = collapsed;
+            sectionHeaderView.collapsibleButton!.isSelected = collapsed;
 
         } else {
-            sectionHeaderView = tableView.dequeueReusableHeaderFooterViewWithIdentifier("Header") as!MenuTableViewHeaderFooterView
+            sectionHeaderView = tableView.dequeueReusableHeaderFooterView(withIdentifier: "Header") as!MenuTableViewHeaderFooterView
         }
 
         if let headerLabel = sectionHeaderView.headerLabel {
@@ -199,81 +203,80 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
     
     // Called after the user changes the selection.
-    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        switch (indexPath.section, indexPath.row, isActionSection(indexPath.section), self.useSwitchSchool) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        switch ((indexPath as NSIndexPath).section, (indexPath as NSIndexPath).row, isActionSection((indexPath as NSIndexPath).section), self.useSwitchSchool) {
         case (_, 0, true, _) :
-            NSOperationQueue.mainQueue().addOperation(OpenModuleHomeOperation())
+            OperationQueue.main.addOperation(OpenModuleHomeOperation())
         case (_, 1, true, _) :
-            NSOperationQueue.mainQueue().addOperation(OpenModuleAboutOperation())
-        case (_, 2, true, true):
-            NSOperationQueue.mainQueue().addOperation(OpenModuleConfigurationSelectionOperation())
-        case (_, 2, true, false), (_, 3, true, _):
+            OperationQueue.main.addOperation(OpenModuleSettingsOperation())
+        case (_, 2, true, _) :
+            OperationQueue.main.addOperation(OpenModuleAboutOperation())
+        case (_, 3, true, true):
+            OperationQueue.main.addOperation(OpenModuleConfigurationSelectionOperation())
+        case (_, 3, true, false), (_, 4, true, _):
             //sign out
-            if CurrentUser.sharedInstance().isLoggedIn {
-                sendEventWithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionMenu_selection, withLabel: "Menu-Click Sign Out", withValue: nil, forModuleNamed: nil)
-                NSOperationQueue.mainQueue().addOperation(LoginSignOutOperation())
-                let cell = tableView.cellForRowAtIndexPath(indexPath)
-                if let cell = cell, nameLabel = cell.viewWithTag(101) as? UILabel {
+            if CurrentUser.sharedInstance.isLoggedIn {
+                sendEvent(category: .ui_Action, action: .menu_selection, label: "Menu-Click Sign Out")
+                OperationQueue.main.addOperation(LoginSignOutOperation())
+                let cell = tableView.cellForRow(at: indexPath)
+                if let cell = cell, let nameLabel = cell.viewWithTag(101) as? UILabel {
                     nameLabel.text = NSLocalizedString("Sign In", comment: "label to sign in")
                 }
-                tableView.deselectRowAtIndexPath(indexPath, animated: true)
+                tableView.deselectRow(at: indexPath, animated: true)
                 reload()
             } else {
-                sendEventWithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionMenu_selection, withLabel: "Menu-Click Sign In", withValue: nil, forModuleNamed: nil)
+                sendEvent(category: .ui_Action, action: .menu_selection, label: "Menu-Click Sign In")
                 let operation = LoginSignInOperation(controller: self)
                 if let slidingViewController = self.view.window?.rootViewController as? ECSlidingViewController {
                     if slidingViewController.topViewController is UINavigationController && slidingViewController.topViewController.childViewControllers[0] is HomeViewController {
                         operation.successCompletionHandler = {
-                            NSOperationQueue.mainQueue().addOperation(OpenModuleHomeOperation())
+                            OperationQueue.main.addOperation(OpenModuleHomeOperation())
                         }
                     }
                 }
-                NSOperationQueue.mainQueue().addOperation(operation)
+                OperationQueue.main.addOperation(operation)
             }
         case (_, _, _, _) :
             //anything else
-            let menuSectionInfo = self.menuSectionInfo![indexPath.section]
+            let menuSectionInfo = self.menuSectionInfo![(indexPath as NSIndexPath).section]
             let modules = menuSectionInfo.modules
-            let module = modules[indexPath.row]
-            NSOperationQueue.mainQueue().addOperation(OpenModuleOperation(module: module))
+            let module = modules[(indexPath as NSIndexPath).row]
+            OperationQueue.main.addOperation(OpenModuleOperation(module: module))
         }
-        tableView.deselectRowAtIndexPath(indexPath, animated: true)
+        tableView.deselectRow(at: indexPath, animated: true)
     }
 
     // MARK: utility
-    func isActionSection(sectionIndex: Int) -> Bool {
+    func isActionSection(_ sectionIndex: Int) -> Bool {
         guard let _ = self.menuSectionInfo else { return true }
         return menuSectionInfo!.count == 1 + sectionIndex
     }
     
-    func cellForActionsRow(indexPath: NSIndexPath) -> UITableViewCell {
+    func cellForActionsRow(_ indexPath: IndexPath) -> UITableViewCell {
         
-        let cell: UITableViewCell;
+        let cell: UITableViewCell = tableView.dequeueReusableCell(withIdentifier: "Menu Cell", for: indexPath) as UITableViewCell
         
-        if AppearanceChanger.isIOS8AndRTL() {
-            cell = tableView.dequeueReusableCellWithIdentifier("Menu RTL Cell", forIndexPath: indexPath) as UITableViewCell
-        } else {
-            cell = tableView.dequeueReusableCellWithIdentifier("Menu Cell", forIndexPath: indexPath) as UITableViewCell
-        }
-        
-        if let nameLabel = cell.viewWithTag(101) as? UILabel, imageView = cell.viewWithTag(102) as? UIImageView {
-            switch (indexPath.row, self.useSwitchSchool) {
+        if let nameLabel = cell.viewWithTag(101) as? UILabel, let imageView = cell.viewWithTag(102) as? UIImageView {
+            switch ((indexPath as NSIndexPath).row, self.useSwitchSchool) {
             case (0, _):
                 nameLabel.text = NSLocalizedString("Home", comment: "Home menu item")
                 imageView.image = UIImage(named: "icon-home")
             case (1, _):
+                nameLabel.text = NSLocalizedString("Settings", comment: "Settings menu item")
+                imageView.image = UIImage(named: "icon-settings")
+            case (2, _):
                 nameLabel.text = NSLocalizedString("About", comment: "About menu item")
-                let iconUrl = AppGroupUtilities.userDefaults()?.stringForKey("about-icon")
-                if iconUrl != nil {
-                    imageView.image = ImageCache.sharedCache().getCachedImage(iconUrl)
+                let iconUrl = AppGroupUtilities.userDefaults()?.string(forKey: "about-icon")
+                if let iconUrl = iconUrl {
+                    imageView.image = ImageCache.sharedCache.getCachedImage(iconUrl)
                 } else {
                     imageView.image = UIImage(named: "icon-about")
                 }
-            case (2, true):
+            case (3, true):
                 nameLabel.text = NSLocalizedString("Switch School", comment: "Switch school menu item")
                 imageView.image = UIImage(named: "icon-switch-schools")
-            case (2, false), (3, _):
-                if CurrentUser.sharedInstance().isLoggedIn {
+            case (3, false), (4, _):
+                if CurrentUser.sharedInstance.isLoggedIn {
                     nameLabel.text = NSLocalizedString("Sign Out", comment: "Sign Out menu item");
                 } else {
                     nameLabel.text = NSLocalizedString("Sign In", comment: "Sign In menu item");
@@ -283,64 +286,58 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 ()
             }
         }
-        if let countLabel = cell.viewWithTag(103) as? UILabel, lockImageView = cell.viewWithTag(104) as? UIImageView  {
+        if let countLabel = cell.viewWithTag(103) as? UILabel, let lockImageView = cell.viewWithTag(104) as? UIImageView  {
             countLabel.text = nil
-            countLabel.hidden = true
-            lockImageView.hidden = true
+            countLabel.isHidden = true
+            lockImageView.isHidden = true
         }
         return cell
         
     }
     
-    func cellForModulesRow(indexPath: NSIndexPath) -> UITableViewCell {
-        let cell: UITableViewCell;
-
-        if AppearanceChanger.isIOS8AndRTL() {
-            cell = tableView.dequeueReusableCellWithIdentifier("Menu RTL Cell", forIndexPath: indexPath) as UITableViewCell
-        } else {
-            cell = tableView.dequeueReusableCellWithIdentifier("Menu Cell", forIndexPath: indexPath) as UITableViewCell
-        }
+    func cellForModulesRow(_ indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Menu Cell", for: indexPath) as UITableViewCell
         
-        let menuSectionInfo = self.menuSectionInfo![indexPath.section]
-        let module = menuSectionInfo.modules[indexPath.row]
+        let menuSectionInfo = self.menuSectionInfo![(indexPath as NSIndexPath).section]
+        let module = menuSectionInfo.modules[(indexPath as NSIndexPath).row]
 
         if let nameLabel = cell.viewWithTag(101) as? UILabel {
             nameLabel.text = module.name
         }
         if let imageView = cell.viewWithTag(102) as? UIImageView {
             if let iconUrl = module.iconUrl {
-                imageView.image = ImageCache.sharedCache().getCachedImage(iconUrl)
+                imageView.image = ImageCache.sharedCache.getCachedImage(iconUrl)
             } else {
                 imageView.image = nil
             }
         }
-        if let countLabel = cell.viewWithTag(103) as? UILabel, lockImageView = cell.viewWithTag(104) as? UIImageView  {
+        if let countLabel = cell.viewWithTag(103) as? UILabel, let lockImageView = cell.viewWithTag(104) as? UIImageView  {
             
             countLabel.text = nil
-            countLabel.hidden = true
-            lockImageView.hidden = true
+            countLabel.isHidden = true
+            lockImageView.isHidden = true
             
-            if CurrentUser.sharedInstance().isLoggedIn {
+            if CurrentUser.sharedInstance.isLoggedIn {
                 
                 if module.type == "notifications" {
                     do{
-                        let managedObjectContext = CoreDataManager.shared.managedObjectContext
-                        let request = NSFetchRequest(entityName: "Notification")
-                        request.predicate = NSPredicate(format: "read == %@", false)
+                        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
+                        let request = NSFetchRequest<EllucianNotification>(entityName: "Notification")
+                        request.predicate = NSPredicate(format: "read == %@", argumentArray: [false])
                         request.includesSubentities = false
-                        let notifications = try managedObjectContext.executeFetchRequest(request)
+                        let notifications = try managedObjectContext.fetch(request)
                         let count = notifications.count
                         countLabel.text = "\(count)"
                         drawLabel(countLabel)
-                        countLabel.hidden = (count == 0)
+                        countLabel.isHidden = (count == 0)
                     } catch {
                     }
                 }
                 
-                lockImageView.hidden = true
+                lockImageView.isHidden = true
             } else {
                 if module.requiresAuthentication() {
-                    lockImageView.hidden = false
+                    lockImageView.isHidden = false
                 }
             }
             
@@ -348,69 +345,69 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
         return cell
     }
     
-    func drawLabel(label: UILabel) {
+    func drawLabel(_ label: UILabel) {
         let layer = label.layer
         layer.cornerRadius = label.bounds.size.height / 2
-        label.textColor = UIColor.blackColor()
-        label.font = UIFont.systemFontOfSize(14)
-        label.textAlignment = NSTextAlignment.Center
+        label.textColor = UIColor.black
+        label.font = UIFont.systemFont(ofSize: 14)
+        label.textAlignment = NSTextAlignment.center
         label.backgroundColor = UIColor(red: 102/255, green: 102/255, blue: 102/255, alpha: 1)
     }
     
     // MARK: SectionHeaderViewDelegate
     
-    func sectionHeaderView(sectionHeaderView: MenuTableViewHeaderFooterView, sectionOpened section: Int) {
+    func sectionHeaderView(_ sectionHeaderView: MenuTableViewHeaderFooterView, sectionOpened section: Int) {
         let menuSectionInfo = self.menuSectionInfo![section]
         menuSectionInfo.collapsed = false
         
         let defaults = AppGroupUtilities.userDefaults()!
-        var collapsedHeaders : [String]? = defaults.stringArrayForKey("menu-collapsed")
+        var collapsedHeaders : [String]? = defaults.stringArray(forKey: "menu-collapsed")
         if collapsedHeaders == nil {
             collapsedHeaders = []
         }
         collapsedHeaders = collapsedHeaders!.filter({ $0 != menuSectionInfo.headerTitle})
-        defaults.setObject(collapsedHeaders, forKey: "menu-collapsed")
+        defaults.set(collapsedHeaders, forKey: "menu-collapsed")
         
         let modules = menuSectionInfo.modules
         let countOfRowsToInsert = modules.count
-        var indexPathsToInsert = [NSIndexPath]()
+        var indexPathsToInsert = [IndexPath]()
         for index in 0 ..< countOfRowsToInsert {
-            indexPathsToInsert.append( NSIndexPath(forRow: index, inSection: section) )
+            indexPathsToInsert.append( IndexPath(row: index, section: section) )
         }
         
         sectionHeaderView.collapsibleButton?.accessibilityLabel = NSLocalizedString("Toggle menu section", comment:"Accessibility label for toggle menu section button")
         
         tableView.beginUpdates()
-        tableView.insertRowsAtIndexPaths(indexPathsToInsert, withRowAnimation: .None)
+        tableView.insertRows(at: indexPathsToInsert, with: .none)
         tableView.endUpdates()
         
         UIAccessibilityPostNotification(UIAccessibilityLayoutChangedNotification, sectionHeaderView);
         
     }
     
-    func sectionHeaderView(sectionHeaderView: MenuTableViewHeaderFooterView, sectionClosed section: Int) {
+    func sectionHeaderView(_ sectionHeaderView: MenuTableViewHeaderFooterView, sectionClosed section: Int) {
         let menuSectionInfo = self.menuSectionInfo![section]
         menuSectionInfo.collapsed = true
         
         let defaults = AppGroupUtilities.userDefaults()!
-        var collapsedHeaders : [String]? = defaults.stringArrayForKey("menu-collapsed")
+        var collapsedHeaders : [String]? = defaults.stringArray(forKey: "menu-collapsed")
         if collapsedHeaders == nil {
             collapsedHeaders = []
         }
         collapsedHeaders!.append(menuSectionInfo.headerTitle!)
-        defaults.setObject(collapsedHeaders, forKey: "menu-collapsed")
+        defaults.set(collapsedHeaders, forKey: "menu-collapsed")
         
         let modules = menuSectionInfo.modules
         let countOfRowsToInsert = modules.count
-        var indexPathsToInsert = [NSIndexPath]()
+        var indexPathsToInsert = [IndexPath]()
         for index in 0 ..< countOfRowsToInsert {
-            indexPathsToInsert.append( NSIndexPath(forRow: index, inSection: section) )
+            indexPathsToInsert.append( IndexPath(row: index, section: section) )
         }
         
         sectionHeaderView.collapsibleButton?.accessibilityLabel = NSLocalizedString("Toggle menu section", comment:"Accessibility label for toggle menu section button")
         
         tableView.beginUpdates()
-        tableView.deleteRowsAtIndexPaths(indexPathsToInsert, withRowAnimation: .None)
+        tableView.deleteRows(at: indexPathsToInsert, with: .none)
         tableView.endUpdates()
         
         UIAccessibilityPostNotification(UIAccessibilityLayoutChangedNotification, sectionHeaderView);
@@ -419,9 +416,9 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // MARK: draw
     
-    func drawMenu(modules: [Module]) {
+    func drawMenu(_ modules: [Module]) {
         
-        var collapsedHeaders : [String]? = AppGroupUtilities.userDefaults()?.stringArrayForKey("menu-collapsed")
+        var collapsedHeaders : [String]? = AppGroupUtilities.userDefaults()?.stringArray(forKey: "menu-collapsed")
         if collapsedHeaders == nil {
             collapsedHeaders = []
         }
@@ -478,14 +475,14 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
     
     private func readCustomizationsPropertyList() {
-        if let customizationsPath = NSBundle.mainBundle().pathForResource("Customizations", ofType: "plist") , let customizationsDictionary = NSDictionary(contentsOfFile: customizationsPath) as? Dictionary<String, AnyObject> {
+        if let customizationsPath = Bundle.main.path(forResource: "Customizations", ofType: "plist") , let customizationsDictionary = NSDictionary(contentsOfFile: customizationsPath) as? Dictionary<String, AnyObject> {
             if let useSwitchSchool = customizationsDictionary["Allow Switch School"] {
                 self.useSwitchSchool = useSwitchSchool as! Bool
             }
         }
     }
     
-    func tableView(tableView: UITableView, willDisplayCell cell: UITableViewCell, forRowAtIndexPath indexPath: NSIndexPath) {
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         cell.backgroundColor = UIColor(white: 0.163037, alpha: 1.0)
     }
 }

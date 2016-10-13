@@ -7,9 +7,6 @@
 //
 
 #import "RegistrationSearchViewController.h"
-#import "AuthenticatedRequest.h"
-#import "Module+Attributes.h"
-#import "CurrentUser.h"
 #import "MBProgressHUD.h"
 #import "RegistrationPlannedSection.h"
 #import "RegistrationPlannedSectionMeetingPattern.h"
@@ -19,9 +16,9 @@
 #import "RegistrationTabBarController.h"
 #import "RegistrationTerm.h"
 #import "Module.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
 #import "RegistrationLocation.h"
 #import "RegistrationAcademicLevel.h"
+#import "Ellucian_GO-Swift.h"
 
 @interface RegistrationSearchViewController ()
 
@@ -41,7 +38,7 @@
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Registration Search" forModuleNamed:self.module.name];
+    [self sendView:@"Registration Search" moduleName:self.module.name];
 }
 
 -(void) viewDidLoad
@@ -83,7 +80,8 @@
     
     self.navigationItem.title = [self.module name];
     
-    self.termsPickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0, 43, 320, 480)];
+    CGFloat height = MIN(480, MIN([[UIScreen mainScreen] bounds].size.width, [[UIScreen mainScreen] bounds].size.height) - 44);
+    self.termsPickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0, 43, 320, height)];
     self.termsPickerView.delegate = self;
     self.termsPickerView.dataSource = self;
     [self.termsPickerView setShowsSelectionIndicator:YES];
@@ -91,9 +89,8 @@
     self.termTextField.inputView = self.termsPickerView ;
     self.termTextField.delegate = self;
     
-    self.pickerToolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, 320, 56)];
+    self.pickerToolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, 320, 44)];
     self.pickerToolbar.barStyle = UIBarStyleBlackOpaque;
-    [self.pickerToolbar sizeToFit];
     
     NSMutableArray *barItems = [[NSMutableArray alloc] init];
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
@@ -171,7 +168,7 @@
 {
     [self.searchTextField resignFirstResponder];
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-    hud.labelText = NSLocalizedString(@"Searching", @"searching message");
+    hud.label.text = NSLocalizedString(@"Searching", @"searching message");
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.01 * NSEC_PER_SEC);
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
         NSMutableArray *searchCourses = [self searchForCourses];
@@ -187,13 +184,13 @@
     NSString *urlString;
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
     if([self.academicLevels count] > 0 && [self.locations count] > 0) {
-        urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@&academicLevels=%@&locations=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.searchTextField.text stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedTermId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedAcademicLevelsCodes stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedLocationsCodes stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+        urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@&academicLevels=%@&locations=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid] stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.searchTextField.text stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedTermId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedAcademicLevelsCodes stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedLocationsCodes stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
     } else if( [self.academicLevels count] >0 ) {
-            urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@&academicLevels=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.searchTextField.text stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedTermId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedAcademicLevelsCodes stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+            urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@&academicLevels=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid] stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.searchTextField.text stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedTermId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedAcademicLevelsCodes stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
     } else if( [self.locations count] > 0) {
-        urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@&locations=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.searchTextField.text stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedTermId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedLocationsCodes stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+        urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@&locations=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid] stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.searchTextField.text stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedTermId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedLocationsCodes stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
     } else {
-        urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.searchTextField.text stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.selectedTermId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+        urlString = [NSString stringWithFormat:@"%@/%@/search-courses?pattern=%@&term=%@", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid] stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.searchTextField.text stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]], [self.selectedTermId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
 
     }
 
@@ -371,6 +368,12 @@
             if([plannedSectionJson objectForKey:@"available"] != [NSNull null]) {
                 plannedSection.available = [plannedSectionJson objectForKey:@"available"];
             }
+            if([plannedSectionJson objectForKey:@"authorizationCodeRequired"] != [NSNull null]) {
+                plannedSection.authorizationCodeRequired = [[plannedSectionJson objectForKey:@"authorizationCodeRequired"] boolValue];
+            }
+            if([plannedSectionJson objectForKey:@"authorizationCodePresented"] != [NSNull null]) {
+                plannedSection.authorizationCode = [plannedSectionJson objectForKey:@"authorizationCodePresented"];
+            }
         }
     } else {
         [self.registrationTabController reportError:authenticatedRequest.error.localizedDescription];
@@ -426,7 +429,7 @@
         resultsViewController.module = self.module;
     } else if ([[segue identifier] isEqualToString:@"Show Filter"])
     {
-        [self sendEventWithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionList_Select withLabel:@"Select filter" withValue:nil forModuleNamed:self.module.name];
+        [self sendEventWithCategory:Analytics.UI_Action action:Analytics.List_Select label:@"Select filter" moduleName:self.module.name];
         UINavigationController *navController = [segue destinationViewController];
         RegistrationRefineSearchViewController *detailController = [[navController viewControllers] objectAtIndex:0];
         detailController.locations = self.locations;

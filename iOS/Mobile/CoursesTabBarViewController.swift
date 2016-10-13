@@ -8,12 +8,11 @@
 
 import Foundation
 
-class CoursesTabBarViewController : UITabBarController {
+class CoursesTabBarViewController : UITabBarController, EllucianMobileLaunchableControllerProtocol {
     
-    var module : Module?
+    var module : Module!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.tabBar.translucent = false
     }
 }

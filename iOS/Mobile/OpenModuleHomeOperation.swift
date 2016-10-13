@@ -11,10 +11,10 @@ import UIKit
 class OpenModuleHomeOperation: OpenModuleAbstractOperation {
 
     override func main() {
-        dispatch_async(dispatch_get_main_queue(), {
+        DispatchQueue.main.async(execute: {
             
             let storyboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
-            let navController = storyboard.instantiateViewControllerWithIdentifier("LandingPage") as! UINavigationController
+            let navController = storyboard.instantiateViewController(withIdentifier: "LandingPage") as! UINavigationController
             let controller = navController.childViewControllers[0] as! HomeViewController
             self.showViewController(controller)
         })

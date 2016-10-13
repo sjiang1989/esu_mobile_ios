@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.text.TextUtils;
 
 import com.androidquery.AQuery;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 public class HomescreenBackground {
@@ -31,10 +32,10 @@ public class HomescreenBackground {
         String backgroundUrl = null;
         if ((context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >=
                 Configuration.SCREENLAYOUT_SIZE_LARGE) {
-            backgroundUrl = Utils.getStringFromPreferences(context, Utils.APPEARANCE, Utils.HOME_URL_TABLET, "");
+            backgroundUrl = PreferencesUtils.getStringFromPreferences(context, Utils.APPEARANCE, Utils.HOME_URL_TABLET, "");
         }
         if (TextUtils.isEmpty(backgroundUrl)) {
-            backgroundUrl = Utils.getStringFromPreferences(context, Utils.APPEARANCE, Utils.HOME_URL_PHONE, "");
+            backgroundUrl = PreferencesUtils.getStringFromPreferences(context, Utils.APPEARANCE, Utils.HOME_URL_PHONE, "");
         }
 
         image = null;

@@ -25,14 +25,14 @@
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     UITableViewHeaderFooterView* h = [self.tableView dequeueReusableHeaderFooterViewWithIdentifier:@"Header"];
 
-    if (![h.backgroundColor isEqual: [UIColor accentColor]]) {
+    if (![h.backgroundColor isEqual: [UIColor accent]]) {
         
-        h.contentView.backgroundColor = [UIColor accentColor];
+        h.contentView.backgroundColor = [UIColor accent];
         
         UILabel* headerLabel = [UILabel new];
         headerLabel.tag = 1;
         headerLabel.backgroundColor = [UIColor clearColor];
-        headerLabel.textColor = [UIColor subheaderTextColor];
+        headerLabel.textColor = [UIColor subheaderText];
         headerLabel.font = [UIFont boldSystemFontOfSize:16];
         [headerLabel setMinimumScaleFactor:.5f];
 

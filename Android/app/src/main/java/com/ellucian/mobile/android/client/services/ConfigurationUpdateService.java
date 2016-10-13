@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client.services;
@@ -15,7 +15,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.hardware.fingerprint.FingerprintManagerCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -28,6 +30,7 @@ import com.ellucian.mobile.android.client.configuration.ConfigurationBuilder;
 import com.ellucian.mobile.android.client.configuration.MobileServerConfigurationBuilder;
 import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import org.json.JSONArray;
@@ -49,8 +52,7 @@ public class ConfigurationUpdateService extends IntentService {
 	public static final String ACTION_OUTDATED = "com.ellucian.mobile.android.client.services.ConfigurationUpdateService.action.outdated";
 	public static final String ACTION_UNABLE_TO_DOWNLOAD = "com.ellucian.mobile.android.client.services.ConfigurationUpdateService.action.unableToDownload";
     public static final String REFRESH_MOBILESERVER_ONLY = "refreshMobileServerOnly";
-	private static final String TAG = ConfigurationUpdateService.class
-			.getSimpleName();
+	private static final String TAG = ConfigurationUpdateService.class.getSimpleName();
 	private boolean imagesDone;
 	private ImageLoaderReceiver imageReceiver;
 	private boolean refresh;
@@ -61,6 +63,7 @@ public class ConfigurationUpdateService extends IntentService {
 
 	@Override
 	protected void onHandleIntent(Intent intent) {
+
         if (intent.getBooleanExtra(REFRESH_MOBILESERVER_ONLY, false)) {
             refreshMobileServerConfig();
             return;
@@ -106,7 +109,7 @@ public class ConfigurationUpdateService extends IntentService {
 						&& jsonConfiguration.has("versions")
 						&& jsonConfiguration.getJSONObject("versions").has(
 								"android")) {
-					ArrayList<String> supportedVersions = new ArrayList<String>();
+					ArrayList<String> supportedVersions = new ArrayList<>();
 					JSONArray jsonVersions = jsonConfiguration.getJSONObject(
 							"versions").getJSONArray("android");
 					for (int i = 0; i < jsonVersions.length(); i++) {
@@ -232,41 +235,30 @@ public class ConfigurationUpdateService extends IntentService {
 
 							// Set if Directory are present
 							if (type.equals(ModuleType.DIRECTORY)) {
-								Utils.addBooleanToPreferences(this,
+								PreferencesUtils.addBooleanToPreferences(this,
 										Utils.CONFIGURATION,
 										Utils.DIRECTORY_PRESENT, true);
 							}
 							// Set if Maps are present
 							if (type.equals(ModuleType.MAPS)) {
-								Utils.addBooleanToPreferences(this,
+								PreferencesUtils.addBooleanToPreferences(this,
 										Utils.CONFIGURATION, Utils.MAP_PRESENT,
 										true);
 							}
 
 							// Check to see if notifications are present
 							if (type.equals(ModuleType.NOTIFICATIONS)) {								
-								Utils.addBooleanToPreferences(this, Utils.CONFIGURATION,
+								PreferencesUtils.addBooleanToPreferences(this, Utils.CONFIGURATION,
 								        Utils.NOTIFICATION_PRESENT, true);
 
 								JSONObject urls = moduleObject.getJSONObject("urls");
 
-								Utils.addStringToPreferences(this, Utils.NOTIFICATION,
+								PreferencesUtils.addStringToPreferences(this, Utils.NOTIFICATION,
 								        Utils.NOTIFICATION_NOTIFICATIONS_URL, urls.getString("notifications"));
 	
-								Utils.addStringToPreferences(this, Utils.NOTIFICATION,
+								PreferencesUtils.addStringToPreferences(this, Utils.NOTIFICATION,
 								        Utils.NOTIFICATION_MOBILE_NOTIFICATIONS_URL, urls.getString("mobilenotifications"));
 
-							}
-
-							// Set if the course roster is visible
-							if (type.equals(ModuleType.COURSES)) {
-								String visible = "none";
-								if (moduleObject.has("visible")) {
-									visible = moduleObject.getString("visible");
-								}
-								Utils.addStringToPreferences(this,
-										Utils.CONFIGURATION,
-										Utils.COURSE_ROSTER_VISIBILITY, visible);
 							}
 
 						}
@@ -302,7 +294,7 @@ public class ConfigurationUpdateService extends IntentService {
 
 		if (success) {
             long updateCheckedTime = System.currentTimeMillis();
-            Utils.addLongToPreferences(this, Utils.CONFIGURATION, Utils.CONFIGURATION_LAST_CHECKED,
+            PreferencesUtils.addLongToPreferences(this, Utils.CONFIGURATION, Utils.CONFIGURATION_LAST_CHECKED,
                     updateCheckedTime);
 			Log.d(TAG, "Configuration update time: " + updateCheckedTime);
 		}
@@ -337,9 +329,9 @@ public class ConfigurationUpdateService extends IntentService {
 	}
 
 	private ArrayList<String> collectHomeImageUrls(JSONObject jsonConfiguration) {
-		ArrayList<String> imageUrlList = new ArrayList<String>();
+		ArrayList<String> imageUrlList = new ArrayList<>();
 
-		// Collecting home background image and school logo
+		// Collecting home background image
 		try {
 			JSONObject layout = jsonConfiguration.getJSONObject("layout");
 			if ((getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= 
@@ -355,31 +347,15 @@ public class ConfigurationUpdateService extends IntentService {
 				}
 			}
 			
-			if (layout.has(Utils.SCHOOL_LOGO_PHONE)
-					&& !TextUtils.isEmpty(layout
-							.getString(Utils.SCHOOL_LOGO_PHONE))) {
-				imageUrlList.add(layout.getString(Utils.SCHOOL_LOGO_PHONE));
-			}
-			if (layout.has(Utils.SCHOOL_LOGO_TABLET)
-					&& !TextUtils.isEmpty(layout
-							.getString(Utils.SCHOOL_LOGO_TABLET))) {
-				imageUrlList.add(layout.getString(Utils.SCHOOL_LOGO_TABLET));
-			}
 		} catch (JSONException e) {
 			Log.e(TAG + ".collectImageUrls", "JSONException:", e);
-		}
-
-		String menuIconUrl = Utils.getStringFromPreferences(this,
-				Utils.APPEARANCE, Utils.MENU_ICON_URL, null);
-		if (!TextUtils.isEmpty(menuIconUrl)) {
-			imageUrlList.add(menuIconUrl);
 		}
 
 		return imageUrlList;
 	}
 
 	private ArrayList<String> collectOtherImageUrls(JSONObject jsonConfiguration) {
-		ArrayList<String> imageUrlList = new ArrayList<String>();
+		ArrayList<String> imageUrlList = new ArrayList<>();
 
 		// Collecting menu icon images
 		try {
@@ -400,7 +376,7 @@ public class ConfigurationUpdateService extends IntentService {
 			Log.e(TAG + ".collectImageUrls", "JSONException:", e);
 		}
 
-		String aboutIconUrl = Utils.getStringFromPreferences(this,
+		String aboutIconUrl = PreferencesUtils.getStringFromPreferences(this,
 				Utils.APPEARANCE, AboutActivity.PREFERENCES_ICON, null);
 		if (!TextUtils.isEmpty(aboutIconUrl)) {
 			imageUrlList.add(aboutIconUrl);
@@ -414,12 +390,12 @@ public class ConfigurationUpdateService extends IntentService {
 
         /** Adding lastUpdated info **/
         if (jsonConfiguration.has("lastUpdated")) {
-            Utils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.CONFIGURATION_LAST_UPDATED, jsonConfiguration.getString("lastUpdated"));
+            PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.CONFIGURATION_LAST_UPDATED, jsonConfiguration.getString("lastUpdated"));
         }
 
         SharedPreferences preferences = this.getSharedPreferences(
 				Utils.APPEARANCE, MODE_PRIVATE);
-		preferences.edit().clear().commit();
+		preferences.edit().clear().apply();
 		SharedPreferences.Editor editor = preferences.edit();
 
 		/** Adding Layout Info **/
@@ -465,13 +441,7 @@ public class ConfigurationUpdateService extends IntentService {
 		} else {
 			editor.putBoolean(Utils.DEFAULT_MENU_ICON, true);
 		}
-		if (layout.has(Utils.MENU_ICON_URL)
-				&& !TextUtils.isEmpty(layout.getString(Utils.MENU_ICON_URL))) {
-			editor.putString(Utils.MENU_ICON_URL,
-					layout.getString(Utils.MENU_ICON_URL));
-		} else {
-			editor.putString(Utils.MENU_ICON_URL, null);
-		}
+
 		if (layout.has(Utils.HOME_URL_PHONE)
 				&& !TextUtils.isEmpty(layout.getString(Utils.HOME_URL_PHONE))) {
 			editor.putString(Utils.HOME_URL_PHONE,
@@ -481,21 +451,6 @@ public class ConfigurationUpdateService extends IntentService {
 				&& !TextUtils.isEmpty(layout.getString(Utils.HOME_URL_TABLET))) {
 			editor.putString(Utils.HOME_URL_TABLET,
 					layout.getString(Utils.HOME_URL_TABLET));
-		} 
-		if (layout.has(Utils.SCHOOL_LOGO_PHONE)
-				&& !TextUtils
-						.isEmpty(layout.getString(Utils.SCHOOL_LOGO_PHONE))) {
-			editor.putString(Utils.SCHOOL_LOGO_PHONE,
-					layout.getString(Utils.SCHOOL_LOGO_PHONE));
-		}
-		if (layout.has(Utils.SCHOOL_LOGO_TABLET)
-				&& !TextUtils.isEmpty(layout
-						.getString(Utils.SCHOOL_LOGO_TABLET))) {
-			editor.putString(Utils.SCHOOL_LOGO_TABLET,
-					layout.getString(Utils.SCHOOL_LOGO_TABLET));
-		} else {
-			editor.putString(Utils.SCHOOL_LOGO_TABLET,
-					"http://cloud.ellucian.com/logo.png"); // need defaults
 		}
 
 		/** Adding About Info **/
@@ -567,43 +522,55 @@ public class ConfigurationUpdateService extends IntentService {
 			editor.putString(AboutActivity.PREFERENCES_VERSION_URL,
 					version.getString("url"));
 		}
-		editor.commit();
+		editor.apply();
 
 		/** Adding Security Info **/
 		JSONObject security = jsonConfiguration.getJSONObject("security");
 		if (security.has("url")) {
-			Utils.addStringToPreferences(this, Utils.SECURITY,
+			PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
 					Utils.SECURITY_URL, security.getString("url"));
 		}
+        if (security.has("logoutUrl")) {
+            PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
+                    Utils.LOGOUT_URL, security.getString("logoutUrl"));
+        }
 		if (security.has("cas")) {
+            PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
+                    Utils.AUTHENTICATION_TYPE, Utils.CAS_AUTH);
+
 			JSONObject cas = security.getJSONObject("cas");
 			String loginType = null;
 			if (cas.has("loginType")) {
 				loginType = cas.getString("loginType");
 			}
-			Utils.addStringToPreferences(this, Utils.SECURITY,
+			PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
 					Utils.LOGIN_TYPE, loginType);
 			String loginUrl = null;
 			if (cas.has("loginUrl")) {
 				loginUrl = cas.getString("loginUrl");
 			}
-			Utils.addStringToPreferences(this, Utils.SECURITY,
+			PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
 					Utils.LOGIN_URL, loginUrl);
 			
 		} else if (security.has("web")) {
+            PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
+                    Utils.AUTHENTICATION_TYPE, Utils.WEB_AUTH);
+
 			JSONObject web = security.getJSONObject("web");
 
-			Utils.addStringToPreferences(this, Utils.SECURITY,
+			PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
 					Utils.LOGIN_TYPE, Utils.BROWSER_LOGIN_TYPE);
 			String loginUrl = null;
 			if (web.has("loginUrl")) {
 				loginUrl = web.getString("loginUrl");
 			}
-			Utils.addStringToPreferences(this, Utils.SECURITY,
+			PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
 					Utils.LOGIN_URL, loginUrl);
 			
 		} else {
-			Utils.addStringToPreferences(this, Utils.SECURITY,
+            PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
+                    Utils.AUTHENTICATION_TYPE, Utils.BASIC_AUTH);
+			PreferencesUtils.addStringToPreferences(this, Utils.SECURITY,
 					Utils.LOGIN_TYPE, "native");
 		}
 
@@ -614,9 +581,9 @@ public class ConfigurationUpdateService extends IntentService {
 		    if (notification != null && notification.has("urls")) {
 			    JSONObject urls = notification.getJSONObject("urls");
 			    if (urls != null) {
-				    Utils.addStringToPreferences(this, Utils.NOTIFICATION,
+				    PreferencesUtils.addStringToPreferences(this, Utils.NOTIFICATION,
 					        Utils.NOTIFICATION_REGISTRATION_URL, urls.getString("registration"));
-				    Utils.addStringToPreferences(this, Utils.NOTIFICATION,
+				    PreferencesUtils.addStringToPreferences(this, Utils.NOTIFICATION,
 					        Utils.NOTIFICATION_DELIVERED_URL, urls.getString("delivered"));
 			    }
 		    }
@@ -625,7 +592,7 @@ public class ConfigurationUpdateService extends IntentService {
 			// ignore this for now
 		}
 		// remove enabled attribute if it exists to ensure we check
-		Utils.removeValuesFromPreferences(this, Utils.NOTIFICATION,
+		PreferencesUtils.removeValuesFromPreferences(this, Utils.NOTIFICATION,
 				Utils.NOTIFICATION_ENABLED);
 
 		/** Adding Map urls */
@@ -633,11 +600,11 @@ public class ConfigurationUpdateService extends IntentService {
 		if (jsonConfiguration.has("map")) {
 			JSONObject map = jsonConfiguration.getJSONObject("map");
 			if (map.has("campuses")) {
-				Utils.addStringToPreferences(this, Utils.CONFIGURATION,
+				PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
 						Utils.MAP_CAMPUSES_URL, map.getString("campuses"));
 			}
 			if (map.has("buildings")) {
-				Utils.addStringToPreferences(this, Utils.CONFIGURATION,
+				PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
 						Utils.MAP_BUILDINGS_URL, map.getString("buildings"));
 			}
 		}
@@ -647,22 +614,22 @@ public class ConfigurationUpdateService extends IntentService {
 		if (jsonConfiguration.has("directory")) {
 			JSONObject directory = jsonConfiguration.getJSONObject("directory");
 			if (directory.has("allSearch")) {
-				Utils.addStringToPreferences(this, Utils.CONFIGURATION,
+				PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
 						Utils.DIRECTORY_ALL_SEARCH_URL,
 						directory.getString("allSearch"));
 			}
 			if (directory.has("facultySearch")) {
-				Utils.addStringToPreferences(this, Utils.CONFIGURATION,
+				PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
 						Utils.DIRECTORY_FACULTY_SEARCH_URL,
 						directory.getString("facultySearch"));
 			}
 			if (directory.has("studentSearch")) {
-				Utils.addStringToPreferences(this, Utils.CONFIGURATION,
+				PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
 						Utils.DIRECTORY_STUDENT_SEARCH_URL,
 						directory.getString("studentSearch"));
 			}
             if (directory.has("baseSearch")) {
-                Utils.addStringToPreferences(this, Utils.CONFIGURATION,
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
                         Utils.DIRECTORY_BASE_SEARCH_URL,
                         directory.getString("baseSearch"));
             }
@@ -673,34 +640,59 @@ public class ConfigurationUpdateService extends IntentService {
 			JSONObject analytics = jsonConfiguration.getJSONObject("analytics");
 			String trackerId1 = analytics.has("ellucian") ? analytics.getString("ellucian") : null;
 			String trackerId2 = analytics.has("client") ? analytics.getString("client") : null;
-			Utils.addStringToPreferences(this, Utils.GOOGLE_ANALYTICS, Utils.GOOGLE_ANALYTICS_TRACKER1, trackerId1);
-			Utils.addStringToPreferences(this, Utils.GOOGLE_ANALYTICS, Utils.GOOGLE_ANALYTICS_TRACKER2, trackerId2);
+			PreferencesUtils.addStringToPreferences(this, Utils.GOOGLE_ANALYTICS, Utils.GOOGLE_ANALYTICS_TRACKER1, trackerId1);
+			PreferencesUtils.addStringToPreferences(this, Utils.GOOGLE_ANALYTICS, Utils.GOOGLE_ANALYTICS_TRACKER2, trackerId2);
 
 		}
 
         /** Adding Mobile Server Configuration url */
-        Utils.removeValuesFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_URL, Utils.MOBILESERVER_CONFIG_LAST_UPDATE, Utils.MOBILESERVER_CODEBASE_VERSION);
+        PreferencesUtils.removeValuesFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_URL, Utils.MOBILESERVER_CONFIG_LAST_UPDATE, Utils.MOBILESERVER_CODEBASE_VERSION);
 
         if (jsonConfiguration.has("mobileServerConfig")) {
             JSONObject mobileServerConfig = jsonConfiguration.getJSONObject("mobileServerConfig");
             if (mobileServerConfig.has("url")) {
-                Utils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_URL, mobileServerConfig.getString("url"));
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_URL, mobileServerConfig.getString("url"));
             }
         }
 
         /** Adding Home Screen Shortcuts */
-        Utils.removeValuesFromPreferences(this, Utils.CONFIGURATION, Utils.HOME_SCREEN_ICONS, Utils.HOME_SCREEN_OVERLAY);
+        PreferencesUtils.removeValuesFromPreferences(this, Utils.CONFIGURATION, Utils.HOME_SCREEN_ICONS, Utils.HOME_SCREEN_OVERLAY);
 
         if (jsonConfiguration.has("home")) {
             JSONObject homeScreenConfig = jsonConfiguration.getJSONObject("home");
             if (homeScreenConfig.has("icons")) {
-                Utils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.HOME_SCREEN_ICONS, homeScreenConfig.getString("icons"));
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.HOME_SCREEN_ICONS, homeScreenConfig.getString("icons"));
             }
             if (homeScreenConfig.has("overlay")) {
-                Utils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.HOME_SCREEN_OVERLAY, homeScreenConfig.getString("overlay"));
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION, Utils.HOME_SCREEN_OVERLAY, homeScreenConfig.getString("overlay"));
             }
         }
 
+        // Set if fingerprint can unlock app
+        boolean fingerprintOptionEnabled = true;
+        String authenticationType = PreferencesUtils.getStringFromPreferences(this, Utils.SECURITY, Utils.AUTHENTICATION_TYPE, "null");
+
+        // Allow any authType to use fingerprint.
+        if (authenticationType.equals("null")) {
+            Log.i(TAG, "Configuration Authentication type doesn't support fingerprint authentication");
+            fingerprintOptionEnabled = false;
+        } else {
+            // Only show fingerprint option if hardware permits it
+            FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(this);
+
+            if (!fingerprintManager.isHardwareDetected()) {
+                Log.i(TAG, "Device doesn't support fingerprint authentication");
+                fingerprintOptionEnabled = false;
+            } else if (!fingerprintManager.hasEnrolledFingerprints()) {
+                Log.d(TAG, "User hasn't enrolled any fingerprints to authenticate with");
+                fingerprintOptionEnabled = false;
+            }
+
+        }
+
+        SharedPreferences.Editor defaultEditor = PreferenceManager.getDefaultSharedPreferences(this).edit();
+        defaultEditor.putBoolean(Utils.FINGERPRINT_OPTION_ENABLED, fingerprintOptionEnabled);
+        defaultEditor.apply();
 
 	}
 
@@ -716,7 +708,7 @@ public class ConfigurationUpdateService extends IntentService {
 	}
 
     private void refreshMobileServerConfig() {
-        String mobileServerConfigUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_URL, null);
+        String mobileServerConfigUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CONFIG_URL, null);
         if (!TextUtils.isEmpty(mobileServerConfigUrl)) {
             MobileClient client = new MobileClient(this);
             String configurationString = client.getConfiguration(mobileServerConfigUrl);

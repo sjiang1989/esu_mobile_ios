@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.adapter;
@@ -12,16 +12,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CheckableSectionedListAdapter extends SectionedListAdapter {
-	
-	public CheckableSectionedListAdapter(Context context) {
+
+    public CheckableSectionedListAdapter(Context context) {
 		super(context);
-	}
-	
+    }
+
 	public CheckableSectionedListAdapter(Context context, int headerResId) {
 		super(context, headerResId);
-	}
-	
-	@Override
+    }
+
+    public CheckableSectionedListAdapter(Context context, int headerResId, int textViewResourceId) {
+        super(context, headerResId, textViewResourceId);
+    }
+
+    @Override
 	public void addSection(String section, Adapter adapter) {
 		this.headers.add(section);
 		if (!(adapter instanceof CheckableCursorAdapter)) {
@@ -42,7 +46,7 @@ public class CheckableSectionedListAdapter extends SectionedListAdapter {
 	}
 
 	public List<Integer> getCheckedPositions() {
-		List<Integer> checkedPositions = new ArrayList<Integer>();
+		List<Integer> checkedPositions = new ArrayList<>();
 		int position = 0;
 		for (Adapter adapter : this.sections) {
 			CheckableCursorAdapter cursorAdapter =  (CheckableCursorAdapter)adapter;

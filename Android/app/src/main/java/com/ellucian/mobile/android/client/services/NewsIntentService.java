@@ -53,14 +53,15 @@ public class NewsIntentService extends IntentService {
 				}
 				Log.d("NewsIntentService", "Batch executed.");
 				
-				LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
-				Intent broadcastIntent = new Intent();
-				broadcastIntent.setAction(ACTION_FINISHED);
-				broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
-				bm.sendBroadcast(broadcastIntent);
 			}
 		} else {
 			Log.d("NewsIntentService", "Response Object was null");
 		}
-	} 
+
+        LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_FINISHED);
+        broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
+        bm.sendBroadcast(broadcastIntent);
+    }
 }

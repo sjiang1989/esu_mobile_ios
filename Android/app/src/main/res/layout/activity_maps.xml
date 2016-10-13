@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 <android.support.v4.widget.DrawerLayout
     android:id="@+id/drawer_layout"
@@ -13,10 +13,10 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <include layout="@layout/toolbar_with_dropdown" />
+        <include layout="@layout/toolbar" />
 
         <fragment
-              class="com.google.android.gms.maps.SupportMapFragment"
+              class="com.google.android.gms.maps.MapFragment"
               android:id="@+id/map"
               android:layout_width="match_parent"
               android:layout_height="match_parent" />

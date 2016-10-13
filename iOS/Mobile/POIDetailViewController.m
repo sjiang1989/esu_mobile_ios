@@ -7,9 +7,6 @@
 //
 
 #import "POIDetailViewController.h"
-#import "MapPOIType.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
-#import "AppearanceChanger.h"
 #import "Ellucian_GO-Swift.h"
 
 @implementation POIDetailViewController
@@ -20,10 +17,6 @@
 
     self.navigationController.navigationBar.translucent = NO;
 
-    if([AppearanceChanger isIOS8AndRTL]) {
-        self.descriptionTextView.textAlignment = NSTextAlignmentRight;
-        self.addressLabel.textAlignment = NSTextAlignmentRight;
-    }
     self.nameLabel.text = self.name;
     self.campusLabel.text = self.campusName;
     if([self.types count] > 0) {
@@ -69,11 +62,11 @@
             [self fetchBuilding];
         }
     }
-    self.backgroundView.backgroundColor = [UIColor accentColor];
-    self.nameLabel.textColor = [UIColor subheaderTextColor];
-    self.typeLabel.textColor = [UIColor subheaderTextColor];
-    self.campusLabel.textColor = [UIColor subheaderTextColor];
-    if(self.imageUrl) {
+    self.backgroundView.backgroundColor = [UIColor accent];
+    self.nameLabel.textColor = [UIColor subheaderText];
+    self.typeLabel.textColor = [UIColor subheaderText];
+    self.campusLabel.textColor = [UIColor subheaderText];
+    if([self.imageUrl length] > 0) {
         [self.imageView loadImagefromURL:self.imageUrl successHandler:nil failureHandler:nil];
     } else {
         self.imageHeightConstraint.constant = 0;
@@ -124,8 +117,8 @@
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Building Detail" forModuleNamed:self.module.name];
-    self.widthConstraint.constant = [AppearanceChanger currentScreenBoundsDependOnOrientation].width;
+    [self sendView:@"Building Detail" moduleName:self.module.name];
+    self.widthConstraint.constant = [UIScreen mainScreen].bounds.size.width;
     self.descriptionTextViewHeightConstraint.constant = self.descriptionTextView.contentSize.height;
     [self.scrollView invalidateIntrinsicContentSize];
 }
@@ -161,10 +154,16 @@
 
             dispatch_async(dispatch_get_main_queue(),^ {
                 if (placemarks.count == 0) {
-                    UIAlertView *alert = [[UIAlertView alloc] init];
-                    alert.title = NSLocalizedString(@"Unknown address", @"error message when address cannot be used for getting directions");
-                    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
-                    [alert show];
+                    UIAlertController *alertController = [UIAlertController
+                                                          alertControllerWithTitle:nil
+                                                          message:NSLocalizedString(@"Unknown address", @"error message when address cannot be used for getting directions")
+                                                          preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *okAction = [UIAlertAction
+                                               actionWithTitle:NSLocalizedString(@"OK", @"OK")
+                                               style:UIAlertActionStyleDefault
+                                               handler:nil];
+                    [alertController addAction:okAction];
+                    [self presentViewController:alertController animated:YES completion:nil];
                 } else {
                     CLPlacemark* placemark = [placemarks objectAtIndex:0];
                     [self openPointOnAppleMaps:placemark.location.coordinate];
@@ -179,7 +178,7 @@
 
 -(void)tapDirections:(id)sender
 {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionInvoke_Native withLabel:@"Get Directions" withValue:nil forModuleNamed:self.module.name];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Invoke_Native label:@"Get Directions" moduleName:self.module.name];
     
     CLLocationCoordinate2D coordinate = self.location.coordinate;
     
@@ -191,10 +190,16 @@
             
             dispatch_async(dispatch_get_main_queue(),^ {
                 if (placemarks.count == 0) {
-                    UIAlertView *alert = [[UIAlertView alloc] init];
-                    alert.title = NSLocalizedString(@"Unknown address", @"error message when address cannot be used for getting directions");
-                    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
-                    [alert show];
+                    UIAlertController *alertController = [UIAlertController
+                                                          alertControllerWithTitle:nil
+                                                          message:NSLocalizedString(@"Unknown address", @"error message when address cannot be used for getting directions")
+                                                          preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *okAction = [UIAlertAction
+                                               actionWithTitle:NSLocalizedString(@"OK", @"OK")
+                                               style:UIAlertActionStyleDefault
+                                               handler:nil];
+                    [alertController addAction:okAction];
+                    [self presentViewController:alertController animated:YES completion:nil];
                 } else {
                     CLPlacemark* placemark = [placemarks objectAtIndex:0];
                     [self openDirectionsOnAppleMaps:placemark.location.coordinate];
@@ -211,7 +216,7 @@
     NSUserDefaults *defaults = [AppGroupUtilities userDefaults];
     NSString *defaultUrlString = [defaults objectForKey:@"urls-map-buildings"];
     
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@", defaultUrlString, [self.buildingId  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@", defaultUrlString, [self.buildingId  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]];
     
     NSError *error;
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
@@ -268,7 +273,7 @@
 
 -(void) didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
 {
-    self.widthConstraint.constant = [AppearanceChanger currentScreenBoundsDependOnOrientation].width;
+    self.widthConstraint.constant = [UIScreen mainScreen].bounds.size.width;
     [self.descriptionTextView invalidateIntrinsicContentSize];
     [self resetScrollViewContentOffset];
 }

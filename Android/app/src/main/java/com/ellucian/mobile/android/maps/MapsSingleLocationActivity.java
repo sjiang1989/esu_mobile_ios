@@ -1,19 +1,13 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.maps;
 
 import android.Manifest;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -27,85 +21,75 @@ import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.maps.LayersDialogFragment.LayersDialogFragmentListener;
+import com.ellucian.mobile.android.settings.SettingsUtils;
 import com.ellucian.mobile.android.util.PermissionUtil;
+import com.ellucian.mobile.android.util.Utils;
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.LocationSource;
-import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MapsSingleLocationActivity extends EllucianActivity
-		implements LayersDialogFragmentListener, LocationSource,
-		LocationListener, ActivityCompat.OnRequestPermissionsResultCallback {
+		implements LayersDialogFragmentListener, LocationListener,
+        ActivityCompat.OnRequestPermissionsResultCallback,
+        GoogleMap.OnMyLocationButtonClickListener,
+        OnMapReadyCallback,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    public static final String TAG = "MapsSingleLocationActivity";
-
-    // WRITE is required by Google Maps API to store map tiles.
-    private static final int STORAGE_REQUEST_ID = 0;
-    private static String[] STORAGE_PERMISSIONS =
-            {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    public static final String TAG = MapsSingleLocationActivity.class.getSimpleName();
+    private static final long LOCATION_REQUEST_INTERVAL = 5 * Utils.ONE_SECOND;
 
     // LOCATION is optional - user can deny and still use maps.
     private static final int LOCATION_REQUEST_ID = 1;
     private static String[] LOCATION_PERMISSIONS =
-            {Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.ACCESS_FINE_LOCATION};
+            {Manifest.permission.ACCESS_FINE_LOCATION};
 
     private GoogleMap map;
-	private OnLocationChangedListener mapLocationListener = null;
-	private LocationManager locMgr = null;
-	private final Criteria crit = new Criteria();
+    private Marker marker;
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest locationRequest;
+    private Location lastKnownLocation;
+    private boolean recreated;
 
-	@Override
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState);
 
-        // Check if the Storage permission is already available. READ is implicitly granted if WRITE is.
-        if (!hasStoragePermission()) {
-            // Storage permission have not been granted
-            requestStoragePermissions();
-        } else {
-            handleIntent();
+        if (!Utils.hasPlayServicesAvailable(this)) {
+            finish();
         }
-	}
 
-    private boolean hasLocationPermission() {
-        return (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED);
+        buildGoogleApiClient();
+
+        setContentView(R.layout.activity_maps_single_location);
+
+        MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+
+        if (savedInstanceState == null) {
+            mapFragment.setRetainInstance(true);
+        } else {
+            recreated = true;
+        }
+
+        mapFragment.getMapAsync(this);
+
     }
 
-    private boolean hasStoragePermission() {
-        return (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED);
-    }
-
-    /**
-     * (Android M+ only)
-     * Before user is prompted to grant permission, explain why we need it.
-     * If they choose to never be asked again, they will see this message
-     * and then be returned to where they came from.
-     */
-    private void requestStoragePermissions() {
-        Log.d(TAG, "Explain and request storage permission.");
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.maps_storage_alert_title)
-                .setMessage(R.string.maps_storage_alert_message)
-                .setPositiveButton(R.string.dialog_continue,
-                        new DialogInterface.OnClickListener() {
-
-                            @Override
-                            public void onClick(DialogInterface arg0, int arg1) {
-                                ActivityCompat.requestPermissions(MapsSingleLocationActivity.this,
-                                        STORAGE_PERMISSIONS, STORAGE_REQUEST_ID);
-                            }
-                        }).create().show();
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        map = googleMap;
+        map.setOnMyLocationButtonClickListener(this);
+        handleIntent();
     }
 
     /**
@@ -113,6 +97,7 @@ public class MapsSingleLocationActivity extends EllucianActivity
      * Request location permission. No explanation to user is needed.
      */
     private void requestLocationPermission() {
+        SettingsUtils.userWasAskedForPermission(this, Utils.PERMISSIONS_ASKED_FOR_LOCATION);
         ActivityCompat.requestPermissions(this, LOCATION_PERMISSIONS, LOCATION_REQUEST_ID);
     }
 
@@ -123,23 +108,10 @@ public class MapsSingleLocationActivity extends EllucianActivity
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         Log.d(TAG, "onRequestPermissionsResult");
-        if (requestCode == STORAGE_REQUEST_ID) {
-            if (!PermissionUtil.verifyPermissions(grantResults)) {
-                // Not all required permissions were granted.
-                Log.w(TAG, "The Required STORAGE permission was NOT granted.");
-                Toast.makeText(this, R.string.maps_storage_not_granted, Toast.LENGTH_LONG).show();
-                finish();  // Close activity.
-            } else {
-                Log.d(TAG, "Storage permissions have been granted.");
-                handleIntent();
-            }
-
-        } else if (requestCode == LOCATION_REQUEST_ID) {
+        if (requestCode == LOCATION_REQUEST_ID) {
             if (PermissionUtil.verifyPermissions(grantResults)) {
                 // All required permissions have been granted.
-                getLocation();
-                map.setMyLocationEnabled(true);
-                map.getUiSettings().setMyLocationButtonEnabled(true);
+                getUsersLocation();
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -149,145 +121,44 @@ public class MapsSingleLocationActivity extends EllucianActivity
 	@Override
 	protected void onResume() {
 		super.onResume();
-        if (hasLocationPermission()) {
-            getLocation();
+        if (mGoogleApiClient.isConnected()) {
+            requestLocationUpdates();
         }
 
-		if (map != null) {
-			map.setLocationSource(this);
+        if (map != null) {
 			map.setIndoorEnabled(true);
 		}
-
 	}
 
 	@Override
 	protected void onPause() {
-		if (map != null) {
-			map.setLocationSource(null);
+        super.onPause();
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        }
+
+        if (map != null) {
 			map.setIndoorEnabled(false);
-		}
-		if (locMgr != null)
-            try {
-                locMgr.removeUpdates(this);
-            } catch (Exception e) {
-                Log.e(TAG, "Location is not available" + e.getMessage());
-            }
-
-		super.onPause();
-	}
-
-	@Override
-	public void activate(OnLocationChangedListener listener) {
-		this.mapLocationListener = listener;
-	}
-
-	@Override
-	public void deactivate() {
-		this.mapLocationListener = null;
-	}
-
-	@Override
-	public void onLocationChanged(Location location) {
-		if (mapLocationListener != null) {
-			mapLocationListener.onLocationChanged(location);
-		}
-	}
-
-	@Override
-	public void onProviderDisabled(String provider) {
-		// unused
-	}
-
-	@Override
-	public void onProviderEnabled(String provider) {
-		// unused
-	}
-
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// unused
-	}
-
-	private void setUpMapIfNeeded() {
-		if (map == null) {
-			map = ((SupportMapFragment) getSupportFragmentManager()
-					.findFragmentById(R.id.map)).getMap();
 		}
 	}
 
     private void handleIntent() {
-        if (readyToGo()) {
 
-            if (!hasLocationPermission()) {
-                // Location permissions have not been granted
-                requestLocationPermission();
-            }
+        Intent intent = getIntent();
+        final String title = intent.getStringExtra("title");
+        LatLng location = new LatLng(intent.getDoubleExtra("latitude", 0),
+                intent.getDoubleExtra("longitude", 0));
+        setTitle(title);
 
-            setContentView(R.layout.activity_maps_single_location);
-            setUpMapIfNeeded();
+        map.setInfoWindowAdapter(new CustomInfoWindowAdapter(getLayoutInflater()));
+        marker = map.addMarker(new MarkerOptions().position(location).title(title));
 
-            Intent intent = getIntent();
-            final String title = intent.getStringExtra("title");
-            LatLng location = new LatLng(intent.getDoubleExtra("latitude", 0),
-                    intent.getDoubleExtra("longitude", 0));
-            setTitle(title);
-
-            map.setInfoWindowAdapter(new CustomInfoWindowAdapter(getLayoutInflater()));
-            Marker marker = map.addMarker(new MarkerOptions().position(location).title(title));
-
-            locMgr = (LocationManager) getSystemService(LOCATION_SERVICE);
-            crit.setAccuracy(Criteria.ACCURACY_COARSE);
-
-            // Don't get user's location if they haven't granted it.
-            if (hasLocationPermission()) {
-                map.setMyLocationEnabled(true);
-                map.getUiSettings().setMyLocationButtonEnabled(true);
-            }
-
+        if (!recreated) {
             CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(location, 17);
             map.moveCamera(cu);
-            marker.showInfoWindow();
         }
+        marker.showInfoWindow();
     }
-
-    private void getLocation() {
-        if(locMgr != null) {
-            try {
-                locMgr.requestLocationUpdates(0L, 0.0f, crit, this, null);
-            } catch (Exception e) {
-                Log.e(TAG, "Location not available. " + e.getMessage());
-            }
-        }
-    }
-
-
-    private boolean readyToGo() {
-		int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
-
-		if (status == ConnectionResult.SUCCESS) {
-			return (true);
-		} else if (GooglePlayServicesUtil.isUserRecoverableError(status)) {
-			// http://stackoverflow.com/questions/13932474/googleplayservicesutil-geterrordialog-is-null
-			// https://code.google.com/p/gmaps-api-issues/issues/detail?id=4720&q=store&colspec=ID%20Type%20Status%20Introduced%20Fixed%20Summary%20Stars%20ApiType%20Internal
-			Dialog dialog = GooglePlayServicesUtil.getErrorDialog(status, this,
-					0);
-			if (dialog != null) {
-				dialog.show();
-			} else {
-				Toast.makeText(this,
-						getString(R.string.maps_feature_not_supported),
-						Toast.LENGTH_LONG).show();
-				finish();
-			}
-		} else {
-			Toast.makeText(this,
-					getString(R.string.maps_feature_not_supported),
-					Toast.LENGTH_LONG).show();
-			finish();
-		}
-
-		return (false);
-	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -357,6 +228,115 @@ public class MapsSingleLocationActivity extends EllucianActivity
 	protected void onStart() {
 		super.onStart();
 		sendView("Map of campus", moduleName);
-	}
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.disconnect();
+        }
+    }
+
+    /**
+     * Builds a GoogleApiClient. Uses the addApi() method to request the LocationServices API.
+     */
+    private synchronized void buildGoogleApiClient() {
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+
+        locationRequest = new LocationRequest();
+        locationRequest.setInterval(LOCATION_REQUEST_INTERVAL);
+        locationRequest.setFastestInterval(LOCATION_REQUEST_INTERVAL);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+    }
+
+    private void enableMyLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (!recreated)
+                requestLocationPermission();
+        } else {
+            map.setMyLocationEnabled(true);
+        }
+    }
+
+    private void requestLocationUpdates() {
+        Log.i(TAG, "requestLocationUpdates: ");
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        lastKnownLocation = location;
+    }
+
+    /**
+     * Runs when a GoogleApiClient object successfully connects.
+     */
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        getUsersLocation();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult result) {
+        Log.i(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + result.getErrorCode());
+    }
+
+
+    @Override
+    public void onConnectionSuspended(int cause) {
+        Log.i(TAG, "Connection suspended. Re-connect");
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public boolean onMyLocationButtonClick() {
+        if (Utils.isLocationEnabled(this)) {
+            showMyLocation();
+        } else {
+            Toast.makeText(this, R.string.maps_enable_location_services, Toast.LENGTH_LONG).show();
+        }
+        return true;
+    }
+
+    private void showMyLocation() {
+        Log.i(TAG, "showMyLocation");
+        sendEvent(GoogleAnalyticsConstants.CATEGORY_UI_ACTION, GoogleAnalyticsConstants.ACTION_INVOKE_NATIVE, "Geolocate user", null, moduleName);
+        if (lastKnownLocation != null) {
+            LatLng myLatlng = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+            builder.include(myLatlng);
+            builder.include(marker.getPosition());
+            LatLngBounds bounds = builder.build();
+            int padding = 100; // offset from edges of the map in pixels
+            CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+            map.animateCamera(cu);
+        }
+    }
+
+    private void getUsersLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (!recreated)
+                requestLocationPermission();
+        } else {
+            requestLocationUpdates();
+            lastKnownLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            enableMyLocation();
+        }
+    }
 
 }

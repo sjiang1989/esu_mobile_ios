@@ -13,8 +13,8 @@ extension UIButton {
     func addBorderAndColor() {
         layer.cornerRadius = 5
         layer.borderWidth = 1
-        layer.borderColor = UIColor.primaryColor().CGColor
-        tintColor = UIColor.primaryColor()
+        layer.borderColor = UIColor.primary.cgColor
+        tintColor = UIColor.primary
         contentEdgeInsets = UIEdgeInsetsMake(4, 8, 4, 8)
     }
 }

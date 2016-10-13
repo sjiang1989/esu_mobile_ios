@@ -395,11 +395,11 @@ public class NumbersListActivity extends EllucianActivity implements OnQueryText
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Utils.hideProgressIndicator(activity);
             boolean updated = intent.getBooleanExtra(NumbersIntentService.PARAM_OUT_DATABASE_UPDATED, false);
             Log.d("NumbersIntentServiceReceiver", "onReceive: database updated = " + updated);
             if (updated) {
                 Log.d("NumbersIntentServiceReceiver.onReceive", "All numbers retrieved and database updated");
-                Utils.hideProgressIndicator(activity);
             }
         }
 

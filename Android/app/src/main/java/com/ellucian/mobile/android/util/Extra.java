@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.util;
@@ -11,11 +11,9 @@ public class Extra {
 	public static final String MODULE_ID = "moduleId";
 	public static final String MODULE_NAME = "moduleName";
 	public static final String REQUEST_URL = "requestUrl";
-	public static final String CONFIG_URL = "configurationUrl";
 	public static final String AUDIO_URL = "audioUrl";
 	public static final String IMAGE_URL = "imageUrl";
 	public static final String VIDEO_URL = "videoUrl";
-	public static final String REQUESTING_CLASS = "requestingClass";
 	public static final String IMAGE_URL_LIST = "imageUrlList";
     public static final String HEADER_SECTION_NAME = "headerSectionName";
 	public static final String ID = "id";
@@ -38,9 +36,9 @@ public class Extra {
     public static final String LOGIN_USERNAME = "loginUsername";
 	public static final String LOGIN_PASSWORD = "loginPassword";
 	public static final String LOGIN_SAVE_USER = "loginSaveUser";
+	public static final String LOGIN_USE_FINGERPRINT = "loginUseFingerprint";
 	public static final String LOGIN_BACKGROUND = "loginBackground";
 	public static final String LOGIN_SUCCESS = "loginSuccess";
-	public static final String CONFIGURATION_REFRESH = "configurationRefresh";
 	public static final String REFRESH = "refresh";
 
 	/** Courses Extras */
@@ -55,6 +53,7 @@ public class Extra {
 	public static final String COURSES_IS_INSTRUCTOR = "coursesIsInstructor";
 	public static final String COURSES_NAME = "coursesName";
 	public static final String COURSES_SECTION_NUMBER = "coursesSectionNumber";
+    public static final String COURSES_ROSTER_VISIBILITY = "coursesRosterVisibility";
 	
 	/** Directory Extras */
 	

@@ -13,7 +13,7 @@
 @import EventKitUI;
 
 
-@interface CourseAssignmentDetailViewController : UIViewController <DetailSelectionDelegate, UIAlertViewDelegate, EKEventEditViewDelegate>
+@interface CourseAssignmentDetailViewController : UIViewController <DetailSelectionDelegate, EKEventEditViewDelegate>
 
 @property (nonatomic, strong) CourseAssignment *courseAssignment;
 

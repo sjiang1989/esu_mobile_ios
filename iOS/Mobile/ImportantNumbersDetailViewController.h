@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "MapPOI.h"
 #import <MapKit/MapKit.h>
 #import "Module.h"
 #import "PseudoButtonView.h"

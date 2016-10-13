@@ -145,11 +145,14 @@
 /* Class = "UILabel"; text = "Label"; ObjectID = "lnT-Nh-UCs"; */
 "lnT-Nh-UCs.text" = "Rótulo";
 
+/* Class = "UILabel"; text = "Label"; ObjectID = "n6a-mr-TBP"; */
+"n6a-mr-TBP.text" = "Rótulo";
+
 /* Class = "UIButton"; accessibilityLabel = "Previous Day"; ObjectID = "ob1-uk-4cE"; */
 "ob1-uk-4cE.accessibilityLabel" = "Dia anterior";
 
 /* Class = "UILabel"; text = "Location:"; ObjectID = "tPe-jc-4j5"; */
-"tPe-jc-4j5.text" = "Local:";
+"tPe-jc-4j5.text" = "Localização:";
 
 /* Class = "UILabel"; text = "Reminder List"; ObjectID = "tv4-i6-3Wg"; */
 "tv4-i6-3Wg.text" = "Lista de lembretes";

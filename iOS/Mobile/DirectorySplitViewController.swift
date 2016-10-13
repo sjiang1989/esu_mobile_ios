@@ -19,17 +19,17 @@ class DirectorySplitViewController  : UISplitViewController, UISplitViewControll
         self.view.setNeedsLayout()
     }
     
-    func splitViewController(splitViewController: UISplitViewController, collapseSecondaryViewController secondaryViewController: UIViewController, ontoPrimaryViewController primaryViewController: UIViewController) -> Bool {
+    func splitViewController(_ splitViewController: UISplitViewController, collapseSecondary secondaryViewController: UIViewController, onto primaryViewController: UIViewController) -> Bool {
         if let secondaryViewController = secondaryViewController as? UINavigationController {
             let childViewController = secondaryViewController.childViewControllers[0]
-            if childViewController.isKindOfClass(FeedDetailViewController) {
+            if childViewController is FeedDetailViewController {
                 return false;
             }
         }
         return true;
     }
     
-    override func revealMenu(sender: AnyObject) {
+    override func revealMenu(_ sender: AnyObject) {
         let navigationViewController = self.childViewControllers[0] as! UINavigationController
         let masterController = navigationViewController.childViewControllers[0] as! DirectoryViewController
         masterController.searchBar?.resignFirstResponder()

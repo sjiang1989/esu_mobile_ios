@@ -1,11 +1,12 @@
-// Copyright 2014 Ellucian Company L.P and its affiliates.
+// Copyright 2014-2016 Ellucian Company L.P and its affiliates.
 
 package com.ellucian.mobile.android.registration;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -34,10 +35,10 @@ public class VariableCreditsConfirmDialogFragment extends EllucianDialogFragment
 	}
 	
 	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
+	public void onAttach(Context context) {
+		super.onAttach(context);
 		try {
-			registrationActivity = (RegistrationActivity) activity;
+			registrationActivity = (RegistrationActivity) context;
         } catch (ClassCastException e) {
             throw new ClassCastException("Attached Activity must of type: RegistrationActivity");
         }
@@ -49,7 +50,8 @@ public class VariableCreditsConfirmDialogFragment extends EllucianDialogFragment
 		setRetainInstance(true);
 	}
 
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
+	@NonNull
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
 
 		Bundle args = getArguments();
 		final Section section = args.getParcelable(RegistrationActivity.SECTION);
@@ -73,16 +75,16 @@ public class VariableCreditsConfirmDialogFragment extends EllucianDialogFragment
 		// Resetting float to only 2 decimal, will truncate the rest
 		final float floatIncrement = (float) intIncrement / 100; 
 		
-		String titleMessage = "";
+		String titleMessage;
 		if (!TextUtils.isEmpty(variableOperator) && variableOperator.equals(Section.VARIABLE_OPERATOR_OR)) {		
 			titleMessage = getString(R.string.registration_dialog_variable_credits_or_message, 
-					(float)section.minimumCredits, (float)section.maximumCredits);			
+					section.minimumCredits, section.maximumCredits);
 		} else if (!TextUtils.isEmpty(variableOperator) && variableOperator.equals(Section.VARIABLE_OPERATOR_INC)) {
 			titleMessage = getString(R.string.registration_dialog_variable_credits_inc_message, 
-					(float)section.minimumCredits, (float)section.maximumCredits, floatIncrement);		
+					section.minimumCredits, section.maximumCredits, floatIncrement);
 		} else {
 			titleMessage = getString(R.string.registration_dialog_variable_credits_to_message, 
-					(float)section.minimumCredits, (float)section.maximumCredits);
+					section.minimumCredits, section.maximumCredits);
 		}
 	
 		AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());

@@ -1,16 +1,16 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client;
 
-import java.util.ArrayList;
-
 import android.content.ContentProviderOperation;
 import android.content.Context;
 
+import java.util.ArrayList;
+
 public abstract class ContentProviderOperationBuilder<E> {
-	private final Context context;
+    protected final Context context;
 	protected ContentProviderOperationBuilder(Context context) {
 		this.context = context;
 	}

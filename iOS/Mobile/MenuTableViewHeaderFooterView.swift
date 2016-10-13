@@ -19,15 +19,15 @@ class MenuTableViewHeaderFooterView : UITableViewHeaderFooterView {
         super.init(reuseIdentifier: reuseIdentifier)
         
         let collapsible = reuseIdentifier == "CollapseableHeader"
-        let backgroundColor = UIColor.blackColor()
+        let backgroundColor = UIColor.black
         if self.backgroundColor != backgroundColor {
             self.contentView.backgroundColor = backgroundColor
-            self.contentView.opaque = true
+            self.contentView.isOpaque = true
             
             headerLabel = UILabel()
-            headerLabel!.font = UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline)
+            headerLabel!.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline)
             headerLabel!.textColor = UIColor(red: 179/255, green: 179/255, blue: 179/255, alpha: 1)
-            headerLabel!.opaque = false
+            headerLabel!.isOpaque = false
             self.contentView.addSubview(headerLabel!)
             headerLabel!.translatesAutoresizingMaskIntoConstraints = false
             headerLabel?.accessibilityTraits |= UIAccessibilityTraitHeader
@@ -35,39 +35,30 @@ class MenuTableViewHeaderFooterView : UITableViewHeaderFooterView {
     
             if(collapsible) {
                 collapsibleButton = UIButton()
-                collapsibleButton!.setImage(UIImage(named:"menu header expanded"), forState: .Normal)
-                collapsibleButton!.setImage(UIImage(named:"menu header collapsed"), forState: .Selected)
-                collapsibleButton!.addTarget(self, action: Selector("toggleHeader"), forControlEvents: .TouchUpInside)
+                collapsibleButton!.setImage(UIImage(named:"menu header expanded"), for: UIControlState())
+                collapsibleButton!.setImage(UIImage(named:"menu header collapsed"), for: .selected)
+                collapsibleButton!.addTarget(self, action: #selector(MenuTableViewHeaderFooterView.toggleHeader), for: .touchUpInside)
                 self.contentView.addSubview(collapsibleButton!)
                 collapsibleButton!.translatesAutoresizingMaskIntoConstraints = false
                 collapsibleButton!.accessibilityLabel = NSLocalizedString("Toggle menu section", comment:"Accessibility label for toggle menu section button")
             }
 
-            if AppearanceChanger.isIOS8AndRTL() {
-                self.contentView .addConstraint(NSLayoutConstraint(item: headerLabel!, attribute: .Right, relatedBy: .Equal, toItem: self.contentView, attribute: .Left, multiplier: 1.0, constant: 267))
+
+            self.contentView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-13-[headerLabel]", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["headerLabel" : headerLabel!]))
                 
-                if(collapsible) {
-                    self.contentView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:[collapsibleButton]-13-|",
-                        options:NSLayoutFormatOptions(rawValue: 0),
-                        metrics: nil, views: ["collapsibleButton": collapsibleButton!]))
-                }
-            } else {
-                self.contentView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|-13-[headerLabel]", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["headerLabel" : headerLabel!]))
-                
-                if(collapsible) {
-                    self.contentView.addConstraint(NSLayoutConstraint(item: collapsibleButton!, attribute: .Trailing, relatedBy: .Equal, toItem: self.contentView, attribute: .Leading, multiplier: 1.0, constant: 267.0))
-                }
+            if(collapsible) {
+                self.contentView.addConstraint(NSLayoutConstraint(item: collapsibleButton!, attribute: .trailing, relatedBy: .equal, toItem: self.contentView, attribute: .leading, multiplier: 1.0, constant: 267.0))
             }
             
-            self.contentView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[headerLabel]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["headerLabel": headerLabel!]))
+            self.contentView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[headerLabel]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["headerLabel": headerLabel!]))
             
             if(collapsible) {
-                self.contentView.addConstraint(NSLayoutConstraint(item: collapsibleButton!, attribute: .CenterY, relatedBy: .Equal, toItem: headerLabel!, attribute: .CenterY, multiplier: 1.0, constant: 0))
+                self.contentView.addConstraint(NSLayoutConstraint(item: collapsibleButton!, attribute: .centerY, relatedBy: .equal, toItem: headerLabel!, attribute: .centerY, multiplier: 1.0, constant: 0))
             }
         }
         
         if(collapsible) {
-            let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: Selector("toggleHeader"))
+            let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(MenuTableViewHeaderFooterView.toggleHeader))
             self.addGestureRecognizer(tapGestureRecognizer)
         }
 
@@ -79,9 +70,9 @@ class MenuTableViewHeaderFooterView : UITableViewHeaderFooterView {
     }
     
     func toggleHeader() {
-        self.collapsibleButton!.selected = !self.collapsibleButton!.selected
+        self.collapsibleButton!.isSelected = !self.collapsibleButton!.isSelected
         
-        if self.collapsibleButton!.selected {
+        if self.collapsibleButton!.isSelected {
             self.delegate?.sectionHeaderView!(self, sectionClosed: self.section!)
         } else {
             self.delegate?.sectionHeaderView!(self, sectionOpened: self.section!)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.courses.overview;
@@ -20,6 +20,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.ellucian.elluciango.R;
@@ -27,10 +28,7 @@ import com.ellucian.mobile.android.app.EllucianFragment;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseCourses;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseInstructors;
-import com.ellucian.mobile.android.provider.EllucianContract.CourseMeetings;
 import com.ellucian.mobile.android.provider.EllucianContract.CoursePatterns;
-import com.ellucian.mobile.android.provider.EllucianContract.MapsBuildings;
-import com.ellucian.mobile.android.provider.EllucianContract.MapsCampuses;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.Utils;
@@ -45,6 +43,7 @@ import java.util.TimeZone;
 public class CourseDetailsFragment extends EllucianFragment implements
 		LoaderManager.LoaderCallbacks<Cursor> {
 	
+	private static final String TAG = CourseDetailsFragment.class.getSimpleName();
 	private Activity activity;
 	private String courseId;
 	private View rootView;
@@ -56,7 +55,9 @@ public class CourseDetailsFragment extends EllucianFragment implements
 	private final int PATTERNS_LOADER = 1;
 	private final int INSTRUCTORS_LOADER = 2;
 	private final int COURSE_LOADER = 3;
-	private final int MEETINGS_LOADER = 4;
+
+    private String sectionStartDate = "";
+    private String sectionEndDate = "";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -68,10 +69,8 @@ public class CourseDetailsFragment extends EllucianFragment implements
 		courseId = getActivity().getIntent().getStringExtra(Extra.COURSES_COURSE_ID);
 
 		LoaderManager manager = getLoaderManager();
-		manager.initLoader(PATTERNS_LOADER, null, this);
 		manager.initLoader(INSTRUCTORS_LOADER, null, this);
 		manager.initLoader(COURSE_LOADER, null, this);
-		manager.initLoader(MEETINGS_LOADER, null, this);
 	}
 
 	@Override
@@ -98,9 +97,6 @@ public class CourseDetailsFragment extends EllucianFragment implements
 			Uri courseUrl = CourseCourses.buildCourseUri(courseId);
 			loader = new CursorLoader(getActivity(), courseUrl, null, null,
 					null, null);
-		} else if (id == MEETINGS_LOADER) {
-			loader = new CursorLoader(getActivity(), CourseMeetings.CONTENT_URI, null,
-					CourseCourses.COURSE_ID + " = ?", new String[] { courseId }, null);
 		}
 		return loader;
 	}
@@ -117,9 +113,8 @@ public class CourseDetailsFragment extends EllucianFragment implements
 			onInstructorsQueryComplete(cursor);
 		} else if (loader.getId() == COURSE_LOADER) {
 			onCourseQueryComplete(cursor);
-		} else if (loader.getId() == MEETINGS_LOADER) {
-			onMeetingsQueryComplete(cursor);
-		} else {
+            getLoaderManager().initLoader(PATTERNS_LOADER, null, this);
+        } else {
 			cursor.close();
 		}
 	}
@@ -140,10 +135,15 @@ public class CourseDetailsFragment extends EllucianFragment implements
 		
 		if (cursor.moveToFirst()) {
             int count = 0;
+            rootView.findViewById(R.id.course_details_no_meetings).setVisibility(View.GONE);
 			do {
                 count++;
 				final String daysOfWeek = cursor.getString(cursor
 						.getColumnIndex(CoursePatterns.PATTERN_DAYS));
+                final String startDate = cursor.getString(cursor
+                        .getColumnIndex(CoursePatterns.PATTERN_START_DATE));
+                final String endDate = cursor.getString(cursor
+                        .getColumnIndex(CoursePatterns.PATTERN_END_DATE));
 				final String startTime = cursor.getString(cursor
 						.getColumnIndex(CoursePatterns.PATTERN_START_TIME));
 				final String endTime = cursor.getString(cursor
@@ -153,13 +153,14 @@ public class CourseDetailsFragment extends EllucianFragment implements
 				final String room = cursor.getString(cursor
 						.getColumnIndex(CoursePatterns.PATTERN_ROOM));
 				final String buildingId = cursor.getString(cursor
-						.getColumnIndex(MapsBuildings.BUILDING_BUILDING_ID));
+						.getColumnIndex(CoursePatterns.PATTERN_BUILDING_ID));
 				final String instructionalMethod = cursor.getString(cursor
 						.getColumnIndex(CoursePatterns.PATTERN_INSTRUCTIONAL_METHOD));
-				@SuppressWarnings("unused")
 				final String campusId = cursor.getString(cursor
-						.getColumnIndex(MapsCampuses.CAMPUS_ID));
-				
+						.getColumnIndex(CoursePatterns.PATTERN_CAMPUS_ID));
+                final String campusName = cursor.getString(cursor
+                        .getColumnIndex(CoursePatterns.PATTERN_CAMPUS_NAME));
+
 				// Converting dates to correct format for display
 				Date startTimeDate = null;
 				Date endTimeDate = null;
@@ -215,6 +216,43 @@ public class CourseDetailsFragment extends EllucianFragment implements
                     Log.e("CourseDetailsFragment", e.getMessage());
                 }
 				
+                DateFormat localFormat = android.text.format.DateFormat.getDateFormat(getActivity());
+                DateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                String meetingStartDate = "";
+                String meetingEndDate = "";
+                if (startDate != null) {
+                    try {
+                        Date start = dateFormat.parse(startDate);
+                        meetingStartDate = localFormat.format(start);
+                    } catch (ParseException e) {
+                        Log.e(TAG, "onPatternsQueryComplete: errorMessage:" + e.getMessage());
+                    }
+                }
+                if (endDate != null) {
+                    try {
+                        Date end = dateFormat.parse(endDate);
+                        meetingEndDate = localFormat.format(end);
+                    } catch (ParseException e) {
+                        Log.e(TAG, "onPatternsQueryComplete: errorMessage:" + e.getMessage());
+                    }
+                }
+
+                // If this meeting has a different date range than the section,
+                // we want to display it.
+                String displayDateRange;
+                if (TextUtils.equals(meetingStartDate, sectionStartDate)
+                        && TextUtils.equals(meetingEndDate, sectionEndDate)) {
+                    // The same.
+                    displayDateRange = "";
+                } else {
+                    if (TextUtils.equals(meetingStartDate, meetingEndDate)) {
+                        displayDateRange = meetingStartDate;
+                    } else {
+                        displayDateRange = getString(R.string.date_to_date_format,
+                                meetingStartDate,
+                                meetingEndDate);
+                    }
+                }
 
 				final LinearLayout meetingRow = (LinearLayout)inflater.inflate(
 						R.layout.course_details_meeting_row, meetingLayout,
@@ -226,28 +264,35 @@ public class CourseDetailsFragment extends EllucianFragment implements
 				final TextView daysView = (TextView) meetingRow
 						.findViewById(R.id.course_details_meeting_row_days);
 				daysView.setText(displayDaysOfWeek);
-				final TextView timeView = (TextView) meetingRow
-						.findViewById(R.id.course_details_meeting_row_times);
-				if (!TextUtils.isEmpty(displayStartTime)) {
-					timeView.setText(getString(R.string.time_to_time_format,
+
+                String displayDateTimeType;
+
+				// Date & Time
+                if (!TextUtils.isEmpty(displayStartTime)) {
+					String displayTimeRange = getString(R.string.time_to_time_format,
 										displayStartTime, 
-										displayEndTime));
+										displayEndTime);
+                    displayDateTimeType = getString(R.string.course_details_date_time,
+                            displayDateRange,
+                            displayTimeRange);
 				} else {
-					timeView.setVisibility(View.GONE);
-				}
-				
-				final TextView typeSeparator = (TextView) meetingRow
-						.findViewById(R.id.course_details_meeting_row_type_separator);
-				final TextView typeView = (TextView) meetingRow
-						.findViewById(R.id.course_details_meeting_row_type);
+                    displayDateTimeType = displayDateRange;
+                }
+
 				if (!TextUtils.isEmpty(instructionalMethod)) {
-					typeView.setText(instructionalMethod);
-				} else {
-					typeSeparator.setVisibility(View.GONE);
-					typeView.setVisibility(View.GONE);
+                    displayDateTimeType = getString(R.string.course_details_date_time_type,
+                            displayDateTimeType,
+                            instructionalMethod);
 				}
-				final TextView locationView = (TextView) meetingRow
-						.findViewById(R.id.course_details_meeting_row_location);
+
+                final TextView dateTimeView = (TextView) meetingRow
+                        .findViewById(R.id.course_details_meeting_date_time_type);
+                dateTimeView.setText(displayDateTimeType);
+
+                final RelativeLayout locationView = (RelativeLayout) meetingRow.
+                        findViewById(R.id.course_details_meeting_row_location);
+				final TextView locationTextView = (TextView) meetingRow
+						.findViewById(R.id.course_details_meeting_row_location_txt);
 				String locationString = "";
 				if (!TextUtils.isEmpty(location)) {
 									
@@ -263,21 +308,35 @@ public class CourseDetailsFragment extends EllucianFragment implements
 				
 				
 				if (!TextUtils.isEmpty(locationString)) {
-					locationView.setText(locationString);
+					locationTextView.setText(locationString);
 					// Show underline of text
-                    locationView.setTextColor(primaryColor);
-					locationView.setPaintFlags(locationView.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
-				} else {
+                    locationTextView.setTextColor(primaryColor);
+					locationTextView.setPaintFlags(locationTextView.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
+                    ((ImageView)meetingRow.findViewById(R.id.course_details_meeting_row_location_image))
+                            .setColorFilter(primaryColor);
+                } else {
 					locationView.setVisibility(View.GONE);
 				}
-				
-				meetingRow.setOnClickListener(new OnClickListener() {
-					@Override
-					public void onClick(View view) {
-						sendEventToTracker1(GoogleAnalyticsConstants.CATEGORY_UI_ACTION, GoogleAnalyticsConstants.ACTION_LIST_SELECT, "Map Detail", null, getEllucianActivity().moduleName);
-						((CourseOverviewActivity) activity).openBuildingDetail(buildingId, location);
-					}
-				});
+
+                if (buildingId != null && location != null) {
+                    meetingRow.setOnClickListener(new OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            sendEventToTracker1(GoogleAnalyticsConstants.CATEGORY_UI_ACTION, GoogleAnalyticsConstants.ACTION_LIST_SELECT, "Map Detail", null, getEllucianActivity().moduleName);
+                            ((CourseOverviewActivity) activity).openBuildingDetail(buildingId, location);
+                        }
+                    });
+                }
+
+                TextView campusText = (TextView) meetingRow
+                        .findViewById(R.id.course_details_meeting_row_campus);
+                if (!TextUtils.isEmpty(campusName)) {
+                    campusText.setText(campusName);
+                } else if (!TextUtils.isEmpty(campusId)) {
+                    campusText.setText(campusId);
+                } else {
+                    campusText.setVisibility(View.GONE);
+                }
 				
 				/*
 				//TODO l10n days of the week and the labels
@@ -320,6 +379,7 @@ public class CourseDetailsFragment extends EllucianFragment implements
 		if (cursor.moveToFirst()) {
 			rootView.findViewById(R.id.course_details_faculty_title).setVisibility(View.VISIBLE);
 			do {
+                rootView.findViewById(R.id.course_details_no_faculty).setVisibility(View.GONE);
 				final String instructorName = cursor.getString(cursor
 						.getColumnIndex(CourseInstructors.INSTRUCTOR_FORMATTED_NAME));
 
@@ -335,8 +395,6 @@ public class CourseDetailsFragment extends EllucianFragment implements
 
 				facultyLayout.addView(instructorView);
 			} while (cursor.moveToNext());
-		} else {
-			rootView.findViewById(R.id.course_details_faculty_title).setVisibility(View.GONE);
 		}
 		
 	}
@@ -348,29 +406,23 @@ public class CourseDetailsFragment extends EllucianFragment implements
         
         titleTextView.setText( cursor.getString(cursor.getColumnIndex(CourseCourses.COURSE_TITLE)));
         descriptionTextView.setText( cursor.getString(cursor.getColumnIndex(CourseCourses.COURSE_DESCRIPTION)));
-    }
-    
-    private void onMeetingsQueryComplete(Cursor cursor) {
-    	if (!cursor.moveToFirst()) {
-            return;
+        String startDate = cursor.getString( cursor.getColumnIndex(CourseCourses.COURSE_FIRST_MEETING_DATE));
+        String endDate = cursor.getString( cursor.getColumnIndex(CourseCourses.COURSE_LAST_MEETING_DATE));
+        DateFormat fromDatabase = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        try {
+            Date start = fromDatabase.parse(startDate);
+            Date end = fromDatabase.parse(endDate);
+            DateFormat localFormat = android.text.format.DateFormat.getDateFormat(getActivity());
+            sectionStartDate = localFormat.format(start);
+            sectionEndDate = localFormat.format(end);
+        } catch (Exception e) {
+            Log.e(TAG, "onCourseQueryComplete: errorMessage:" + e.getMessage());
         }
-    	String startDate = cursor.getString(cursor.getColumnIndex(CourseMeetings.MEETING_START));
-    	String endDate = cursor.getString(cursor.getColumnIndex(CourseMeetings.MEETING_END));
-    	DateFormat fromDatabase = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
-    	try {
-			Date start = fromDatabase.parse(startDate);
-			Date end = fromDatabase.parse(endDate);
-	    	DateFormat localFormat = android.text.format.DateFormat.getDateFormat(getActivity());
-	    	startDate = localFormat.format(start);
-	    	endDate = localFormat.format(end);
-		} catch (ParseException e) {
-			Log.e("CourseDetailsFragment", e.getMessage());
-		}
-    	
-    	datesTextView.setText(getString(R.string.date_to_date_format,
-    							startDate,
-    							endDate));
-    	
+
+        datesTextView.setText(getString(R.string.date_to_date_format,
+                sectionStartDate,
+                sectionEndDate));
+
     }
 
 	@Override

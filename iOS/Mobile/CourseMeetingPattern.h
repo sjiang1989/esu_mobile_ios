@@ -25,5 +25,6 @@
 @property (nonatomic, retain) NSDate * startDate;
 @property (nonatomic, retain) NSDate * startTime;
 @property (nonatomic, retain) CourseDetail *course;
+@property (nonatomic, retain) NSString * campus;
 
 @end

@@ -49,6 +49,9 @@
 @property (nonatomic, assign) BOOL isGraded;
 @property (nonatomic, assign) BOOL isAudit;
 
+@property (nonatomic, assign) BOOL authorizationCodeRequired;
+@property (nonatomic, strong) NSString *authorizationCode;
+
 -(NSString *)facultyNames;
 -(NSString *)meetingPatternDescription;
 -(NSString *)instructionalMethod;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client.configuration;
@@ -13,10 +13,12 @@ import com.ellucian.mobile.android.ModuleType;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
 import com.ellucian.mobile.android.client.ContentProviderOperationBuilder;
 import com.ellucian.mobile.android.provider.EllucianContract.Modules;
+import com.ellucian.mobile.android.provider.EllucianContract.ModulesBeacons;
 import com.ellucian.mobile.android.provider.EllucianContract.ModulesProperties;
 import com.ellucian.mobile.android.provider.EllucianContract.ModulesRoles;
 import com.ellucian.mobile.android.provider.EllucianContract.RegistrationLevels;
 import com.ellucian.mobile.android.provider.EllucianContract.RegistrationLocations;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import org.json.JSONArray;
@@ -27,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONObject>{
+
+    private static final String TAG = ConfigurationBuilder.class.getSimpleName();
 
     private final Context context;
 
@@ -39,7 +43,10 @@ public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONOb
     public ArrayList<ContentProviderOperation> buildOperations(JSONObject mApps) {
         final ArrayList<ContentProviderOperation> batch = new ArrayList<>();
 
+        Log.v(TAG, "BuildOperations()");
+
         batch.add(ContentProviderOperation.newDelete(Modules.CONTENT_URI).build());
+        batch.add(ContentProviderOperation.newDelete(ModulesBeacons.CONTENT_URI).build());
         batch.add(ContentProviderOperation.newDelete(ModulesProperties.CONTENT_URI).build());
         batch.add(ContentProviderOperation.newDelete(ModulesRoles.CONTENT_URI).build());
         batch.add(ContentProviderOperation.newDelete(RegistrationLocations.CONTENT_URI).build());
@@ -85,6 +92,16 @@ public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONOb
                     hideBeforeLogin = moduleObject.getBoolean("hideBeforeLogin");
                 }
 
+                String useBeaconToLaunch = "false";
+                if (moduleObject.has("useBeaconToLaunch")) {
+                    useBeaconToLaunch = moduleObject.getString("useBeaconToLaunch");
+                }
+
+                String displayInMenu = "true";
+                if (moduleObject.has("displayInMenu")) {
+                    displayInMenu = moduleObject.getString("displayInMenu");
+                }
+
                 // If module is invalid, do not add it
                 if (!validModuleDefinition(type, moduleObject)) {
                     continue;
@@ -101,7 +118,10 @@ public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONOb
                         .withValue(Modules.MODULE_TYPE, type)
                         .withValue(Modules.MODULE_SUB_TYPE, subType)
                         .withValue(Modules.MODULE_SECURE, secure)
+                        .withValue(Modules.MODULE_USE_BEACON_TO_LAUNCH, useBeaconToLaunch)
+                        .withValue(Modules.MODULE_DISPLAY_IN_MENU, displayInMenu)
                         .build());
+
                 if(moduleObject.has("urls")) {
                     JSONObject urlsValues = moduleObject.getJSONObject("urls");
                     Iterator<?>  urlsIter = urlsValues.keys();
@@ -130,6 +150,29 @@ public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONOb
                                     .withValue(ModulesRoles.MODULE_ROLES_NAME, roleValue)
                                     .build());
                         }
+                    }
+                }
+
+                if(moduleObject.has("launchBeacons") && moduleObject.getBoolean("useBeaconToLaunch")) {
+
+                    JSONArray beaconsArray = moduleObject.getJSONArray("launchBeacons");
+                    for (int i = 0; i < beaconsArray.length(); i++) {
+                        JSONObject beacon = (JSONObject) beaconsArray.get(i);
+                        String uuid = beacon.getString("uuid");
+                        String major = beacon.getString("major");
+                        String minor = beacon.getString("minor");
+                        String distance = beacon.getString("distance");
+                        String message = beacon.getString("message");
+
+                        batch.add(ContentProviderOperation
+                                .newInsert(ModulesBeacons.CONTENT_URI)
+                                .withValue(Modules.MODULES_ID, moduleId)
+                                .withValue(ModulesBeacons.MODULES_BEACONS_UUID, uuid.toUpperCase())
+                                .withValue(ModulesBeacons.MODULES_BEACONS_MAJOR, major)
+                                .withValue(ModulesBeacons.MODULES_BEACONS_MINOR, minor)
+                                .withValue(ModulesBeacons.MODULES_BEACONS_DISTANCE, distance)
+                                .withValue(ModulesBeacons.MODULES_BEACONS_MESSAGE, message)
+                                .build());
                     }
                 }
 
@@ -263,13 +306,13 @@ public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONOb
                     if(moduleObject.has("urls")) {
                         JSONObject urls = moduleObject.getJSONObject("urls");
                         if (urls.has("ilp")) {
-                            Utils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.ILP_URL, urls.getString("ilp"));
+                            PreferencesUtils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.ILP_URL, urls.getString("ilp"));
                         }
                     }
                     // Save the name of the ILP module for use in setting the module title when coming in from Widget.
                     if(moduleObject.has("name")) {
                         String ilpName = moduleObject.getString("name");
-                        Utils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.ILP_NAME, ilpName);
+                        PreferencesUtils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.ILP_NAME, ilpName);
                     }
                 }
 
@@ -277,7 +320,7 @@ public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONOb
                 if (type.equals(ModuleType.NOTIFICATIONS)) {
                     if(moduleObject.has("name")) {
                         String notificationName = moduleObject.getString("name");
-                        Utils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.NOTIFICATION_MODULE_NAME, notificationName);
+                        PreferencesUtils.addStringToPreferences(context, Utils.CONFIGURATION, Utils.NOTIFICATION_MODULE_NAME, notificationName);
                     }
                 }
 
@@ -309,8 +352,22 @@ public class ConfigurationBuilder extends ContentProviderOperationBuilder<JSONOb
 
                     }
                 }
+
+                // Set if the course roster is visible
+                if (type.equals(ModuleType.COURSES)) {
+                    String visible = "none";
+                    if (moduleObject.has("visible")) {
+                        visible = moduleObject.getString("visible");
+                    }
+                    batch.add(ContentProviderOperation
+                            .newInsert(ModulesProperties.CONTENT_URI)
+                            .withValue(Modules.MODULES_ID, moduleId)
+                            .withValue(ModulesProperties.MODULE_PROPERTIES_NAME, Utils.COURSE_ROSTER_VISIBILITY)
+                            .withValue(ModulesProperties.MODULE_PROPERTIES_VALUE, visible)
+                            .build());
+                }
             } catch (JSONException e) {
-                Log.e("ConfigurationBuilder", "JSONException:", e);
+                Log.e(TAG, "JSONException:", e);
             }
         }
         return batch;

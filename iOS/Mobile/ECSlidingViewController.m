@@ -114,6 +114,7 @@
 #pragma mark - UIViewController
 
 - (void)awakeFromNib {
+    [super awakeFromNib]; //Ellucian change for Xcode 8
     if (self.topViewControllerStoryboardId) {
         self.topViewController = [self.storyboard instantiateViewControllerWithIdentifier:self.topViewControllerStoryboardId];
     }
@@ -414,7 +415,7 @@
     
     _panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(detectPanGestureRecognizer:)];
     
-    //fix to allow "swipe to delete" edit mode in UITableView
+    //fix from Ellucian to allow "swipe to delete" edit mode in UITableView
     _panGesture.delegate = self;
     
     return _panGesture;
@@ -449,6 +450,34 @@
 #pragma mark - Private
 
 - (void)moveTopViewToPosition:(ECSlidingViewControllerTopViewPosition)position animated:(BOOL)animated onComplete:(void(^)())complete {
+    
+    //Ellucian fix to accessibility API
+    if (position == ECSlidingViewControllerTopViewPositionCentered) {
+        self.topViewController.view.accessibilityElementsHidden = NO;
+        self.gestureView.accessibilityElementsHidden = NO;
+        if ([self.topViewController isKindOfClass:[UINavigationController class]]) {
+            self.topViewController.childViewControllers[0].view.accessibilityElementsHidden = NO;
+        }
+        self.underLeftViewController.view.accessibilityElementsHidden = YES;
+        self.underRightViewController.view.accessibilityElementsHidden = YES;
+    } else if (position == ECSlidingViewControllerTopViewPositionAnchoredRight) {
+        self.topViewController.view.accessibilityElementsHidden = YES;
+        self.gestureView.accessibilityElementsHidden = YES;
+        if ([self.topViewController isKindOfClass:[UINavigationController class]]) {
+            self.topViewController.childViewControllers[0].view.accessibilityElementsHidden = YES;
+        }
+        self.underLeftViewController.view.accessibilityElementsHidden = NO;
+        self.underRightViewController.view.accessibilityElementsHidden = YES;
+    } else if (position == ECSlidingViewControllerTopViewPositionAnchoredLeft) {
+        self.topViewController.view.accessibilityElementsHidden = YES;
+        self.gestureView.accessibilityElementsHidden = YES;
+        if ([self.topViewController isKindOfClass:[UINavigationController class]]) {
+            self.topViewController.childViewControllers[0].view.accessibilityElementsHidden = YES;
+        }
+        self.underLeftViewController.view.accessibilityElementsHidden = YES;
+        self.underRightViewController.view.accessibilityElementsHidden = NO;
+    }
+    
     self.isAnimated = animated;
     self.animationComplete = complete;
     [self.view endEditing:YES];
@@ -978,7 +1007,7 @@
     self.coordinatorInteractionEnded = handler;
 }
 
-#pragma mark - iOS 8 fixes
+#pragma mark - iOS 8 fixes from Ellucian
 - (CGAffineTransform)targetTransform  {
     
     return self.targetTransform;
@@ -989,7 +1018,7 @@
     return nil;
 }
 
-#pragma mark - fix to allow "swipe to delete" edit mode in UITableView
+#pragma mark - fix from Ellucian to allow "swipe to delete" edit mode in UITableView
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     return YES;
 }

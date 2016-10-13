@@ -9,10 +9,11 @@
 #import <UIKit/UIKit.h>
 #import "EllucianSectionedUITableViewController.h"
 #import "DetailSelectionDelegate.h"
+#import "Ellucian_GO-Swift.h"
 
 @class Module;
 
-@interface RegistrationRegisteredSectionsViewController : EllucianSectionedUITableViewController<UITableViewDataSource, UITableViewDelegate, UIActionSheetDelegate, UISplitViewControllerDelegate>
+@interface RegistrationRegisteredSectionsViewController : EllucianSectionedUITableViewController<UITableViewDataSource, UITableViewDelegate, UISplitViewControllerDelegate, EllucianMobileLaunchableControllerProtocol>
 
 @property (strong, nonatomic) Module *module;
 @property (nonatomic, assign) id<DetailSelectionDelegate> detailSelectionDelegate;

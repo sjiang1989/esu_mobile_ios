@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.ilp;
@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -34,7 +33,7 @@ import com.ellucian.mobile.android.provider.EllucianContract.CourseCourses;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseEvents;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Extra;
-import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -54,10 +53,10 @@ public class IlpCardFragment extends EllucianFragment implements
 	private CardView assignmentsCard;
 	private CardView eventsCard;
 	private CardView announcementsCard;
-	private List<AssignmentItemHolder> assignmentsToday = new ArrayList<AssignmentItemHolder>();
-    private List<AssignmentItemHolder> assignmentsOverdue = new ArrayList<AssignmentItemHolder>();
-	private List<EventItemHolder> events = new ArrayList<EventItemHolder>();
-	private List<AnnouncementItemHolder> announcements = new ArrayList<AnnouncementItemHolder>();
+	private List<AssignmentItemHolder> assignmentsToday = new ArrayList<>();
+    private List<AssignmentItemHolder> assignmentsOverdue = new ArrayList<>();
+	private List<EventItemHolder> events = new ArrayList<>();
+	private List<AnnouncementItemHolder> announcements = new ArrayList<>();
 	private Bundle detailBundle;
 	
 	@Override
@@ -222,12 +221,8 @@ public class IlpCardFragment extends EllucianFragment implements
         boolean showTodaySubheader = false;
         if (assignmentsOverdue != null && assignmentsOverdue.size() > 0) {
             TextView overdueSubheader = (TextView) inflater.inflate(R.layout.ilp_card_sub_header_row, assignmentsLayout, false);
-            overdueSubheader.setTextColor(Utils.getColorHelper(getContext(), R.color.warning_text_color));
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                overdueSubheader.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.icon_warning_red, 0, 0, 0);
-            } else {
-                overdueSubheader.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_warning_red, 0, 0, 0);
-            }
+            overdueSubheader.setTextColor(VersionSupportUtils.getColorHelper(getContext(), R.color.warning_text_color));
+            overdueSubheader.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.icon_warning_red, 0, 0, 0);
 
             overdueSubheader.setCompoundDrawablePadding(12);
             overdueSubheader.setText(R.string.ilp_overdue);
@@ -237,7 +232,7 @@ public class IlpCardFragment extends EllucianFragment implements
             for (int i = 0; i < assignmentsOverdue.size(); i++) {
                 AssignmentItemHolder infoHolder = assignmentsOverdue.get(i);
                 View cardRow = inflater.inflate(R.layout.ilp_card_row, assignmentsLayout, false);
-                cardRow.setTag(Integer.valueOf(i));
+                cardRow.setTag(i);
                 cardRow.setOnClickListener(new View.OnClickListener() {
 
                     @Override
@@ -253,7 +248,7 @@ public class IlpCardFragment extends EllucianFragment implements
                 });
 
                 TextView titleView = (TextView) cardRow.findViewById(R.id.title);
-                titleView.setTextColor(Utils.getColorHelper(getContext(), R.color.warning_text_color));
+                titleView.setTextColor(VersionSupportUtils.getColorHelper(getContext(), R.color.warning_text_color));
                 titleView.setText(infoHolder.title);
 
                 TextView sectionView = (TextView) cardRow.findViewById(R.id.section_name);
@@ -281,7 +276,7 @@ public class IlpCardFragment extends EllucianFragment implements
         if (assignmentList != null) {
             if (showTodaySubheader && !assignmentList.isEmpty()) {
                 TextView todaySubheader = (TextView) inflater.inflate(R.layout.ilp_card_sub_header_row, assignmentsLayout, false);
-                todaySubheader.setTextColor(Utils.getColorHelper(getContext(), R.color.due_today_green));
+                todaySubheader.setTextColor(VersionSupportUtils.getColorHelper(getContext(), R.color.due_today_green));
                 todaySubheader.setText(R.string.ilp_due_today);
                 assignmentsLayout.addView(todaySubheader);
             }
@@ -289,7 +284,7 @@ public class IlpCardFragment extends EllucianFragment implements
             for (int i = 0; i < assignmentList.size(); i++) {
                 AssignmentItemHolder infoHolder = assignmentList.get(i);
                 View cardRow = inflater.inflate(R.layout.ilp_card_row, assignmentsLayout, false);
-                cardRow.setTag(Integer.valueOf(i));
+                cardRow.setTag(i);
                 cardRow.setOnClickListener(new View.OnClickListener() {
 
                     @Override
@@ -344,7 +339,7 @@ public class IlpCardFragment extends EllucianFragment implements
     }
 	
 	private void buildEventsList(Cursor cursor) {
-		events = new ArrayList<EventItemHolder>();
+		events = new ArrayList<>();
 		
 		Calendar todayCal = Calendar.getInstance();
 		if (cursor.moveToFirst()) {
@@ -381,7 +376,7 @@ public class IlpCardFragment extends EllucianFragment implements
 						boolean allDay = Boolean.parseBoolean(allDayString);
 
 						// default displayDate will be the date and time
-						String displayDate = "";
+						String displayDate;
 
                         if (allDay) {
                             displayDate = getString(R.string.date_all_day_event_format,
@@ -431,7 +426,7 @@ public class IlpCardFragment extends EllucianFragment implements
             for (int i = 0; i < eventsList.size(); i++) {
                 EventItemHolder infoHolder = eventsList.get(i);
                 View cardRow = inflater.inflate(R.layout.ilp_card_row, eventsLayout, false);
-                cardRow.setTag(Integer.valueOf(i));
+                cardRow.setTag(i);
                 cardRow.setOnClickListener(new View.OnClickListener() {
 
                     @Override
@@ -476,7 +471,7 @@ public class IlpCardFragment extends EllucianFragment implements
     }
 	
 	private void buildAnnouncementsList(Cursor cursor) {
-		announcements = new ArrayList<AnnouncementItemHolder>();
+		announcements = new ArrayList<>();
 
         Calendar todayCal = Calendar.getInstance();
 		if (cursor.moveToFirst()) {
@@ -489,7 +484,7 @@ public class IlpCardFragment extends EllucianFragment implements
                 String content = cursor.getString(cursor.getColumnIndex(CourseAnnouncements.ANNOUNCEMENT_CONTENT));
                 String url = cursor.getString(cursor.getColumnIndex(CourseAnnouncements.ANNOUNCEMENT_URL));
 
-                String displayDate = "";
+                String displayDate;
                 Date announcementDate;
 
                 if (!TextUtils.isEmpty(dateString)) {
@@ -528,7 +523,7 @@ public class IlpCardFragment extends EllucianFragment implements
             for (int i = 0; i < announcementsList.size(); i++) {
                 AnnouncementItemHolder infoHolder = announcementsList.get(i);
                 View cardRow = inflater.inflate(R.layout.ilp_card_row, announcementsLayout, false);
-                cardRow.setTag(Integer.valueOf(i));
+                cardRow.setTag(i);
                 cardRow.setOnClickListener(new View.OnClickListener() {
 
                     @Override

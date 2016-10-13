@@ -8,6 +8,7 @@
 
 import Foundation
 
+
 class NotificationUIActivityItemProvider : UIActivityItemProvider {
     
     let subject : String
@@ -20,12 +21,11 @@ class NotificationUIActivityItemProvider : UIActivityItemProvider {
         super.init(placeholderItem: subject)
     }
     
-    override func item() -> AnyObject {
-        return text
-    }
+    override public var item: Any { return text }
     
-    override func activityViewController(activityViewController: UIActivityViewController, subjectForActivityType activityType: String?) -> String {
-        if activityType == UIActivityTypeMail {
+    @nonobjc
+    override func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivityType?) -> String {
+        if activityType == .mail {
             return subject
         } else {
             return ""

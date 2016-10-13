@@ -8,10 +8,10 @@
 
 import Foundation
 
-class NotificationsTableViewController : UITableViewController, NSFetchedResultsControllerDelegate {
+class NotificationsTableViewController : UITableViewController, NSFetchedResultsControllerDelegate, EllucianMobileLaunchableControllerProtocol {
 
-    var module : Module?
-    var indexPathToReselect : NSIndexPath?
+    var module : Module!
+    var indexPathToReselect : IndexPath?
     var uuid : String?
 
     override func viewDidLoad() {
@@ -26,37 +26,36 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
         tableView.estimatedRowHeight = 44
         tableView.rowHeight = UITableViewAutomaticDimension
 
-        if UIScreen.mainScreen().traitCollection.userInterfaceIdiom == .Pad {
-            self.splitViewController?.preferredDisplayMode = .AllVisible;
+        if UIScreen.main.traitCollection.userInterfaceIdiom == .pad {
+            self.splitViewController?.preferredDisplayMode = .allVisible;
         } else {
-            self.splitViewController?.preferredDisplayMode = .Automatic;
+            self.splitViewController?.preferredDisplayMode = .automatic;
         }
 
         fetchNotifications()
         reloadData()
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        sendView("Notifications List", forModuleNamed: self.module?.name)
+        sendView( "Notifications List", moduleName: self.module?.name)
     }
     
     // MARK: data retrieval
     func fetchNotifications() {
 
-        let urlBase = self.module!.propertyForKey("notifications")!
-        let userid =  CurrentUser.sharedInstance().userid.stringByAddingPercentEncodingWithAllowedCharacters(NSCharacterSet.URLQueryAllowedCharacterSet())
+        let urlBase = self.module!.property(forKey: "notifications")!
+        let userid =  CurrentUser.sharedInstance.userid?.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
         let urlString = "\(urlBase)/\(userid!)"
-        NotificationsFetcher.fetchNotificationsFromURL(urlString, withManagedObjectContext: CoreDataManager.shared.managedObjectContext, showLocalNotification: false, fromView: self)
-        
+        NotificationsFetcher.fetchNotificationsFromURL(notificationsUrl: urlString, withManagedObjectContext: CoreDataManager.sharedInstance.managedObjectContext, showLocalNotification: false, fromView: self)
     }
     
     //MARK: segue
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "Show Detail" {
-            self.sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction:kAnalyticsActionList_Select, withLabel:"Select Notification", withValue:nil, forModuleNamed:self.module!.name);
-            let detailController = (segue.destinationViewController as! UINavigationController).topViewController as! NotificationsDetailViewController
-            let notification = fetchedResultsController.objectAtIndexPath(self.tableView.indexPathForSelectedRow!) as! Notification
+            self.sendEventToTracker1(category: .ui_Action, action: .list_Select, label:"Select Notification", moduleName:self.module?.name);
+            let detailController = (segue.destination as! UINavigationController).topViewController as! NotificationsDetailViewController
+            let notification = fetchedResultsController.object(at: self.tableView.indexPathForSelectedRow!)
             detailController.notification = notification
             detailController.module = self.module
         }
@@ -75,29 +74,29 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
     
     private func showNotificationSelectedIfSet() {
         if let selectedId = self.uuid {
-            let notifications = _fetchedResultsController?.fetchedObjects as! [Notification]
-            for (index, notification) in notifications.enumerate() {
-                if notification.notificationId == selectedId {
-                    self.uuid = nil
-                    let indexPath = NSIndexPath(forRow: index, inSection: 0)
-                    tableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition: UITableViewScrollPosition.Bottom)
-                    self.performSegueWithIdentifier("Show Detail", sender: nil)
-                    tableView.reloadRowsAtIndexPaths( [ indexPath ], withRowAnimation: UITableViewRowAnimation.None )
+            if let notifications = _fetchedResultsController?.fetchedObjects {
+                for (index, notification) in notifications.enumerated() {
+                    if notification.notificationId == selectedId {
+                        self.uuid = nil
+                        let indexPath = IndexPath(row: index, section: 0)
+                        tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition.bottom)
+                        self.performSegue(withIdentifier: "Show Detail", sender: nil)
+                        tableView.reloadRows( at: [ indexPath ], with: UITableViewRowAnimation.none )
+                    }
                 }
             }
         }
     }
     
     // MARK: fetch
-    var fetchedResultsController: NSFetchedResultsController {
+    var fetchedResultsController: NSFetchedResultsController<EllucianNotification> {
         // return if already initialized
         if self._fetchedResultsController != nil {
             return self._fetchedResultsController!
         }
-        let managedObjectContext = CoreDataManager.shared.managedObjectContext
+        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
         
-        let request = NSFetchRequest()
-        request.entity = NSEntityDescription.entityForName("Notification", inManagedObjectContext: managedObjectContext)
+        let request = NSFetchRequest<EllucianNotification>(entityName: "Notification")
         
         request.sortDescriptors = [NSSortDescriptor(key: "sticky", ascending: false),NSSortDescriptor(key: "noticeDate", ascending: false),NSSortDescriptor(key: "title", ascending: true)]
         
@@ -114,14 +113,14 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
         
         return self._fetchedResultsController!
     }
-    var _fetchedResultsController: NSFetchedResultsController?
+    var _fetchedResultsController: NSFetchedResultsController<EllucianNotification>?
     
     //MARK :UITable
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
 
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let sections = fetchedResultsController.sections {
             let currentSection = sections[section] as NSFetchedResultsSectionInfo
             return currentSection.numberOfObjects
@@ -130,26 +129,26 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
         return 0
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Notification Cell", forIndexPath: indexPath) as UITableViewCell
-        let notification = fetchedResultsController.objectAtIndexPath(indexPath) as! Notification
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Notification Cell", for: indexPath) as UITableViewCell
+        let notification = fetchedResultsController.object(at: indexPath)
 
         let textLabel = cell.viewWithTag(1) as! UILabel
         let barImageView = cell.viewWithTag(2) as! UIImageView
         
         textLabel.text = notification.title
 
-        var stickyColor = UIColor.clearColor()
-        if notification.read.boolValue {
-            textLabel.font = UIFont.preferredFontForTextStyle(UIFontTextStyleBody)
+        var stickyColor = UIColor.clear
+        if notification.read != nil && notification.read!.boolValue == true {
+            textLabel.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.body)
         } else {
-            textLabel.font = UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline)
+            textLabel.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline)
         }
-        if notification.sticky.boolValue {
+        if notification.sticky != nil && notification.sticky!.boolValue {
             stickyColor = UIColor(red: 241/255.0, green: 90/255.0, blue: 36/255.0, alpha: 1.0)
         }
         
-        let rect = CGRectMake(0, 0, 1, 1)
+        let rect = CGRect(x: 0, y: 0, width: 1, height: 1)
         // Create a 1 by 1 pixel context
         UIGraphicsBeginImageContextWithOptions(rect.size, false, 0)
         stickyColor.setFill()
@@ -161,21 +160,21 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
         return cell
     }
     
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.beginUpdates()
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         switch type{
-        case NSFetchedResultsChangeType.Insert:
-            self.tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: UITableViewRowAnimation.Top)
+        case NSFetchedResultsChangeType.insert:
+            self.tableView.insertRows(at: [newIndexPath!], with: UITableViewRowAnimation.top)
             break
-        case NSFetchedResultsChangeType.Delete:
-            self.tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: UITableViewRowAnimation.Left)
+        case NSFetchedResultsChangeType.delete:
+            self.tableView.deleteRows(at: [indexPath!], with: UITableViewRowAnimation.left)
             break
-        case NSFetchedResultsChangeType.Update:
-            tableView.reloadRowsAtIndexPaths( [ indexPath! ], withRowAnimation: UITableViewRowAnimation.None )
+        case NSFetchedResultsChangeType.update:
+            tableView.reloadRows( at: [ indexPath! ], with: UITableViewRowAnimation.none )
             indexPathToReselect = indexPath
             break
         default:
@@ -183,24 +182,24 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
         }
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeSection sectionInfo: NSFetchedResultsSectionInfo, atIndex sectionIndex: Int, forChangeType type: NSFetchedResultsChangeType) {
-        let indexSet = NSIndexSet(index: sectionIndex)
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
+        let indexSet = IndexSet(integer: sectionIndex)
         switch type {
-        case NSFetchedResultsChangeType.Insert:
-            self.tableView.insertSections(indexSet, withRowAnimation: UITableViewRowAnimation.Fade)
-        case NSFetchedResultsChangeType.Delete:
-            self.tableView.deleteSections(indexSet, withRowAnimation: UITableViewRowAnimation.Fade)
-        case NSFetchedResultsChangeType.Update:
+        case NSFetchedResultsChangeType.insert:
+            self.tableView.insertSections(indexSet, with: UITableViewRowAnimation.fade)
+        case NSFetchedResultsChangeType.delete:
+            self.tableView.deleteSections(indexSet, with: UITableViewRowAnimation.fade)
+        case NSFetchedResultsChangeType.update:
             break
-        case NSFetchedResultsChangeType.Move:
+        case NSFetchedResultsChangeType.move:
             break
         }
     }
     
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.endUpdates()
         if let indexPath = indexPathToReselect {
-            tableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition: UITableViewScrollPosition.Bottom)
+            tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition.bottom)
             indexPathToReselect = nil
         }
         
@@ -208,16 +207,16 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
     }
     
     //MARK: edit
-    override func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {
-        let notification = fetchedResultsController.objectAtIndexPath(indexPath) as! Notification
-        return !notification.sticky.boolValue
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        let notification = fetchedResultsController.object(at: indexPath)
+        return notification.sticky == nil || !notification.sticky!.boolValue
     }
     
-    override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
 
-        if editingStyle == .Delete {
-            let notification = fetchedResultsController.objectAtIndexPath(indexPath) as! Notification
-            NotificationsFetcher.deleteNotification(notification, module: self.module!)
+        if editingStyle == .delete {
+            let notification = fetchedResultsController.object(at: indexPath)
+            NotificationsFetcher.deleteNotification(notification: notification, module: self.module!)
         }
     }
 

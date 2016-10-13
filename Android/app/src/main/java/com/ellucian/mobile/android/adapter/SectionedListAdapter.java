@@ -1,10 +1,8 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.adapter;
-
-import java.util.ArrayList;
 
 import android.content.Context;
 import android.view.View;
@@ -15,20 +13,26 @@ import android.widget.BaseAdapter;
 
 import com.ellucian.elluciango.R;
 
+import java.util.ArrayList;
+
 public class SectionedListAdapter extends BaseAdapter {
-	public final ArrayList<Adapter> sections = new ArrayList<Adapter>();
+	public final ArrayList<Adapter> sections = new ArrayList<>();
 	public final ArrayAdapter<String> headers;
-	public final ArrayList<String> identifiers = new ArrayList<String>();
+	public final ArrayList<String> identifiers = new ArrayList<>();
 	public final static int TYPE_SECTION_HEADER = 0;
 
 	SectionedListAdapter(Context context) {
-		headers = new ArrayAdapter<String>(context, R.layout.list_header);
+		headers = new ArrayAdapter<>(context, R.layout.list_header);
 	}
 	
 	SectionedListAdapter(Context context, int headerResId) {
-		headers = new ArrayAdapter<String>(context, headerResId);
+		headers = new ArrayAdapter<>(context, headerResId);
 	}
 
+    SectionedListAdapter(Context context, int headerResId, int textViewResourceId) {
+        headers = new ArrayAdapter<>(context, headerResId, textViewResourceId);
+    }
+    
 	public void addSection(String section, Adapter adapter) {
 		this.headers.add(section);
 		this.sections.add(adapter);

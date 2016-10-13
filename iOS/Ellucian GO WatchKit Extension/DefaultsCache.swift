@@ -14,7 +14,7 @@ class DefaultsCache {
     private static let cacheLogoutKeysKey = "cache logout keys"
     private let key: String
     private let clearOnLogout: Bool
-    private let defaults: NSUserDefaults
+    private let defaults: UserDefaults
     
     init(key: String, clearOnLogout: Bool = true) {
         self.key = key
@@ -22,7 +22,7 @@ class DefaultsCache {
         defaults = AppGroupUtilities.userDefaults()!
     }
     
-    func store(data: AnyObject) {
+    func store(_ data: Any) {
         // key track of this key so it can be cleared later
         storeKey(key, keyCacheKey: DefaultsCache.cacheKeysKey)
         
@@ -30,52 +30,52 @@ class DefaultsCache {
             storeKey(key, keyCacheKey: DefaultsCache.cacheLogoutKeysKey)
         }
         
-        NSLog("Stored cache data for key: \(key)")
-        defaults.setObject(data, forKey: key)
+        print("Stored cache data for key: \(key)")
+        defaults.set(data, forKey: key)
     }
     
-    func fetch() -> AnyObject? {
-        return defaults.objectForKey(key)
+    func fetch() -> Any? {
+        return defaults.object(forKey: key)
     }
 
     class func clearLogoutCaches() {
         let defaults = AppGroupUtilities.userDefaults()!
         
-        if let cacheOfKeys = defaults.objectForKey(cacheLogoutKeysKey) as! [String]? {
+        if let cacheOfKeys = defaults.object(forKey: cacheLogoutKeysKey) as! [String]? {
             for key in cacheOfKeys {
-                defaults.removeObjectForKey(key)
-                NSLog("Cleared cache data for key: \(key)")
+                defaults.removeObject(forKey: key)
+                print("Cleared cache data for key: \(key)")
             }
         }
         
         // for grins remove the cache of keys too
-        defaults.removeObjectForKey(cacheLogoutKeysKey)
+        defaults.removeObject(forKey: cacheLogoutKeysKey)
     }
     
     class func clearAllCaches() {
         let defaults = AppGroupUtilities.userDefaults()!
 
-        if let cacheOfKeys = defaults.objectForKey(cacheKeysKey) as! [String]? {
+        if let cacheOfKeys = defaults.object(forKey: cacheKeysKey) as! [String]? {
             for key in cacheOfKeys {
-                defaults.removeObjectForKey(key)
-                NSLog("Cleared cache data for key: \(key)")
+                defaults.removeObject(forKey: key)
+                print("Cleared cache data for key: \(key)")
             }
         }
         
         // for grins remove the cache of keys too
-        defaults.removeObjectForKey(cacheKeysKey)
-        defaults.removeObjectForKey(cacheLogoutKeysKey)
+        defaults.removeObject(forKey: cacheKeysKey)
+        defaults.removeObject(forKey: cacheLogoutKeysKey)
     }
 
-    private func storeKey(key: String, keyCacheKey: String) {
-        var cacheKeys = defaults.objectForKey(keyCacheKey) as! [String]?
+    private func storeKey(_ key: String, keyCacheKey: String) {
+        var cacheKeys = defaults.object(forKey: keyCacheKey) as! [String]?
         if cacheKeys == nil {
             cacheKeys = [String]()
         }
         
         if !cacheKeys!.contains(key) {
             cacheKeys?.append(key)
-            defaults.setObject(cacheKeys, forKey: keyCacheKey)
+            defaults.set(cacheKeys, forKey: keyCacheKey)
         }
     }
 }

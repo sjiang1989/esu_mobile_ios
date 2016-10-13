@@ -9,6 +9,7 @@ import android.text.TextUtils;
 
 import com.ellucian.mobile.android.app.EllucianDefaultDetailActivity;
 import com.ellucian.mobile.android.app.EllucianDefaultDetailFragment;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 public class IlpDetailActivity extends EllucianDefaultDetailActivity {
@@ -23,7 +24,7 @@ public class IlpDetailActivity extends EllucianDefaultDetailActivity {
 		super.onCreate(savedInstanceState);
         if (TextUtils.isEmpty(moduleName)) {
             // When coming from Widget, moduleName is not known.
-            String title = Utils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.ILP_NAME, null);
+            String title = PreferencesUtils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.ILP_NAME, null);
             setTitle(title);
         } else {
             setTitle(moduleName);

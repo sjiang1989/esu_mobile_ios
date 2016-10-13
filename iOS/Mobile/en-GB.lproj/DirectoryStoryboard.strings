@@ -61,7 +61,7 @@
 /* Class = "UILabel"; text = "PO Box\nStreet\nCity State Zip\nCountry"; ObjectID = "Ymg-LR-Cb5"; */
 "Ymg-LR-Cb5.text" = "PO Box
 Street
-City Region Postcode
+City State Post Code
 Country";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "cqF-p7-CSY"; */

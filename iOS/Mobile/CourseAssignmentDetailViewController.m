@@ -7,8 +7,6 @@
 //
 
 #import "CourseAssignmentDetailViewController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
-#import "AppearanceChanger.h"
 #import "CourseAssignment.h"
 #import "Ellucian_GO-Swift.h"
 
@@ -39,11 +37,6 @@
         [self.navigationController setToolbarHidden:NO animated:NO];
     }
     self.navigationController.navigationBar.translucent = NO;
-    
-    if([AppearanceChanger isIOS8AndRTL]) {
-        self.titleLabel.textAlignment = NSTextAlignmentRight;
-        self.descriptionTextView.textAlignment = NSTextAlignmentRight;
-    }
     
     UIBarButtonItem *reminderButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"ilp-reminder"] style:UIBarButtonItemStylePlain target:self action:@selector(createReminder:)];
     
@@ -82,12 +75,12 @@
     }
     self.descriptionTextView.text = self.itemContent;
     
-    self.backgroundView.backgroundColor = [UIColor accentColor];
+    self.backgroundView.backgroundColor = [UIColor accent];
 
-    self.titleLabel.textColor = [UIColor subheaderTextColor];
-    self.courseNameLabel.textColor = [UIColor subheaderTextColor];
-    self.dateLabel.textColor = [UIColor subheaderTextColor];
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionSearch withLabel:@"ILP Assignments Detail" withValue:nil forModuleNamed:self.module.name];
+    self.titleLabel.textColor = [UIColor subheaderText];
+    self.courseNameLabel.textColor = [UIColor subheaderText];
+    self.dateLabel.textColor = [UIColor subheaderText];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Search label:@"ILP Assignments Detail" moduleName:self.module.name];
 
 }
 
@@ -105,14 +98,14 @@
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Course assignments detail" forModuleNamed:self.module.name];
+    [self sendView:@"Course assignments detail" moduleName:self.module.name];
 }
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     
     if ([[segue identifier] isEqualToString:@"Show Website"]) {
-        WebViewController *detailController = (WebViewController *)[segue destinationViewController];
+        WKWebViewController *detailController = (WKWebViewController *)[segue destinationViewController];
         detailController.loadRequest = [[NSURLRequest alloc] initWithURL:[NSURL URLWithString:self.itemLink]];
         detailController.title = self.itemTitle;
         detailController.analyticsLabel = self.module.name;
@@ -132,8 +125,10 @@
 }
 
 - (IBAction) takeAction:(id)sender {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionFollow_web withLabel:@"Open assignment in web frame" withValue:nil forModuleNamed:self.module.name];
-    [self performSegueWithIdentifier:@"Show Website" sender:sender];
+    if (self.itemTitle != nil) {
+        [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Follow_web label:@"Open assignment in web frame" moduleName:self.module.name];
+        [self performSegueWithIdentifier:@"Show Website" sender:sender];
+    }
 }
 
 -(void)setCourseAssignment:(CourseAssignment *)courseAssignment
@@ -199,52 +194,62 @@
 }
 
 -(void) createReminder:(id)sender {
-    NSString *reminderType = [[NSUserDefaults standardUserDefaults] stringForKey:@"settings-assignments-reminder"];
-    if([reminderType isEqualToString:@"Calendar"]) {
-        [self addToCalendar];
-    } else if ([reminderType isEqualToString:@"Reminders"]) {
-        [self addToReminders];
-    } else {
-        if(NSClassFromString(@"UIAlertController")) {
-            UIAlertController *alert = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Reminder Type", @"Reminder setting title") message:NSLocalizedString(@"What application would you list to use for reminders?", @"Reminder setting message") preferredStyle:UIAlertControllerStyleAlert];
-            
-            UIAlertAction *calendarAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Calendar", @"Calendar app name") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-                [[NSUserDefaults standardUserDefaults] setObject:@"Calendar" forKey:@"settings-assignments-reminder"];
-                [self addToCalendar];
-            }];
-            
-            UIAlertAction *reminderAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Reminders", @"Reminders app name") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-                [[NSUserDefaults standardUserDefaults] setObject:@"Reminders" forKey:@"settings-assignments-reminder"];
-                [self addToReminders];
-            }];
-            
-            [alert addAction:calendarAction];
-            [alert addAction:reminderAction];
-            
-            dispatch_async(dispatch_get_main_queue(),^{
-                    [self presentViewController:alert animated:YES completion:nil];
-                }); 
-        } else {
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Reminder Type", comment:@"Reminder setting title")
-                                                            message: NSLocalizedString(@"What application would you list to use for reminders?", @"Reminder setting message")
-                                                           delegate:self
-                                                  cancelButtonTitle:nil
-                                                  otherButtonTitles: NSLocalizedString(@"Calendar", @"Calendar app name"), NSLocalizedString(@"Reminders", @"Reminders app name"), nil];
-            alert.tag = 1;
-            [alert performSelectorOnMainThread:@selector(show) withObject:nil waitUntilDone:YES];
-        }
-    }
-}
-
--(void) alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-    if(alertView.tag == 1) {
-        if(buttonIndex == 1) {
-            [[NSUserDefaults standardUserDefaults] setObject:@"Reminders" forKey:@"settings-assignments-reminder"];
-            [self addToReminders];
-        } else if(buttonIndex == 0) {
-            [[NSUserDefaults standardUserDefaults] setObject:@"Calendar" forKey:@"settings-assignments-reminder"];
+    if (self.itemTitle != nil) {
+        NSString *reminderType = [[NSUserDefaults standardUserDefaults] stringForKey:@"settings-assignments-reminder"];
+        if([reminderType isEqualToString:@"Calendar"]) {
             [self addToCalendar];
+        } else if ([reminderType isEqualToString:@"Reminders"]) {
+            [self addToReminders];
+        } else {
+            if(NSClassFromString(@"UIAlertController")) {
+                UIAlertController *alert = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Reminder Type", @"Reminder setting title") message:NSLocalizedString(@"What application would you like to use for reminders?", @"Reminder setting message") preferredStyle:UIAlertControllerStyleAlert];
+                
+                UIAlertAction *calendarAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Calendar", @"Calendar app name") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                    [[NSUserDefaults standardUserDefaults] setObject:@"Calendar" forKey:@"settings-assignments-reminder"];
+                    [self addToCalendar];
+                }];
+                
+                UIAlertAction *reminderAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Reminders", @"Reminders app name") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                    [[NSUserDefaults standardUserDefaults] setObject:@"Reminders" forKey:@"settings-assignments-reminder"];
+                    [self addToReminders];
+                }];
+                
+                [alert addAction:calendarAction];
+                [alert addAction:reminderAction];
+                
+                dispatch_async(dispatch_get_main_queue(),^{
+                        [self presentViewController:alert animated:YES completion:nil];
+                    }); 
+            } else {
+                
+                dispatch_async(dispatch_get_main_queue(),^{
+                    UIAlertController *alertController = [UIAlertController
+                                                          alertControllerWithTitle:NSLocalizedString(@"Reminder Type", comment:@"Reminder setting title")
+                                                          message:NSLocalizedString(@"What application would you like to use for reminders?", @"Reminder setting message")
+                                                          preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *calendarAction = [UIAlertAction
+                                                     actionWithTitle:NSLocalizedString(@"Calendar", comment:@"Calendar app name")
+                                                   style:UIAlertActionStyleDefault
+                                                   handler:^(UIAlertAction *action)
+                                                   {
+                                                       [[NSUserDefaults standardUserDefaults] setObject:@"Calendar" forKey:@"settings-assignments-reminder"];
+                                                       [self addToCalendar];
+                                                   }];
+                    
+                    UIAlertAction *reminderAction = [UIAlertAction
+                                               actionWithTitle:NSLocalizedString(@"Reminders", @"Reminders app name")
+                                               style:UIAlertActionStyleDefault
+                                               handler:^(UIAlertAction *action)
+                                               {
+                                                   [[NSUserDefaults standardUserDefaults] setObject:@"Reminders" forKey:@"settings-assignments-reminder"];
+                                                   [self addToReminders];
+                                               }];
+                    
+                    [alertController addAction:calendarAction];
+                    [alertController addAction:reminderAction];
+                    [self presentViewController:alertController animated:YES completion:nil];
+                });
+            }
         }
     }
 }
@@ -276,13 +281,20 @@
                                 [self presentViewController:controller animated:YES completion:nil];
                             });
          } else {
-             UIAlertView * alert = [[UIAlertView alloc ] initWithTitle:NSLocalizedString(@"Permission not granted", @"Permission not granted title")
-                                                               message:NSLocalizedString(@"You must give permission in Settings to allow access", @"Permission not granted message")
-                                                              delegate:self
-                                                     cancelButtonTitle:@"OK"
-                                                     otherButtonTitles: nil];
-             alert.tag = 2;
-             [alert performSelectorOnMainThread:@selector(show) withObject:nil waitUntilDone:YES];
+             dispatch_async(dispatch_get_main_queue(),
+                            ^{
+                                UIAlertController *alertController = [UIAlertController
+                                                                      alertControllerWithTitle:NSLocalizedString(@"Permission not granted", @"Permission not granted title")
+                                                                      message:NSLocalizedString(@"You must give permission in Settings to allow access", @"Permission not granted message. Settings application is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages")
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+                                UIAlertAction *okAction = [UIAlertAction
+                                                           actionWithTitle:NSLocalizedString(@"OK", @"OK action")
+                                                           style:UIAlertActionStyleDefault
+                                                           handler:nil];
+                                [alertController addAction:okAction];
+                                [self presentViewController:alertController animated:YES completion:nil];
+                            });
+
          }
      }];
 }
@@ -309,12 +321,12 @@
     
     UIAlertController * alertController = [UIAlertController
                                            alertControllerWithTitle: NSLocalizedString(@"Permission not granted", @"Permission not granted title")
-                                           message:NSLocalizedString(@"You must give permission in Settings to allow access", @"Permission not granted message")
+                                           message:NSLocalizedString(@"You must give permission in Settings to allow access", @"Permission not granted message. Settings is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages")
                                            preferredStyle:UIAlertControllerStyleAlert];
     
     
     UIAlertAction* settingsAction = [UIAlertAction
-                                     actionWithTitle:NSLocalizedString(@"Settings", @"Settings application name")
+                                     actionWithTitle:NSLocalizedString(@"Settings", @"Settings application name. This is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages")
                                      style:UIAlertActionStyleDefault
                                      handler: ^(UIAlertAction * action)
                                      {

@@ -11,13 +11,12 @@
 #import <EventKitUI/EventKitUI.h>
 #import <MessageUI/MessageUI.h>
 #import <Accounts/Accounts.h>
-#import "Event.h"
 #import "Module.h"
 #import "DetailSelectionDelegate.h"
 #import "CourseEvent.h"
 
 @interface CourseEventsDetailViewController : UIViewController
-            <EKEventEditViewDelegate,UIPopoverControllerDelegate,DetailSelectionDelegate>
+            <EKEventEditViewDelegate,DetailSelectionDelegate>
 
 @property (nonatomic, strong) CourseEvent *courseEvent;
 

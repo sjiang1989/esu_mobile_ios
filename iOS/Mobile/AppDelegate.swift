@@ -8,17 +8,24 @@
 
 import UIKit
 import CoreData
+import WebKit
 
-//@UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    
+    static let localNotification = Notification.Name("GoLocalNotification")
+    static let wkProcessPool = WKProcessPool()
     
     var window: UIWindow?
     
+    var openModuleWhenActiveModuleKey: String?
     
-    func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey : Any]? = nil) -> Bool {
         // Override point for customization after application launch.
         
-        WatchConnectivityManager.instance.ensureWatchConnectivityInitialized()
+        let _ = WatchConnectivityManager.sharedInstance.ensureWatchConnectivityInitialized()
+        
+        // boot strap Launch Beacon Manager
+        LaunchBeaconManager.start()
         
         NSSetUncaughtExceptionHandler { exception in
             print("uncaught exception: \(exception.description)")
@@ -27,196 +34,251 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         //Google Analytics
         let gai = GAI.sharedInstance()
-        gai.trackUncaughtExceptions = true
-        gai.dispatchInterval = 20
-        gai.logger.logLevel = GAILogLevel.Error
-        
-        //Notifications registration
-        let settings = UIUserNotificationSettings(forTypes: [.Alert, .Badge, .Sound], categories: nil)
-        application.registerUserNotificationSettings(settings)
-        
-        
-        if !NSUserDefaults.standardUserDefaults().boolForKey("didMigrateToAppGroups") {
-            var oldDefaults: [String : AnyObject] = NSUserDefaults.standardUserDefaults().dictionaryRepresentation()
+        gai?.trackUncaughtExceptions = true
+        gai?.dispatchInterval = 20
+        gai?.logger.logLevel = GAILogLevel.error
+                
+        if !UserDefaults.standard.bool(forKey: "didMigrateToAppGroups") {
+            var oldDefaults = UserDefaults.standard.dictionaryRepresentation()
             
             for key: String in oldDefaults.keys {
-                AppGroupUtilities.userDefaults()?.setObject(oldDefaults[key], forKey: key)
+                AppGroupUtilities.userDefaults()?.set(oldDefaults[key], forKey: key)
             }
-            if let appDomain = NSBundle.mainBundle().bundleIdentifier {
-                NSUserDefaults.standardUserDefaults().removePersistentDomainForName(appDomain)
-                NSUserDefaults.standardUserDefaults().setBool(true, forKey: "didMigrateToAppGroups")
-            }
+            if let appDomain = Bundle.main.bundleIdentifier {
+                UserDefaults.standard.removePersistentDomain(forName: appDomain)
+            UserDefaults.standard.set(true, forKey: "didMigrateToAppGroups")
         }
+        }
+        
+        
         
         let slidingViewController = self.window?.rootViewController as? ECSlidingViewController
         if let slidingViewController = slidingViewController {
             self.slidingViewController = slidingViewController
             slidingViewController.anchorRightRevealAmount = 276
             slidingViewController.anchorLeftRevealAmount = 276
-            slidingViewController.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.Tapping , ECSlidingViewControllerAnchoredGesture.Panning]
+            slidingViewController.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.tapping , ECSlidingViewControllerAnchoredGesture.panning]
             let storyboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
-            let menu: UIViewController = storyboard.instantiateViewControllerWithIdentifier("Menu")
+            let menu: UIViewController = storyboard.instantiateViewController(withIdentifier: "Menu")
             
-            if #available(iOS 9, *) {
-                let direction: UIUserInterfaceLayoutDirection = UIView.userInterfaceLayoutDirectionForSemanticContentAttribute((self.window?.rootViewController!.view.semanticContentAttribute)!)
-                if direction == .RightToLeft {
-                    slidingViewController.underRightViewController = menu
-                } else {
-                    slidingViewController.underLeftViewController = menu
-                }
-                
+            
+            let direction: UIUserInterfaceLayoutDirection = UIView.userInterfaceLayoutDirection(for: (self.window?.rootViewController!.view.semanticContentAttribute)!)
+            if direction == .rightToLeft {
+                slidingViewController.underRightViewController = menu
             } else {
                 slidingViewController.underLeftViewController = menu
             }
         }
         
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "applicationDidTimeout:", name: "AppTimeOut", object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "applicationDidTouch:", name: "AppTouch", object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "returnHome:", name: kSignOutNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "returnHome:", name: kSignInReturnToHomeNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "forceConfigurationSelection:", name: kConfigurationFetcherError, object: nil)
-        if let currentUser = CurrentUser.sharedInstance() {
-            if currentUser.isLoggedIn && !currentUser.remember && logoutOnStartup != false {
-                currentUser.logout(false)
+        NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.applicationDidTimeout(_:)), name: MobileUIApplication.ApplicationDidTimeoutNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.applicationDidTouch(_:)), name: MobileUIApplication.ApplicationDidTouchNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.returnHome(_:)), name: CurrentUser.SignOutNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.returnHome(_:)), name: CurrentUser.SignInReturnToHomeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.forceConfigurationSelection(_:)), name: ConfigurationFetcher.ConfigurationFetcherErrorNotification, object: nil)
+        let currentUser = CurrentUser.sharedInstance
+        if currentUser.isLoggedIn && logoutOnStartup != false {
+            if currentUser.useFingerprint {
+                currentUser.fingerprintValid = false
+            } else if !currentUser.remember {
+                currentUser.logout( false)
             }
         }
+        
         // for when swapping the application in, honor the current logged in/out state
         logoutOnStartup = false
         
         if let prefs = AppGroupUtilities.userDefaults() {
-            if let _ = prefs.stringForKey("configurationUrl") {
+            if let configurationUrl = prefs.string(forKey: "configurationUrl") {
                 
-                AppearanceChanger.applyAppearanceChanges(self.window)
-                NSOperationQueue.mainQueue().addOperation(OpenModuleHomeOperation())
+                //reload if upgrading app version
+                let oldVersion = prefs.string(forKey: "app-version")
+                let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+                
+                if oldVersion != currentVersion {
+                    if self.useDefaultConfiguration && !self.allowSwitchSchool {
+                        if let defaultConfigUrl = self.defaultConfigUrl {
+                            prefs.set(defaultConfigUrl, forKey: "configurationUrl")
+                            DispatchQueue.main.async(execute: {() -> Void in
+                                let storyboard: UIStoryboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
+                                let vc: UIViewController = storyboard.instantiateViewController(withIdentifier: "Loading")
+                                self.window?.rootViewController = vc
+                                DispatchQueue.main.async(execute: {() -> Void in
+                                    self.loadConfigurationInBackground(URL(string: defaultConfigUrl)!)
+                                })
+                            })
+                        }
+                        
+                    } else {
+                        self.loadDefaultConfiguration(configurationUrl)
+                    }
+                    prefs.set(currentVersion, forKey: "app-version")
+                }
+                
+                AppearanceChanger.applyAppearanceChanges()
+                OperationQueue.main.addOperation(OpenModuleHomeOperation())
                 
             } else {
                 if self.useDefaultConfiguration {
-                    prefs.setObject(self.defaultConfigUrl, forKey: "configurationUrl")
+                    prefs.set(self.defaultConfigUrl, forKey: "configurationUrl")
                     self.loadDefaultConfiguration(self.defaultConfigUrl!)
                 } else {
                     let storyboard: UIStoryboard = UIStoryboard(name: "ConfigurationSelectionStoryboard", bundle: nil)
-                    let navcontroller = storyboard.instantiateViewControllerWithIdentifier("ConfigurationSelector") as! UINavigationController
+                    let navcontroller = storyboard.instantiateViewController(withIdentifier: "ConfigurationSelector") as! UINavigationController
                     let vc = navcontroller.childViewControllers[0] as! ConfigurationSelectionViewController
-                    vc.modalPresentationStyle = .FullScreen
+                    vc.modalPresentationStyle = .fullScreen
                     self.window?.rootViewController = navcontroller
-                    AppearanceChanger.applyAppearanceChanges(self.window)
+                    AppearanceChanger.applyAppearanceChanges()
                     
                 }
             }
         }
         
-        UIApplication.sharedApplication().applicationIconBadgeNumber = 0
+        UIApplication.shared.applicationIconBadgeNumber = 0
         
-        if #available(iOS 9.0, *) {
-            if let shortcutItem = launchOptions?[UIApplicationLaunchOptionsShortcutItemKey] as? UIApplicationShortcutItem {
-                handleShortcut(shortcutItem)
-                return false
-            }
+        if let localNotification = launchOptions?[UIApplicationLaunchOptionsKey.localNotification] as! UILocalNotification? {
+            let data = ["notification": localNotification]
+            NotificationCenter.default.post(name: AppDelegate.localNotification, object: data)
+            return false
+        }
+        
+        if let shortcutItem = launchOptions?[UIApplicationLaunchOptionsKey.shortcutItem] as? UIApplicationShortcutItem {
+            let _ = handleShortcut(shortcutItem)
+            return false
         }
         return true
     }
     
-    func applicationWillResignActive(application: UIApplication) {
+    func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
+        if (CurrentUser.sharedInstance.useFingerprint) {
+            //save time
+            if let defaults = AppGroupUtilities.userDefaults() {
+                defaults.setValue(Date(), forKey: "applicationDidEnterBackgroundDate")
+            }
+        }
     }
     
-    func applicationDidEnterBackground(application: UIApplication) {
+    func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-        self.saveContext()
     }
     
-    func applicationWillEnterForeground(application: UIApplication) {
+    func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-    }
-    
-    func applicationDidBecomeActive(application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-        
-        if let prefs = AppGroupUtilities.userDefaults() {
-            let configurationUrl = prefs.stringForKey("configurationUrl")
-            if let defaultConfigUrl = self.defaultConfigUrl where configurationUrl == nil && useDefaultConfiguration {
-                self.loadDefaultConfiguration(defaultConfigUrl)
-            }
-            
-            if AppDelegate.openURL != true {
-                NSNotificationCenter.defaultCenter().postNotificationName("RefreshConfigurationListIfPresent", object: nil)
-            }
-            AppDelegate.openURL = false
-            
-            let authenticationMode = prefs.stringForKey("login-authenticationType")
-            if authenticationMode == nil || (authenticationMode == "native") {
-                if let currentUser = CurrentUser.sharedInstance() {
-                    if currentUser.isLoggedIn && !currentUser.remember {
-                        if let timestampLastActivity = timestampLastActivity {
-                            let compareDate = timestampLastActivity.dateByAddingTimeInterval(ApplicationConstants.applicationTimeoutInMinutes * 60)
-                            let currentDate = NSDate()
-                            if (compareDate.compare(currentDate) == .OrderedAscending) || (logoutOnStartup != false) {
-                                self.sendEventWithCategory(kAnalyticsCategoryAuthentication, withAction: kAnalyticsActionTimeout, withLabel: "Password Timeout")
-                                currentUser.logout(false)
-                            }
-                        }
-                    }
+        if (CurrentUser.sharedInstance.useFingerprint && CurrentUser.sharedInstance.fingerprintValid) {
+            //compare time
+            if let defaults = AppGroupUtilities.userDefaults() {
+                if let date = defaults.value(forKey: "applicationDidEnterBackgroundDate") as? Date {
+                    let minutes = (Date().timeIntervalSince(date)) / 60
+                    CurrentUser.sharedInstance.fingerprintValid = minutes <= 5
+                } else {
+                    CurrentUser.sharedInstance.fingerprintValid = false
                 }
             }
         }
     }
     
-    func applicationWillTerminate(application: UIApplication) {
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        if let prefs = AppGroupUtilities.userDefaults() {
+            let configurationUrl = prefs.string(forKey: "configurationUrl")
+            if let defaultConfigUrl = self.defaultConfigUrl , configurationUrl == nil && useDefaultConfiguration {
+                self.loadDefaultConfiguration(defaultConfigUrl)
+            }
+            
+            if AppDelegate.openURL != true {
+                NotificationCenter.default.post(name: ConfigurationSelectionViewController.ConfigurationListRefreshIfPresentNotification, object: nil)
+            }
+            AppDelegate.openURL = false
+            
+            if LoginExecutor.isUsingBasicAuthentication() {
+                let currentUser = CurrentUser.sharedInstance
+                if currentUser.isLoggedIn && !currentUser.remember && !currentUser.useFingerprint
+                {
+                    if let timestampLastActivity = timestampLastActivity {
+                        let compareDate = timestampLastActivity.addingTimeInterval(MobileUIApplication.ApplicationTimeoutInMinutes * 60)
+                        let currentDate = Date()
+                        if (compareDate.compare(currentDate) == .orderedAscending) || (logoutOnStartup != false) {
+                            if let controller = UIApplication.shared.keyWindow?.rootViewController {
+                                controller.sendEvent(category: .authentication, action: .timeout, label: "Password Timeout")
+                            }
+                            currentUser.logout( false)
+                        }
+                    }
+                }
+                
+            }
+            
+        }
+        
+        if openModuleWhenActiveModuleKey != nil {
+            // Notification from tray action occurred while not active, if openModuleWhenActiveModuleKey is set then open it
+            let operation: OpenModuleOperation = OpenModuleOperation(id: openModuleWhenActiveModuleKey!)
+            OperationQueue.main.addOperation(operation)
+            openModuleWhenActiveModuleKey = nil
+        }
+    }
+    
+    func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         // Saves changes in the application's managed object context before the application terminates.
-        if let currentUser = CurrentUser.sharedInstance() {
-            if currentUser.isLoggedIn && !currentUser.remember {
-                currentUser.logout(false)
-            }
+        let currentUser = CurrentUser.sharedInstance
+        if currentUser.isLoggedIn && !currentUser.remember && !currentUser.useFingerprint {
+            currentUser.logout( false)
         }
+        
         self.saveContext()
     }
     
-    func application(application: UIApplication, openURL url: NSURL, sourceApplication: String?, annotation: AnyObject) -> Bool {
+    func application(_ app: UIApplication, open url: URL, options: [UIApplicationOpenURLOptionsKey : Any] = [:]) -> Bool {
         AppDelegate.openURL = true
         
-        let urlComponents = NSURLComponents(string: url.absoluteString)
+        let urlComponents = URLComponents(string: url.absoluteString)
         let type = urlComponents?.host
         let queryItems = urlComponents?.queryItems
         
         let pathComponents = url.pathComponents
         if (type == "mobilecloud") {
-            if let pathComponents = pathComponents where pathComponents.count >= 2 {
+            if pathComponents.count >= 2 {
                 
                 let scheme = pathComponents[1]
                 let host = pathComponents[2]
                 
                 let newPathComponents = pathComponents[3 ..< pathComponents.count].flatMap { $0 }
-                let newPath = newPathComponents.joinWithSeparator("/")
+                let newPath = newPathComponents.joined(separator: "/")
                 
-                let newUrl = NSURL(scheme: scheme, host: host, path: "/\(newPath)")
+                let components = NSURLComponents()
+                components.scheme = scheme
+                components.host = host
+                components.path = "/\(newPath)"
+                let newUrl = components.url
+                
                 let defaults = AppGroupUtilities.userDefaults()
-                defaults?.setObject(newUrl?.absoluteString, forKey: "mobilecloud-url")
+                defaults?.set(newUrl?.absoluteString, forKey: "mobilecloud-url")
                 let storyboard: UIStoryboard = UIStoryboard(name: "ConfigurationSelectionStoryboard", bundle: nil)
-                let navcontroller = storyboard.instantiateViewControllerWithIdentifier("ConfigurationSelector") as! UINavigationController
+                let navcontroller = storyboard.instantiateViewController(withIdentifier: "ConfigurationSelector") as! UINavigationController
                 let vc = navcontroller.childViewControllers[0] as! ConfigurationSelectionViewController
-                vc.modalPresentationStyle = .FullScreen
+                vc.modalPresentationStyle = .fullScreen
                 self.window?.rootViewController = navcontroller
             }
         }
         else if (type == "configuration") {
-            if let pathComponents = pathComponents where pathComponents.count >= 2 {
+            if pathComponents.count >= 2 {
                 let scheme = pathComponents[1]
                 let host = pathComponents[2]
                 
                 let newPathComponents = pathComponents[3 ..< pathComponents.count].flatMap { $0 }
-                let newPath = newPathComponents.joinWithSeparator("/")
+                let newPath = newPathComponents.joined(separator: "/")
                 
-                CurrentUser.sharedInstance().logoutWithoutUpdatingUI()
-                self.window?.rootViewController?.dismissViewControllerAnimated(false, completion: nil)
+                CurrentUser.sharedInstance.logoutWithoutUpdatingUI()
+                self.window?.rootViewController?.dismiss(animated: false, completion: nil)
                 let passcode = queryItems?.filter({$0.name == "passcode"}).first?.value
-                dispatch_async(dispatch_get_main_queue(), {() -> Void in
+                DispatchQueue.main.async(execute: {() -> Void in
                     let storyboard: UIStoryboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
-                    let vc: UIViewController = storyboard.instantiateViewControllerWithIdentifier("Loading")
+                    let vc: UIViewController = storyboard.instantiateViewController(withIdentifier: "Loading")
                     self.window?.rootViewController = vc
-                    dispatch_async(dispatch_get_global_queue(0, 0), {() -> Void in
+                    DispatchQueue.main.async(execute: {() -> Void in
                         self.loadConfigurationInBackground(scheme, host: host, newPath: newPath, passcode: passcode)
                     })
                 })
@@ -224,17 +286,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             
         }
         else if (type == "module-type") {
-            if let pathComponents = pathComponents where pathComponents.count >= 1 {
+            if pathComponents.count >= 1 {
                 if (pathComponents[1] == "ilp") {
-                    self.sendEventWithCategory(kAnalyticsCategoryWidget, withAction: kAnalyticsActionList_Select, withLabel: "Assignments")
-                    self.window?.rootViewController?.dismissViewControllerAnimated(false, completion: nil)
+                    UIApplication.shared.keyWindow?.rootViewController?.sendEvent(category: .widget, action: .list_Select, label: "Assignments")
+                    self.window?.rootViewController?.dismiss(animated: false, completion: nil)
                     let operation: OpenModuleOperation = OpenModuleOperation(type: "ilp")
                     if let urlToAssignment = queryItems?.filter({$0.name == "url"}).first
                     {
                         //sign in will not pass a url to open
-                        operation.properties = ["requestedAssignmentId": urlToAssignment]
+                        operation.properties = ["requestedAssignmentId": urlToAssignment.value!]
                     }
-                    NSOperationQueue.mainQueue().addOperation(operation)
+                    OperationQueue.main.addOperation(operation)
                 }
             }
         }
@@ -244,56 +306,73 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     // MARK: - 3d touch
     @available(iOS 9.0, *)
-    func application(application: UIApplication, performActionForShortcutItem shortcutItem: UIApplicationShortcutItem, completionHandler: (Bool) -> Void) {
+    func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
         completionHandler(handleShortcut(shortcutItem))
     }
     
     @available(iOS 9.0, *)
-    private func handleShortcut(shortcutItem: UIApplicationShortcutItem) -> Bool {
+    private func handleShortcut(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
         let shortcutType = shortcutItem.type
         
         let operation: OpenModuleOperation = OpenModuleOperation(id: shortcutType)
         
-        NSOperationQueue.mainQueue().addOperation(operation)
+        OperationQueue.main.addOperation(operation)
         return true
     }
     
     // MARK: - Core Data stack
     
-    lazy var applicationDocumentsDirectory: NSURL = {
+    lazy var applicationDocumentsDirectory: URL = {
         // The directory the application uses to store the Core Data store file.
-        return AppGroupUtilities.applicationDocumentsDirectory()!
+        return (AppGroupUtilities.applicationDocumentsDirectory()! as URL)
     }()
     
     lazy var managedObjectContext: NSManagedObjectContext = {
         // Returns the managed object context for the application (which is already bound to the persistent store coordinator for the application.) This property is optional since there are legitimate error conditions that could cause the creation of the context to fail.
-        return CoreDataManager.shared.managedObjectContext;
+        return CoreDataManager.sharedInstance.managedObjectContext;
     }()
     
     // MARK: - Core Data Saving support
     
     func saveContext () {
-        CoreDataManager.shared.save()
+        CoreDataManager.sharedInstance.save()
     }
     
     // MARK: Noficiations
-    func application(application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: NSData) {
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         print("Application deviceToken: \(deviceToken)")
         NotificationManager.registerDeviceToken(deviceToken)
     }
     
-    func application(application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: NSError) {
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print("Failed to get token, error: \(error)")
     }
+
+    func application(_ application: UIApplication, didReceive notification: UILocalNotification) {
+        let data = ["notification": notification]
+        NotificationCenter.default.post(name: AppDelegate.localNotification, object: data)
+    }
     
-    func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject]) {
+    func application(_ application: UIApplication, handleActionWithIdentifier identifier: String?, for notification: UILocalNotification, completionHandler: @escaping () -> Void) {
+        var data : [String : Any] = ["notification": notification]
+        if let identifier = identifier {
+            data["identifier"] = identifier
+        }
+        NotificationCenter.default.post(name: AppDelegate.localNotification, object: data)
+
+        completionHandler()
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) {
         
         let uuid = userInfo["uuid"] as? String
         print("didReceiveRemoteNotification - for uuid: \(uuid)")
-        if application.applicationState == .Active {
-            NSLog("application active - show notification message alert")
+        if application.applicationState == .active {
+            print("application active - show notification message alert")
             // log activity to Google Analytics
-            self.sendEventWithCategory(kAnalyticsCategoryPushNotification, withAction: kAnalyticsActionReceivedMessage, withLabel: "whileActive")
+            if let rootViewController = UIApplication.shared.keyWindow?.rootViewController {
+                rootViewController.sendEvent(category: .push_Notification, action: .receivedMessage, label: "whileActive")
+            }
             
             if let aps = userInfo["aps"] as? NSDictionary {
                 //                if let alert = aps["alert"] as? NSDictionary {
@@ -302,46 +381,64 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 //                    }
                 //                } else
                 if let alertMessage = aps["alert"] as? String {
-                    let alert: UIAlertController = UIAlertController(title: NSLocalizedString("New Notification", comment: "new notification has arrived"), message: alertMessage, preferredStyle: .Alert)
-                    let view: UIAlertAction = UIAlertAction(title: NSLocalizedString("View", comment: "view label"), style: .Default, handler: {(action: UIAlertAction) -> Void in
+                    let alert: UIAlertController = UIAlertController(title: NSLocalizedString("New Notification", comment: "new notification has arrived"), message: alertMessage, preferredStyle: .alert)
+                    let view: UIAlertAction = UIAlertAction(title: NSLocalizedString("View", comment: "view label"), style: .default, handler: {(action: UIAlertAction) -> Void in
                         let operation: OpenModuleOperation = OpenModuleOperation(type: "notifications")
                         if let uuid = uuid {
                             operation.properties = ["uuid": uuid]
                         }
-                        NSOperationQueue.mainQueue().addOperation(operation)
+                        OperationQueue.main.addOperation(operation)
                     })
-                    let cancel: UIAlertAction = UIAlertAction(title: NSLocalizedString("Close", comment: "Close"), style: .Cancel, handler: {(action: UIAlertAction) -> Void in
-                        alert.dismissViewControllerAnimated(true, completion: { _ in })
+                    let cancel: UIAlertAction = UIAlertAction(title: NSLocalizedString("Close", comment: "Close"), style: .cancel, handler: {(action: UIAlertAction) -> Void in
+                        alert.dismiss(animated: true, completion: { _ in })
                     })
                     alert.addAction(cancel)
                     alert.addAction(view)
                     self.window?.makeKeyAndVisible()
-                    self.window?.rootViewController?.presentViewController(alert, animated: true, completion: nil)
+                    self.window?.rootViewController?.present(alert, animated: true, completion: nil)
                 }
             }
         } else {
             // navigate to notifications
-            NSLog("application not active - open from notifications")
+            print("application not active - open from notifications")
             // log activity to Google Analytics
-            self.sendEventWithCategory(kAnalyticsCategoryPushNotification, withAction: kAnalyticsActionReceivedMessage, withLabel: "whileInActive")
-            self.window?.rootViewController?.dismissViewControllerAnimated(false, completion: nil)
+            if let rootViewController = UIApplication.shared.keyWindow?.rootViewController {
+                rootViewController.sendEvent(category:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      .push_Notification, action: .receivedMessage, label: "whileInActive")
+            }
+            self.window?.rootViewController?.dismiss(animated: false, completion: nil)
             let operation: OpenModuleOperation = OpenModuleOperation(type: "notifications")
             if let uuid = uuid {
                 operation.properties = ["uuid": uuid]
             }
-            NSOperationQueue.mainQueue().addOperation(operation)
+            OperationQueue.main.addOperation(operation)
         }
+    }
+    
+    func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([Any]?) -> Void) -> Bool {
+        var result = false
+        if userActivity.activityType == "com.ellucian.go.open.module" {
+            if let moduleKey = userActivity.userInfo?["moduleKey"] as! String? {
+                let operation: OpenModuleOperation = OpenModuleOperation(id: moduleKey)
+                OperationQueue.main.addOperation(operation)
+                if let rootViewController = UIApplication.shared.keyWindow?.rootViewController {
+                    rootViewController.sendEvent(category: Analytics.Category.location, action: Analytics.Action.launch, label: Analytics.Label.beaconLaunch.rawValue)
+                    result = true
+                }
+            }
+        }
+        
+        return result
     }
     
     // MARK: - Ellucian Mobile
     var slidingViewController : ECSlidingViewController?
-    var timestampLastActivity : NSDate?
+    var timestampLastActivity : Date?
     var logoutOnStartup = true
     static var openURL = false
     
     var useDefaultConfiguration: Bool {
         
-        if let plistPath = NSBundle.mainBundle().pathForResource("Customizations", ofType: "plist"), let customizationsDictionary = NSDictionary(contentsOfFile: plistPath) as? Dictionary<String, AnyObject> {
+        if let plistPath = Bundle.main.path(forResource: "Customizations", ofType: "plist"), let customizationsDictionary = NSDictionary(contentsOfFile: plistPath) as? Dictionary<String, AnyObject> {
             
             let useDefaultConfiguration = customizationsDictionary["Use Default Configuration"] as! Bool
             return useDefaultConfiguration
@@ -352,7 +449,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     var defaultConfigUrl : String? {
         
-        if let plistPath = NSBundle.mainBundle().pathForResource("Customizations", ofType: "plist"), let customizationsDictionary = NSDictionary(contentsOfFile: plistPath) as? Dictionary<String, AnyObject> {
+        if let plistPath = Bundle.main.path(forResource: "Customizations", ofType: "plist"), let customizationsDictionary = NSDictionary(contentsOfFile: plistPath) as? Dictionary<String, AnyObject> {
             
             if let url = customizationsDictionary["Default Configuration URL"] {
                 return url as? String
@@ -363,97 +460,104 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
     }
     
+    var allowSwitchSchool: Bool {
+        
+        if let plistPath = Bundle.main.path(forResource: "Customizations", ofType: "plist"), let customizationsDictionary = NSDictionary(contentsOfFile: plistPath) as? Dictionary<String, AnyObject> {
+            
+            let allowSwitchSchool = customizationsDictionary["Allow Switch School"] as! Bool
+            return allowSwitchSchool
+        } else {
+            return true
+        }
+    }
+    
     func reset() {
         print("reset")
-        let sharedCache: NSURLCache = NSURLCache(memoryCapacity: 0, diskCapacity: 0, diskPath: nil)
-        NSURLCache.setSharedURLCache(sharedCache)
-        let appDomain = NSBundle.mainBundle().bundleIdentifier
+        let sharedCache: URLCache = URLCache(memoryCapacity: 0, diskCapacity: 0, diskPath: nil)
+        URLCache.shared = sharedCache
+        let appDomain = Bundle.main.bundleIdentifier
         //must persist this property when switching configurations
         if let appGroupDefaults = AppGroupUtilities.userDefaults() {
-            let cloudUrl = appGroupDefaults.stringForKey("mobilecloud-url")
+            let cloudUrl = appGroupDefaults.string(forKey: "mobilecloud-url")
+            let appVersion = appGroupDefaults.string(forKey: "app-version")
+            let didMigrateToAppGroups = UserDefaults.standard.bool(forKey: "didMigrateToAppGroups")
             let appGroupDefaultsDictionary = appGroupDefaults.dictionaryRepresentation()
             
-            NSUserDefaults.standardUserDefaults().removePersistentDomainForName(appDomain!)
+            UserDefaults.standard.removePersistentDomain(forName: appDomain!)
             for key: String in appGroupDefaultsDictionary.keys {
-                appGroupDefaults.removeObjectForKey(key)
+                appGroupDefaults.removeObject(forKey: key)
             }
             
             if let cloudUrl = cloudUrl {
-                appGroupDefaults.setObject(cloudUrl, forKey: "mobilecloud-url")
+                appGroupDefaults.set(cloudUrl, forKey: "mobilecloud-url")
+            }
+            if let appVersion = appVersion {
+                appGroupDefaults.set(appVersion, forKey: "app-version")
             }
             
+            UserDefaults.standard.set(didMigrateToAppGroups, forKey: "didMigrateToAppGroups")
+            
         }
-
-        CurrentUser.sharedInstance().logoutWithoutUpdatingUI()
         
-        CoreDataManager.shared.reset()
+        CurrentUser.sharedInstance.logoutWithoutUpdatingUI()
+        CurrentUser.sharedInstance.reset()
+        CoreDataManager.sharedInstance.reset()
+        ImageCache.sharedCache.reset()
+        UIApplication.shared.cancelAllLocalNotifications()
+        UIApplication.shared.applicationIconBadgeNumber = 0
         
-        
-        ImageCache.sharedCache().reset()
-        UIApplication.sharedApplication().cancelAllLocalNotifications()
-        UIApplication.sharedApplication().applicationIconBadgeNumber = 0
-        
-        if #available(iOS 9, *) {
-            UIApplication.sharedApplication().shortcutItems = nil
-        }
+        UIApplication.shared.shortcutItems = nil
     }
     
-    func loadDefaultConfiguration(defaultConfigUrl: String) {
+    func loadDefaultConfiguration(_ defaultConfigUrl: String) {
         if let hudView = self.window?.rootViewController?.view {
-            let hud = MBProgressHUD.showHUDAddedTo(hudView, animated: true)
-            hud.labelText = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let hud = MBProgressHUD.showAdded(to: hudView, animated: true)
+            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
             
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW,Int64(0.01 * Double(NSEC_PER_SEC))), dispatch_get_main_queue(), {() -> Void in
-                let manager = ConfigurationManager.instance
-                manager.loadConfiguration(configurationUrl: defaultConfigUrl, completionHandler: {(result: AnyObject) -> Void in
-                    dispatch_async(dispatch_get_main_queue(), {() -> Void in
-                        MBProgressHUD.hideHUDForView(hudView, animated: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                let manager = ConfigurationManager.shared
+                manager.loadConfiguration(configurationUrl: defaultConfigUrl, completionHandler: {(result: Any) -> Void in
+                    DispatchQueue.main.async(execute: {() -> Void in
+                        MBProgressHUD.hide(for: hudView, animated: true)
                         if result is Bool && (result as! Bool) {
-                            AppearanceChanger.applyAppearanceChanges(self.window)
-                            NSOperationQueue.mainQueue().addOperation(OpenModuleHomeOperation())
+                            AppearanceChanger.applyAppearanceChanges()
+                            OperationQueue.main.addOperation(OpenModuleHomeOperation())
                         }
                     })
                 })
-            })
+            }
+        }
+    }
+    
+    func loadConfigurationInBackground(_ scheme: String, host: String, newPath: String, passcode: String?) {
+        
+        
+        let components = NSURLComponents()
+        components.scheme = scheme
+        components.host = host
+        components.path = "/\(newPath)"
+        
+        if let passcode = passcode {
+            components.queryItems = [ URLQueryItem(name: "passcode", value: passcode)]
         }
         
-    }
-    
-    func sendEventWithCategory(category: String, withAction action: String, withLabel label: String) {
-        if let defaults = AppGroupUtilities.userDefaults() {
-            let trackingId1 = defaults.stringForKey( "gaTracker1" )
-            let trackingId2 = defaults.stringForKey( "gaTracker2" )
-            let configurationName = defaults.stringForKey( "configurationName" )
-            let builder: GAIDictionaryBuilder = GAIDictionaryBuilder.createEventWithCategory(category, action: action, label: label, value: nil)
-            builder.set(configurationName, forKey: GAIFields.customMetricForIndex(1))
-            let buildDictionary = builder.build() as [NSObject : AnyObject]
-            if let trackingId1 = trackingId1 {
-                let tracker1: GAITracker = GAI.sharedInstance().trackerWithTrackingId(trackingId1)
-                tracker1.send(buildDictionary)
-            }
-            if let trackingId2 = trackingId2 {
-                let tracker2: GAITracker = GAI.sharedInstance().trackerWithTrackingId(trackingId2)
-                tracker2.send(buildDictionary)
-            }
-        }
-    }
-    
-    func loadConfigurationInBackground(scheme: String, host: String, newPath: String, passcode: String?) {
-        self.reset()
-        var newUrl = NSURL(scheme: scheme, host: host, path: "/\(newPath)")!
-        if let passcode = passcode {
-            newUrl = NSURL(scheme: scheme, host: host, path: "/\(newPath)?passcode=\(passcode)")!
-        }
+        let newUrl = components.url
+        
         if let prefs = AppGroupUtilities.userDefaults() {
-            prefs.setObject(newUrl.absoluteString, forKey: "configurationUrl")
+            prefs.set(newUrl?.absoluteString, forKey: "configurationUrl")
         }
-        let manager = ConfigurationManager.instance
-        manager.loadConfiguration(configurationUrl: newUrl.absoluteString, completionHandler:  {(result: AnyObject) -> Void in
+        loadConfigurationInBackground(newUrl!)
+    }
+    
+    func loadConfigurationInBackground(_ url: URL) {
+        self.reset()
+        let manager = ConfigurationManager.shared
+        manager.loadConfiguration(configurationUrl: url.absoluteString, completionHandler:  {(result: Any) -> Void in
             
-            ConfigurationManager.instance.loadMobileServerConfiguration() {
+            manager.loadMobileServerConfiguration() {
                 (result2) in
                 
-                dispatch_async(dispatch_get_main_queue(), {() -> Void in
+                DispatchQueue.main.async(execute: {() -> Void in
                     
                     var resultBool = false
                     if result is NSNumber {
@@ -461,45 +565,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         resultBool = num.boolValue
                     }
                     
+                    if let prefs = AppGroupUtilities.userDefaults() {
+                        prefs.removeObject(forKey: "configurationUrl")
+                        prefs.set(url.absoluteString, forKey: "configurationUrl")
+                    }
+                    
                     if resultBool || self.useDefaultConfiguration {
-                        AppearanceChanger.applyAppearanceChanges(self.window)
+                        AppearanceChanger.applyAppearanceChanges()
                         //the case may be that the user was on the modal "configuration selection" screen.  dismiss in case that's the case.
-                        self.window?.rootViewController?.dismissViewControllerAnimated(false, completion: nil)
+                        self.window?.rootViewController?.dismiss(animated: false, completion: nil)
                         let storyboard: UIStoryboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
-                        let slidingVC = storyboard.instantiateViewControllerWithIdentifier("SlidingViewController") as! ECSlidingViewController
+                        let slidingVC = storyboard.instantiateViewController(withIdentifier: "SlidingViewController") as! ECSlidingViewController
                         slidingVC.anchorRightRevealAmount = 276
                         slidingVC.anchorLeftRevealAmount = 276
-                        slidingVC.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.Tapping , ECSlidingViewControllerAnchoredGesture.Panning]
-                        let menu: UIViewController = storyboard.instantiateViewControllerWithIdentifier("Menu")
-                        if #available(iOS 9.0, *) {
-                            let direction: UIUserInterfaceLayoutDirection = UIView.userInterfaceLayoutDirectionForSemanticContentAttribute(slidingVC.view.semanticContentAttribute)
-                            if direction == .RightToLeft {
-                                slidingVC.underRightViewController = menu
-                            }
-                            else {
-                                slidingVC.underLeftViewController = menu
-                            }
+                        slidingVC.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.tapping , ECSlidingViewControllerAnchoredGesture.panning]
+                        let menu: UIViewController = storyboard.instantiateViewController(withIdentifier: "Menu")
+                        
+                        let direction: UIUserInterfaceLayoutDirection = UIView.userInterfaceLayoutDirection(for: slidingVC.view.semanticContentAttribute)
+                        if direction == .rightToLeft {
+                            slidingVC.underRightViewController = menu
                         }
                         else {
                             slidingVC.underLeftViewController = menu
                         }
+                        
                         self.window?.rootViewController = slidingVC
                         self.slidingViewController = slidingVC
-                        NSOperationQueue.mainQueue().addOperation(OpenModuleHomeOperation())
+                        OperationQueue.main.addOperation(OpenModuleHomeOperation())
                     }
                     else {
-                        if let prefs = AppGroupUtilities.userDefaults() {
-                            prefs.removeObjectForKey("configurationUrl")
-                            prefs.setObject(newUrl.absoluteString, forKey: "configurationUrl")
-                        }
-                        
                         let storyboard: UIStoryboard = UIStoryboard(name: "ConfigurationSelectionStoryboard", bundle: nil)
-                        let navcontroller = storyboard.instantiateViewControllerWithIdentifier("ConfigurationSelector") as! UINavigationController
+                        let navcontroller = storyboard.instantiateViewController(withIdentifier: "ConfigurationSelector") as! UINavigationController
                         let vc = navcontroller.childViewControllers[0] as! ConfigurationSelectionViewController
-                        vc.modalPresentationStyle = .FullScreen
-                        dispatch_async(dispatch_get_main_queue(), {() -> Void in
+                        vc.modalPresentationStyle = .fullScreen
+                        DispatchQueue.main.async(execute: {() -> Void in
                             self.window?.rootViewController = navcontroller
-                            ConfigurationFetcher.showErrorAlertView()
+                            ConfigurationFetcher.showErrorAlertView(controller: navcontroller)
                         })
                     }
                     
@@ -509,37 +610,44 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     // MARK: responds to notification center
-    func applicationDidTimeout(notif: NSNotification) {
-        NSLog("time exceeded!!")
-        if let currentUser = CurrentUser.sharedInstance() {
-            if currentUser.isLoggedIn && !currentUser.remember {
-                if let authenticationMode = AppGroupUtilities.userDefaults()!.stringForKey("login-authenticationType") {
+    func applicationDidTimeout(_ notif: Notification) {
+        print("time exceeded!!")
+        let currentUser = CurrentUser.sharedInstance
+        if (currentUser.isLoggedIn) {
+            if (currentUser.remember) {
+                () //do nothing
+            } else if (currentUser.useFingerprint) {
+                //                currentUser.fingerprintValid = false
+                () //do nothing
+            } else {
+                if let authenticationMode = AppGroupUtilities.userDefaults()!.string(forKey: "login-authenticationType") {
                     if authenticationMode == "native" {
-                        currentUser.logout(false)
+                        currentUser.logout( false)
                     }
                 } else {
-                    currentUser.logout(false)
-                    
+                    currentUser.logout( false)
                 }
             }
         }
+        
     }
     
-    func applicationDidTouch(notif: NSNotification) {
-        timestampLastActivity = NSDate()
+    func applicationDidTouch(_ notif: Notification) {
+        timestampLastActivity = Date()
     }
     
-    func returnHome(sender: AnyObject) {
-        AppearanceChanger.applyAppearanceChanges(self.window)
-        NSOperationQueue.mainQueue().addOperation(OpenModuleHomeOperation())
+    func returnHome(_ sender: AnyObject) {
+        AppearanceChanger.applyAppearanceChanges()
+        OperationQueue.main.addOperation(OpenModuleHomeOperation())
     }
     
-    func forceConfigurationSelection(sender: AnyObject) {
-        dispatch_async(dispatch_get_main_queue(), {() -> Void in
-            ConfigurationFetcher.showErrorAlertView()
-            AppearanceChanger.applyAppearanceChanges(self.window)
-            NSOperationQueue.mainQueue().addOperation(OpenModuleConfigurationSelectionOperation())
+    func forceConfigurationSelection(_ sender: AnyObject) {
+        DispatchQueue.main.async(execute: {() -> Void in
+            if let rootViewController = self.window?.rootViewController {
+                ConfigurationFetcher.showErrorAlertView(controller: rootViewController)
+                AppearanceChanger.applyAppearanceChanges()
+                OperationQueue.main.addOperation(OpenModuleConfigurationSelectionOperation())
+            }
         })
     }
 }
-

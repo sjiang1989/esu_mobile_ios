@@ -7,14 +7,11 @@
 //
 
 #import "CourseAnnouncementsViewController.h"
-#import "CurrentUser.h"
-#import "AuthenticatedRequest.h"
-#import "EmptyTableViewCell.h"
 #import "CourseAnnouncement.h"
 #import "CourseAnnouncementDetailViewController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
+#import "Ellucian_GO-Swift.h"
 
-@interface CourseAnnouncementsViewController ()
+@interface CourseAnnouncementsViewController () <CourseDetailViewControllerProtocol>
 
 @property (strong, nonatomic) NSDateFormatter *datetimeFormatter;
 @property (strong, nonatomic) NSDateFormatter *datetimeOutputFormatter;
@@ -35,19 +32,18 @@
 	}
     
     self.navigationItem.title = self.courseNameAndSectionNumber;
-    if([CurrentUser sharedInstance].isLoggedIn) {
-        [self fetchAnnouncements:self];
-    }
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fetchAnnouncements:) name:kLoginExecutorSuccess object:nil];
-    
-    
+    [self fetchAnnouncements:self];
+}
+
+-(NSString *)courseNameAndSectionNumber
+{
+    return [NSString stringWithFormat:@"%@-%@", self.courseName, self.courseSectionNumber];
 }
 
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Course activity list" forModuleNamed:self.module.name];
+    [self sendView:@"Course activity list" moduleName:self.module.name];
     
 }
 - (NSFetchedResultsController *)fetchedResultsController {
@@ -192,7 +188,7 @@
     NSManagedObjectContext *importContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     importContext.parentContext = self.module.managedObjectContext;
 
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/%@/announcements?term=%@", [self.module propertyForKey:@"ilp"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.sectionId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.termId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/%@/announcements?term=%@", [self.module propertyForKey:@"ilp"], [[[CurrentUser sharedInstance] userid] stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.sectionId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.termId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
     
     [importContext performBlock: ^{
         

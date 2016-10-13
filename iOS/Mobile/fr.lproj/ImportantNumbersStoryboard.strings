@@ -7,9 +7,6 @@
 /* Class = "UILabel"; text = "Label"; ObjectID = "5T8-YL-lNA"; */
 "5T8-YL-lNA.text" = "Libellé";
 
-/* Class = "UILabel"; text = "Label"; ObjectID = "5fj-kV-FRh"; */
-"5fj-kV-FRh.text" = "Libellé";
-
 /* Class = "UILabel"; text = "Get Directions"; ObjectID = "At7-K0-AnS"; */
 "At7-K0-AnS.text" = "Itinéraire";
 
@@ -21,6 +18,9 @@
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "X55-zO-KoE"; */
 "X55-zO-KoE.text" = "Libellé";
+
+/* Class = "UILabel"; text = "Title"; ObjectID = "fmV-SB-Rmw"; */
+"fmV-SB-Rmw.text" = "Titre";
 
 /* Class = "UILabel"; text = "Phone"; ObjectID = "oAa-S2-lIX"; */
 "oAa-S2-lIX.text" = "Téléphone";

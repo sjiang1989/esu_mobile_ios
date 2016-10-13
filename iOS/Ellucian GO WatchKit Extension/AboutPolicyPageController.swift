@@ -15,9 +15,9 @@ class AboutPolicyPageController: WKInterfaceController {
     
     @IBOutlet var policyLabelLabel: WKInterfaceLabel!
     @IBOutlet var policyLabel: WKInterfaceLabel!
-    override func awakeWithContext(context: AnyObject?) {
+    override func awake(withContext context: Any?) {
         let defaults = AppGroupUtilities.userDefaults()
-        self.policyLabelLabel.setText(defaults?.stringForKey("about-privacy-display"))
-        self.policyLabel.setText(defaults?.stringForKey("about-privacy-url"))
+        self.policyLabelLabel.setText(defaults?.string(forKey: "about-privacy-display"))
+        self.policyLabel.setText(defaults?.string(forKey: "about-privacy-url"))
     }
 }

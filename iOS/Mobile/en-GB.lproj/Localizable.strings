@@ -79,6 +79,13 @@
 /* Audit label for registration */
 "Audit" = "Audit";
 
+/* Authorization Code Heading
+   Authorization Code placeholder text */
+"Authorization Code" = "Authorisation Code";
+
+/* Message to encourage them to turn on bluetooth */
+"Bluetooth is used at your institution to alert you when you are near location specific information or services. Please enable Bluetooth in your device settings." = "Bluetooth is used at your institution to alert you when you are near location specific information or services. Please enable Bluetooth in your device settings.";
+
 /* CEU (singular) label for registration */
 "CEU" = "CEU";
 
@@ -88,7 +95,8 @@
 /* Calendar app name */
 "Calendar" = "Calendar";
 
-/* Cancel */
+/* Cancel
+   Cancel action */
 "Cancel" = "Cancel";
 
 /* checking registration eligibility message */
@@ -97,14 +105,11 @@
 /* Close */
 "Close" = "Close";
 
-/* Accessibility label for collapse menu section button */
-"Collapse menu section" = "Collapse menu section";
-
 /* Watch communication to phone error title */
 "Communication Error" = "Communication Error";
 
-/* button label to copy webpage's URL to clipboard */
-"Copy URL" = "Copy URL";
+/* Confirm fingerprint to continue */
+"Confirm fingerprint to continue" = "Confirm fingerprint to continue";
 
 /* message for add to cart alert */
 "Course(s) added to cart." = "Course(s) added to cart.";
@@ -121,6 +126,9 @@
 
 /* Delete button */
 "Delete" = "Delete";
+
+/* Dismiss label */
+"Dismiss" = "Dismiss";
 
 /* Registration Drop button */
 "Drop" = "Drop";
@@ -146,9 +154,6 @@
 /* Ellucian privacy policy label */
 "Ellucian Privacy" = "Ellucian Privacy";
 
-/* Email label for address book property */
-"Email" = "Email";
-
 /* text for variable credits prompt with two options */
 "Enter course credit value %@ or %@" = "Enter course credit value %1$@ or %2$@";
 
@@ -160,6 +165,9 @@
 
 /* PIN label for registration */
 "Enter the registration PIN" = "Enter the registration PIN";
+
+/* Enter your authorization code message */
+"Enter your authorization code." = "Enter your authorisation code.";
 
 /* Error */
 "Error" = "Error";
@@ -214,6 +222,13 @@
    loading message while waiting for data to load */
 "Loading" = "Loading";
 
+/* Location Access Disabled */
+"Location Access Disabled" = "Location Access Disabled";
+
+/* Description shown to user if location access disabled.  The text in quotes is the label used by iOS. Arabic=دائما Spanish=Siempre French=Tourjous Portuguese=Sempre
+   Message to encourage them to turn on Location Access to Always. The text in quotes is the label used by iOS. Arabic=دائما Spanish=Siempre French=Tourjous Portuguese=Sempre */
+"Location services are used at your institution to alert you when you are near location specific information or services. Please allow location access \"Always\" in your device settings." = "Location services are used at your institution to alert you when you are near location specific information or services. Please allow location access \"Always\" in your device settings.";
+
 /* Locations label for registration filter */
 "Locations" = "Locations";
 
@@ -222,6 +237,13 @@
 
 /* Message in directory suggesting to sign in for more information */
 "More contact information may be displayed if you are signed in." = "More contact information may be displayed if you are signed in.";
+
+/* Mute For Today button label
+   Mute For Today label */
+"Mute For Today" = "Mute For Today";
+
+/* Mute Forever label */
+"Mute Forever" = "Mute Forever";
 
 /* new notification has arrived */
 "New Notification" = "New Notification";
@@ -275,6 +297,9 @@
 
 /* PassFail label for registration */
 "Pass/Fail" = "Pass/Fail";
+
+/* Password */
+"Password" = "Password";
 
 /* Permission not granted title */
 "Permission not granted" = "Permission not granted";
@@ -345,7 +370,8 @@
 /* Title of the action sheet to select a reminder list to save the reminder */
 "Select the name of the reminder list to use." = "Select the name of the reminder list to use.";
 
-/* Settings application name */
+/* Settings application name. This is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages
+   Settings menu item */
 "Settings" = "Settings";
 
 /* label to sign in
@@ -385,13 +411,13 @@
 /* Unsupported feature alert message */
 "This application is not available on iOS." = "This application is not available on iOS.";
 
-/* button label to compose tweet on Twitter */
-"Twitter" = "Twitter";
+/* Accessibility label for toggle menu section button */
+"Toggle menu section" = "Toggle menu section";
 
 /* unable to access contacts alert view title */
 "Unable to access contacts" = "Unable to access contacts";
 
-/* unable to access contacts alert view message */
+/* unable to access contacts alert view message. Settings application is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages */
 "Unable to access contacts. Go to Settings to grant permission to Ellucian GO" = "Unable to access contacts. Go to Settings to grant permission to Ellucian GO";
 
 /* unable to download configuration message */
@@ -403,9 +429,6 @@
 /* Unavailable Application alert title */
 "Unavailable Application" = "Unavailable Application";
 
-/* Accessibility label for uncollapse menu section button */
-"Uncollapse menu section" = "Uncollapse menu section";
-
 /* error message when address cannot be used for getting directions */
 "Unknown address" = "Unknown address";
 
@@ -415,7 +438,11 @@
 /* Upgrade software button label */
 "Upgrade" = "Upgrade";
 
-/* view label */
+/* User Name */
+"User Name" = "User Name";
+
+/* view label
+   View label */
 "View" = "View";
 
 /* second message for heading of failed drop classes */
@@ -431,7 +458,7 @@
 "WebView loading error" = "%1$@ %2$@";
 
 /* Reminder setting message */
-"What application would you list to use for reminders?" = "What application would you list to use for reminders?";
+"What application would you like to use for reminders?" = "What application would you like to use for reminders?";
 
 /* permission access error message */
 "You do not have permission to use this feature." = "You do not have permission to use this feature.";
@@ -439,7 +466,10 @@
 /* You do not have the required app. Would you like to install it? message */
 "You do not have the required app. Would you like to install it?" = "You do not have the required app. Would you like to install it?";
 
-/* Permission not granted message */
+/* Permission not granted message
+   Permission not granted message. Settings application is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages
+   Permission not granted message. Settings is part of iOS.  Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages
+   Permission not granted message. Settings is the name of an app that is part of iOS. Apple translates this to be Arabic = الإعدادات Spanish/Portuguese=Ajustes French=Réglages */
 "You must give permission in Settings to allow access" = "You must give permission in Settings to allow access";
 
 /* available seats/capacity */
@@ -471,6 +501,18 @@
 
 /* days start - end method */
 "days start - end method" = "%1$@ %2$@ - %3$@ %4$@";
+
+/* days startdate - enddate starttime - endtime */
+"days startdate - enddate starttime - endtime" = "%1$@ %2$@ - %3$@ %4$@ - %5$@";
+
+/* days startdate - enddate starttime - endtime method */
+"days startdate - enddate starttime - endtime method" = "%1$@ %2$@ - %3$@ %4$@ - %5$@ %6$@";
+
+/* days startdate starttime - endtime */
+"days startdate starttime - endtime" = "%1$@ %2$@ %3$@ - %4$@";
+
+/* days startdate starttime - endtime method */
+"days startdate starttime - endtime method" = "%1$@ %2$@ %3$@ - %4$@ %5$@";
 
 /* days: */
 "days:" = "%@: ";

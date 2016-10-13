@@ -1,14 +1,15 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.app;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 
@@ -36,11 +37,12 @@ public class CategoryDialogFragment extends EllucianDialogFragment {
         this.callingFragment = callingFragment;
     }
 
-    public void onAttach(Activity activity) {
-		super.onAttach(activity);
+    @Override
+    public void onAttach(Context context) {
+		super.onAttach(context);
 
         try {
-			listener = (CategoryDialogListener) activity;
+			listener = (CategoryDialogListener) context;
 		} catch (ClassCastException e) {
             if (callingFragment != null) {
                 try {
@@ -49,12 +51,13 @@ public class CategoryDialogFragment extends EllucianDialogFragment {
                     throw new ClassCastException(callingFragment.toString() + " must implement CategoryDialogListener");
                 }
             } else {
-                throw new ClassCastException(activity.toString() + " must implement CategoryDialogListener");
+                throw new ClassCastException(context.toString() + " must implement CategoryDialogListener");
             }
 		}
 	}
-		
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
+
+	@NonNull
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
 		Log.d("CategoryDialogFragment.onCreateDialog", "Creating dialog");
 		final String[] currentCategories = listener.getAllCategories();
 		final String[] currentFiltered = listener.getFilteredCategories();
@@ -107,7 +110,7 @@ public class CategoryDialogFragment extends EllucianDialogFragment {
         		})		        
                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                    public void onClick(DialogInterface dialog, int id) {
-	                	ArrayList<String> filteredCategoriesList = new ArrayList<String>();
+	                	ArrayList<String> filteredCategoriesList = new ArrayList<>();
 	               		for (int i = 0; i < currentCategories.length; i++) {
 	               			if (!selectedPositions.contains(i)) {
 	               				filteredCategoriesList.add(currentCategories[i]);

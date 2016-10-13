@@ -1,18 +1,16 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.courses.daily;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.text.TextUtils;
@@ -33,6 +31,7 @@ import com.ellucian.mobile.android.courses.CoursesTabListener;
 import com.ellucian.mobile.android.courses.overview.CourseOverviewActivity;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 import com.ellucian.mobile.android.view.BlockView;
 import com.ellucian.mobile.android.view.BlocksLayout;
 
@@ -98,13 +97,13 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-        tabLayout.setSelectedTabIndicatorColor(Utils.getColorHelper(this, R.color.tab_indicator_color));
+        tabLayout.setSelectedTabIndicatorColor(VersionSupportUtils.getColorHelper(this, R.color.tab_indicator_color));
 
         TabLayout.Tab dailyView =  tabLayout.newTab().setText(R.string.courses_menu_daily_schedule);
         TabLayout.Tab fullView =  tabLayout.newTab().setText(R.string.courses_menu_full_schedule);
         tabLayout.addTab(dailyView, CoursesTabListener.DAILY_VIEW_TAB_INDEX, true);
         tabLayout.addTab(fullView, CoursesTabListener.FULL_VIEW_TAB_INDEX, false);
-        tabLayout.setOnTabSelectedListener(new CoursesTabListener(this, getIntent()));
+        tabLayout.addOnTabSelectedListener(new CoursesTabListener(this, getIntent()));
 
 		checkButtonIcons();
 		
@@ -112,17 +111,14 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
 		
 	}
 	
-	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	private void checkButtonIcons() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-			// In RTL mode in order for the buttons to look right after they flip the icons need to be switched
-			if (TextUtils.getLayoutDirectionFromLocale(Locale.getDefault()) == View.LAYOUT_DIRECTION_RTL) {
-				ImageView forwardButton = (ImageView) findViewById(R.id.courses_daily_date_forward_button);
-				forwardButton.setImageResource(R.drawable.ic_calendar_nav_left);
-				ImageView backButton = (ImageView) findViewById(R.id.courses_daily_date_back_button);
-				backButton.setImageResource(R.drawable.ic_calendar_nav_right);
-			}
-		}
+        // In RTL mode in order for the buttons to look right after they flip the icons need to be switched
+        if (TextUtils.getLayoutDirectionFromLocale(Locale.getDefault()) == View.LAYOUT_DIRECTION_RTL) {
+            ImageView forwardButton = (ImageView) findViewById(R.id.courses_daily_date_forward_button);
+            forwardButton.setImageResource(R.drawable.ic_calendar_nav_left);
+            ImageView backButton = (ImageView) findViewById(R.id.courses_daily_date_back_button);
+            backButton.setImageResource(R.drawable.ic_calendar_nav_right);
+        }
 	}
 	
 	@Override
@@ -189,8 +185,7 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
 	
 	private void refreshSchedule() {
 
-        Log.d(TAG, "Get courses for " + sdf.format(calendar.getTime()));
-        Day[] calDateSchedule = parseCachedSchedule(cachedSchedule);
+        ArrayList<Day> calDateSchedule = parseCachedSchedule(cachedSchedule);
 
         if (calDateSchedule == null) {
             String modifiedRequestUrl = createRequestUrl();
@@ -223,9 +218,8 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
 		cal.add(Calendar.DAY_OF_YEAR, 7);
 		String endDateString = cal.get(Calendar.YEAR) + "-" + (cal.get(Calendar.MONTH) + 1) + "-" + cal.get(Calendar.DAY_OF_MONTH);
 		
-		String modifiedRequestUrl = requestUrl + "/" + getEllucianApp().getAppUserId() + "?start=" + startDateString + "&end=" + endDateString;
+		return requestUrl + "/" + getEllucianApp().getAppUserId() + "?start=" + startDateString + "&end=" + endDateString;
 		
-		return modifiedRequestUrl;
 	}
 	
 	private void displayDate() {
@@ -244,7 +238,7 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
         return startStr.compareTo(targetDateStr) == 0 || endStr.compareTo(targetDateStr) == 0;
     }
 
-	private void displaySchedule(Day[] calDateSchedule) {
+	private void displaySchedule(ArrayList<Day> calDateSchedule) {
 		String targetDateStr = sdf.format(calendar.getTime());
 
 		final DateFormat timeFormatter = android.text.format.DateFormat.getTimeFormat(this);
@@ -281,6 +275,7 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
             Collections.addAll(meetings, day.coursesMeetings);
             Collections.sort(meetings);
             Date previousCourseEndTime = null;
+			String previousCourseTag = Integer.toString(0);
 
             for (int i=0; i<=meetings.size()-1;i++ ){
                 final Meeting meeting = meetings.get(i);
@@ -335,23 +330,27 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
                         int column = 0;
                         if (previousCourseEndTime == null) {
                             previousCourseEndTime = end;
-                        } else {
+							previousCourseTag = (Integer.toString(i));
+						} else {
                             if (start.compareTo(previousCourseEndTime) <= 0) {
                                 try {
                                     // Need to go back and change the column of the previous
                                     // Course Meeting since it can't be full width.
-                                    BlockView previousCourseBV = (BlockView) blocksView.getChildAt(i);
+                                    BlockView previousCourseBV = (BlockView) blocksView.findViewWithTag(previousCourseTag);
                                     previousCourseBV.setColumn(1);
                                 } catch (Exception e) {
-                                    Log.e("CoursesDailyScheduleActivity", "Bad Block view accessed at i:" + i);
+                                    Log.e("CoursesDailyScheduleActivity", "Bad Block view accessed at tag:" + previousCourseTag);
                                     Log.e("CoursesDailyScheduleActivity", e.getMessage());
                                 }
                                 column = 2;
                             }
+							previousCourseEndTime = end;
+							previousCourseTag = Integer.toString(i);
                         }
 
                         BlockView blockView = new BlockView(this, courseLabel, title, location,
                                 time, start.getTime(), end.getTime(), column);
+						blockView.setTag(Integer.toString(i));
 
 						blockView.setOnClickListener(new View.OnClickListener() {
 							@Override
@@ -393,8 +392,7 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
 			String requestUrl = params[0];
 			MobileClient client = new MobileClient(CoursesDailyScheduleActivity.this);
 			client.setDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-			DailyScheduleResponse dailySchedule = client.getDailySchedule(requestUrl);
-			return dailySchedule;
+			return client.getDailySchedule(requestUrl);
 		}
 		
 		@Override
@@ -411,7 +409,7 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
 				if (dailySchedule.coursesDays.length > 0) {
 
                     cachedSchedule = dailySchedule;
-                    Day[] displayDate = parseCachedSchedule(cachedSchedule);
+                    ArrayList<Day> displayDate = parseCachedSchedule(cachedSchedule);
                     if (displayDate != null) {
                         displaySchedule(displayDate);
                     }
@@ -427,23 +425,34 @@ public class CoursesDailyScheduleActivity extends EllucianActivity {
 
     // Parse the cached schedule data for just the user's selected calendar date (+/- 1 day)
     // and return that as an array.
-    private Day[] parseCachedSchedule(DailyScheduleResponse dailyScheduleResponse) {
+    private ArrayList<Day> parseCachedSchedule(DailyScheduleResponse dailyScheduleResponse) {
         String targetDateStr = sdf.format(calendar.getTime());
+        Log.d(TAG, "Get courses for " + targetDateStr);
 
         if (dailyScheduleResponse != null) {
 
-            // Start at 1. End at length-1 b/c we need 1 day before and after.
-            for (int i = 1; i < dailyScheduleResponse.coursesDays.length-1; i++) {
-                if (dailyScheduleResponse.coursesDays[i].date.equals(targetDateStr)){
-                    Day[] calDateSchedule = new Day[3];
-                    calDateSchedule[0] = dailyScheduleResponse.coursesDays[i - 1];
-                    calDateSchedule[1] = dailyScheduleResponse.coursesDays[i];
-                    calDateSchedule[2] = dailyScheduleResponse.coursesDays[i + 1];
+            // Return today, along with 1 day before and after.
+            for (int i = 0; i < dailyScheduleResponse.coursesDays.length; i++) {
+                if (dailyScheduleResponse.coursesDays[i].date.equals(targetDateStr)) {
+                    ArrayList<Day> calDateSchedule = new ArrayList<>();
+                    if ((i-1) >= 0) {
+                        Log.i(TAG, "parseCachedSchedule: include yesterday");
+                        calDateSchedule.add(dailyScheduleResponse.coursesDays[i - 1]);
+                    }
+                    calDateSchedule.add(dailyScheduleResponse.coursesDays[i]);
+                    if ((i+1) < dailyScheduleResponse.coursesDays.length) {
+                        Log.i(TAG, "parseCachedSchedule: include tomorrow");
+                        calDateSchedule.add(dailyScheduleResponse.coursesDays[i + 1]);
+                    }
                     return calDateSchedule;
                 }
             }
+            Log.d(TAG, "parseCachedSchedule() - No courses scheduled for " + targetDateStr);
+            return null;
+        } else {
+            Log.d(TAG, "parseCachedSchedule() - No schedule data to parse. ");
+            return null;
         }
-        return null;
     }
 	
 	private String formatDate(Date date) {

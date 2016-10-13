@@ -7,9 +7,6 @@
 //
 
 #import "ImportantNumbersDetailViewController.h"
-#import "MapPOIType.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
-#import "AppearanceChanger.h"
 #import "Ellucian_GO-Swift.h"
 
 @implementation ImportantNumbersDetailViewController
@@ -20,25 +17,15 @@
     
     self.navigationController.navigationBar.translucent = NO;
     
-    self.backgroundView.backgroundColor = [UIColor accentColor];
+    self.backgroundView.backgroundColor = [UIColor accent];
     
-    if([AppearanceChanger isIOS8AndRTL]) {
-        self.nameLabel.textAlignment = NSTextAlignmentRight;
-        self.typeLabel.textAlignment = NSTextAlignmentRight;
-        self.phoneLabelLabel.textAlignment = NSTextAlignmentRight;
-        self.emailLabelLabel.textAlignment = NSTextAlignmentRight;
-        self.addressLabelLabel.textAlignment = NSTextAlignmentRight;
-        self.getDirectionsLabel.textAlignment = NSTextAlignmentRight;
-        self.addressLabel.textAlignment = NSTextAlignmentRight;
-    }
-    
-    self.separatorAfterPhoneView.backgroundColor = [UIColor accentColor];
-    self.separatorAfterEmailView.backgroundColor = [UIColor accentColor];
-    self.separatorAfterAddressView.backgroundColor = [UIColor accentColor];
+    self.separatorAfterPhoneView.backgroundColor = [UIColor accent];
+    self.separatorAfterEmailView.backgroundColor = [UIColor accent];
+    self.separatorAfterAddressView.backgroundColor = [UIColor accent];
     
     
-    self.nameLabel.textColor = [UIColor subheaderTextColor];
-    self.typeLabel.textColor = [UIColor subheaderTextColor];
+    self.nameLabel.textColor = [UIColor subheaderText];
+    self.typeLabel.textColor = [UIColor subheaderText];
     
     self.nameLabel.text = self.name;
 
@@ -151,14 +138,14 @@
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Important Number Detail" forModuleNamed:self.module.name];
+    [self sendView:@"Important Number Detail" moduleName:self.module.name];
     
-    self.widthConstraint.constant = [AppearanceChanger currentScreenBoundsDependOnOrientation].width;
+    self.widthConstraint.constant = [UIScreen mainScreen].bounds.size.width;
 }
 
 -(void)showGetDirections
 {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionInvoke_Native withLabel:@"Get Directions" withValue:nil forModuleNamed:self.module.name];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Invoke_Native label:@"Get Directions" moduleName:self.module.name];
 
         CLLocationCoordinate2D coordinate = self.location.coordinate;
         if(coordinate.latitude == 0 && coordinate.longitude == 0) {
@@ -168,10 +155,17 @@
             [geocoder geocodeAddressString:self.address completionHandler:^(NSArray *placemarks, NSError *error) {
                 dispatch_async(dispatch_get_main_queue(),^ {
                     if (placemarks.count == 0) {
-                        UIAlertView *alert = [[UIAlertView alloc] init];
-                        alert.title = NSLocalizedString(@"Unknown address", @"error message when address cannot be used for getting directions");
-                        [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
-                        [alert show];
+                        UIAlertController *alertController = [UIAlertController
+                                                              alertControllerWithTitle:nil
+                                                              message:NSLocalizedString(@"Unknown address", @"error message when address cannot be used for getting directions")
+                                                              preferredStyle:UIAlertControllerStyleAlert];
+                        UIAlertAction *okAction = [UIAlertAction
+                                                   actionWithTitle:NSLocalizedString(@"OK", @"OK")
+                                                   style:UIAlertActionStyleDefault
+                                                   handler:nil];
+                        [alertController addAction:okAction];
+                        [self presentViewController:alertController animated:YES completion:nil];
+                        
                     } else {
                         CLPlacemark* placemark = [placemarks objectAtIndex:0];
                         [self openPointOnAppleMaps:placemark.location.coordinate];
@@ -196,7 +190,7 @@
 
 -(void)tapPhone:(id)sender
 {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionInvoke_Native withLabel:@"Call Phone Number" withValue:nil forModuleNamed:self.module.name];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Invoke_Native label:@"Call Phone Number" moduleName:self.module.name];
     NSString *phone = [[self.phone componentsSeparatedByCharactersInSet: [NSCharacterSet characterSetWithCharactersInString:@"() -"]] componentsJoinedByString: @""];
     if(self.phoneExtension) {
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"tel://%@;%@",phone, self.phoneExtension]]];
@@ -220,7 +214,7 @@
     NSUserDefaults *defaults = [AppGroupUtilities userDefaults];
     NSString *defaultUrlString = [defaults objectForKey:@"urls-map-buildings"];
 
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@", defaultUrlString, [self.buildingId  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@", defaultUrlString, [self.buildingId   stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]];
 
     NSError *error;
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
@@ -271,7 +265,7 @@
 
 -(void) didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
 {
-    self.widthConstraint.constant = [AppearanceChanger currentScreenBoundsDependOnOrientation].width;
+    self.widthConstraint.constant = [UIScreen mainScreen].bounds.size.width;
     [self.scrollView setContentOffset:CGPointZero animated:YES];
 }
 

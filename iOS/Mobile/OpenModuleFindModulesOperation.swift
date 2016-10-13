@@ -14,7 +14,7 @@ class OpenModuleFindModulesOperation: OpenModuleAbstractOperation {
     var limitToHomeScreen = false
     
     override func main() {
-        self.modules = OpenModuleAbstractOperation.findUserModules(limitToHomeScreen)
+        self.modules = ModuleManager.findUserModules(limitToHomeScreen: limitToHomeScreen)
     }
     
 }

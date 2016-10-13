@@ -1,12 +1,10 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.util;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.Application;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -21,35 +19,39 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.text.util.Linkify;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
-import android.webkit.WebSettings;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import com.androidquery.AQuery;
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
+import com.ellucian.mobile.android.MainActivity;
 import com.ellucian.mobile.android.ModuleType;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
+import com.ellucian.mobile.android.app.EllucianActivity;
+import com.ellucian.mobile.android.login.Fingerprint.FingerprintDialogFragment;
+import com.ellucian.mobile.android.login.LoginDialogFragment;
+import com.ellucian.mobile.android.login.QueuedIntentHolder;
 import com.ellucian.mobile.android.provider.EllucianContract;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class Utils {
+    public static final String TAG = Utils.class.getSimpleName();
 	public static final String DEFAULT_MENU_ICON = "defaultMenuIcon";
-	public static final String MENU_ICON_URL = "menuIconUrl";
 	public static final String SUBHEADER_TEXT_COLOR = "subheaderTextColor";
 	public static final String ACCENT_COLOR = "accentColor";
 	public static final String HEADER_TEXT_COLOR = "headerTextColor";
 	public static final String PRIMARY_COLOR = "primaryColor";
 	public static final String HOME_URL_PHONE = "homeUrlPhone";
 	public static final String HOME_URL_TABLET = "homeUrlTablet";
-	public static final String SCHOOL_LOGO_PHONE= "schoolLogoPhone";
-	public static final String SCHOOL_LOGO_TABLET = "schoolLogoTablet";
 	public static final String SECURITY = "security";
 	public static final String SECURITY_URL = "securityUrl";
 	public static final String NOTIFICATION = "notification";
@@ -65,18 +67,13 @@ public class Utils {
 	public static final String CONFIGURATION_URL = "configurationUrl";
 	public static final String CONFIGURATION_LAST_UPDATED = "configurationLastUpdated";
     public static final String CONFIGURATION_LAST_CHECKED = "configurationLastChecked";
+    public static final String LAST_DEVICE_VERSION = "lastDeviceVersion";
     public static final String MOBILESERVER_CONFIG_URL = "mobileServerConfigUrl";
     public static final String MOBILESERVER_CONFIG_LAST_UPDATE = "mobileServerConfigLastUpdate";
     public static final String MOBILESERVER_CODEBASE_VERSION = "mobileServerCodebaseVersion";
     public static final String APPEARANCE = "appearance";
 	public static final String DIALOG = "dialog";
-	private static final String USER = "user";
-	private static final String USER_ID = "userId";
-	private static final String USER_NAME = "userName";
-	private static final String USER_PASSWORD = "userPassword";
-	private static final String USER_ROLES = "userRoles";
-	public static final String USER_MASTER = "userMaster";
-	public static final String ID = "id";
+    public static final String ID = "id";
 	public static final String COURSE_ROSTER_VISIBILITY = "course_roster_visibility";
 	public static final String MAP_BUILDINGS_URL = "maBuildingsUrl";
 	public static final String MAP_CAMPUSES_URL = "mapCampusesUrl";
@@ -90,16 +87,34 @@ public class Utils {
 	public static final String GOOGLE_ANALYTICS_TRACKER1 = "tracker1";
 	public static final String GOOGLE_ANALYTICS_TRACKER2 = "tracker2";
 	public static final String LOGIN_URL = "loginUrl";
+    public static final String LOGOUT_URL = "logoutUrl";
 	public static final String LOGIN_TYPE = "loginType";
 	public static final String BROWSER_LOGIN_TYPE = "browser";
 	public static final String NATIVE_LOGIN_TYPE = "native";
+    public static final String AUTHENTICATION_TYPE = "authenticationType";
+    public static final String BASIC_AUTH = "basicAuth";
+    public static final String CAS_AUTH = "casAuth";
+    public static final String WEB_AUTH = "webAuth";
 	public static final String MENU = "menu";
 	public static final String MENU_HEADER_STATE = "menuHeaderState";
     public static final String ILP_URL = "ilpUrl";
     public static final String ILP_NAME = "ilpName";
     public static final String HOME_SCREEN_ICONS = "homeScreenIcons";
     public static final String HOME_SCREEN_OVERLAY = "homeScreenOverlay";
+    public static final String BLUETOOTH_NOTIF_TIMESTAMP = "bluetoothNotifTimestamp";
+    public static final String BLUETOOTH_NOTIF_REMIND = "bluetoothNotifRemind";
+    public static final String LOCATIONS_NOTIF_TIMESTAMP = "locationsNotifTimestamp";
+    public static final String LOCATIONS_NOTIF_REMIND = "locationsNotifRemind";
+    public static final String MUTE_LOCATIONS = "muteLocations";
+    public static final String FINGERPRINT_OPTION_ENABLED = "fingerprintOptionEnabled";
+    public static final String PERMISSIONS_ASKED_FOR_LOCATION = "permissionsAskedForLocation";
+    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 2000;
 
+    // Time
+    public static final long ONE_SECOND = 1000;
+    public static final long ONE_MINUTE = 60 * ONE_SECOND;
+    public static final long ONE_HOUR = 60 * ONE_MINUTE;
+    public static final long ONE_DAY = 24 * ONE_HOUR;
 
 	public static boolean isIntentAvailable(Context context, Intent intent) {
 		if(intent == null) return false;
@@ -113,6 +128,8 @@ public class Utils {
 	   return false;
 	}
 	
+    private Utils() {}  // Prevents instantiation
+
 	public static int getPrimaryColor(Context context) {
 		return getColor(context, PRIMARY_COLOR);
 	}
@@ -128,20 +145,6 @@ public class Utils {
 	public static int getSubheaderTextColor(Context context) {
 		return getColor(context, SUBHEADER_TEXT_COLOR);
 	}
-	
-	
-	public static Drawable getMenuIcon(Context context) {
-		String menuIconUrl = Utils.getStringFromPreferences(context, Utils.APPEARANCE, Utils.MENU_ICON_URL, null);
-		if (!TextUtils.isEmpty(menuIconUrl)) {
-			AQuery aq = new AQuery(context);
-			Bitmap bit = aq.getCachedImage(menuIconUrl);
-			if (bit != null) {
-				Drawable draw = new BitmapDrawable(context.getResources(), bit);
-				return resize(draw, 20, 20, context);
-			}
-		}
-		return null;
-	}
 
     public static Drawable resize(Drawable image, int height, int width, Context context) {
         Bitmap b = ((BitmapDrawable)image).getBitmap();
@@ -155,171 +158,23 @@ public class Utils {
 		SharedPreferences preferences = context.getSharedPreferences(APPEARANCE, Context.MODE_PRIVATE);
 		String color = preferences.getString(key, "#000000");
 		try {
-			int colorValue = Color.parseColor(color);
-			return colorValue;
+			return Color.parseColor(color);
 		} catch (IllegalArgumentException e) {
 			return Color.TRANSPARENT;
 		}
 	}
-		
-	public static String getStringFromPreferences(Context context, String fileName, String key, String defaultString) {		
-		SharedPreferences preferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE);
-        return preferences.getString(key, defaultString);
-	}
-	
-	public static void addStringToPreferences(Context context, String fileName, String key, String value) {
-		SharedPreferences preferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = preferences.edit();
-        
-        editor.putString(key, value);
-        editor.commit();
-	}
-	
-	public static Long getLongFromPreferences(Context context, String fileName, String key, Long defaultString) {		
-		SharedPreferences preferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE);
-        return preferences.getLong(key, defaultString);
-	}
-	
-	public static void addLongToPreferences(Context context, String fileName, String key, Long value) {
-		SharedPreferences preferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = preferences.edit();
-        
-        editor.putLong(key, value);
-        editor.commit();
-	}
-	
-	private static boolean getBooleanFromPreferences(Context context, String fileName, String key, boolean defaultValue) {
-		SharedPreferences preferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE);
-        return preferences.getBoolean(key, defaultValue);
-	}
-	
-	public static void addBooleanToPreferences(Context context, String fileName, String key, boolean value) {
-		SharedPreferences preferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = preferences.edit();
-        
-        editor.putBoolean(key, value);
-        editor.commit();
-	}
-	
-	public static void removeValuesFromPreferences(Context context, String fileName, String... keys) {
-		SharedPreferences preferences = context.getSharedPreferences(fileName, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = preferences.edit();
-        
-        for (String key: keys) {
-        	editor.remove(key);
-        }
-        editor.commit();
-	}
 
-	
-	public static void saveUserInfo(Context context, String userId, String username, String password, List<String> roleList) {
-		
-		StringBuilder roleBuilder = new StringBuilder();
-		int rolesLength = roleList.size();
-		String role;
-		for (int i = 0; i < rolesLength; i++) {
-			if (i > 0) {
-				roleBuilder.append(",");
-			}
-			role = (String) roleList.get(i);
-			roleBuilder.append(role);
-			
-		}
-		
-		SharedPreferences preferences = context.getSharedPreferences(Utils.USER, Context.MODE_PRIVATE);
-		SharedPreferences.Editor editor = preferences.edit();
-		
-		if (!TextUtils.isEmpty(userId)) {
-			editor.putString(Utils.USER_ID, userId);
-			Log.d("MainActivity.saveUserInfo", "User saved with id: " + userId);
-		}
-		if (!TextUtils.isEmpty(username)) {
-			editor.putString(Utils.USER_NAME, username);
-			Log.d("MainActivity.saveUserInfo", "User saved with username: " + username);
-		}
-		if (!TextUtils.isEmpty(password)) {
-			//Encrypt password before saving
-			String encryptedPassword = null;
-			try {
-				encryptedPassword = Encrypt.encrypt(Utils.USER_MASTER, password);
-			} catch (Exception e) {
-				Log.d("Utils.saveUserInfo", "Encryption Failed");
-				e.printStackTrace();
-			}
-			
-			editor.putString(Utils.USER_PASSWORD, encryptedPassword);
-		}
-		String rolesString = roleBuilder.toString();
-		if (!TextUtils.isEmpty(rolesString)) {
-			editor.putString(Utils.USER_ROLES, rolesString);
-			Log.d("Utils.saveUserInfo", "User saved with roles: " + rolesString);
-		}
-		
-		editor.commit();
-				
-	}
 
-	public static String getSavedUserId(Context context) {
-		return getStringFromPreferences(context, Utils.USER, Utils.USER_ID, null);
-	}
-	
-	public static String getSavedUserName(Context context) {
-		return getStringFromPreferences(context, Utils.USER, Utils.USER_NAME, null);
-	}
-	
-	public static String getSavedUserPassword(Context context) {
-		return getStringFromPreferences(context, Utils.USER, Utils.USER_PASSWORD, null);
-	}
-	
-	public static String getSavedUserRoles(Context context) {
-		return getStringFromPreferences(context, Utils.USER, Utils.USER_ROLES, null);
-	}
-	
-	public static void removeSavedUser(Context context) {
-		SharedPreferences preferences = context.getSharedPreferences(Utils.USER, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = preferences.edit();
-        
-        editor.remove(Utils.USER_ID);
-        editor.remove(Utils.USER_NAME);
-        editor.remove(Utils.USER_PASSWORD);
-        editor.remove(Utils.USER_ROLES);
-        editor.commit();
-	}
-	
-	public static String getUserId(Application application) {
-		if(application instanceof EllucianApplication) {
-			EllucianApplication ea = (EllucianApplication)application;
-			return ea.getAppUserId();
-		}
-		return null;
-	}
-	
-	public static String getUserName(Application application) {
-		if(application instanceof EllucianApplication) {
-			EllucianApplication ea = (EllucianApplication)application;
-			return ea.getAppUserName();
-		}
-		return null;
-	}
-	
-	public static String getUserPassword(Application application) {
-		if(application instanceof EllucianApplication) {
-			EllucianApplication ea = (EllucianApplication)application;
-			return ea.getAppUserPassword();
-		}
-		return null;
-	}
-	
-	public static boolean isMapPresent(Context context) {
-        return getBooleanFromPreferences(context, CONFIGURATION, MAP_PRESENT, false);
+    public static boolean isMapPresent(Context context) {
+        return PreferencesUtils.getBooleanFromPreferences(context, CONFIGURATION, MAP_PRESENT, false);
 	}
 	 
 	public static boolean isDirectoryPresent(Context context) {
-		return getBooleanFromPreferences(context, CONFIGURATION, DIRECTORY_PRESENT, false);
+		return PreferencesUtils.getBooleanFromPreferences(context, CONFIGURATION, DIRECTORY_PRESENT, false);
 	}
 	
 	public static boolean isNotificationsPresent(Context context) {
-		return getBooleanFromPreferences(context, CONFIGURATION, NOTIFICATION_PRESENT, false);
+		return PreferencesUtils.getBooleanFromPreferences(context, CONFIGURATION, NOTIFICATION_PRESENT, false);
 	}
 	
 	public static boolean isGoogleMapsInstalled(Context context) {
@@ -348,13 +203,13 @@ public class Utils {
 	private static boolean isWebIntentAvailable(Context context) {
 		Intent intent = new Intent(Intent.ACTION_VIEW,
 				Uri.parse("http://www.google.com"));
-		return Utils.isIntentAvailable(context, intent);
+		return isIntentAvailable(context, intent);
 	}
 
 	public static int getAvailableLinkMasks(Context context, Integer... linkTypes) {
 		int mask = 0;
 		
-		List<Integer> typeList = null;
+		List<Integer> typeList;
 		if (linkTypes != null) {
 			typeList = Arrays.asList(linkTypes);
 		
@@ -389,7 +244,7 @@ public class Utils {
 		marketIntent.setData(Uri.parse("market://details?id="
 						+ packageName));
 
-		if (Utils.isIntentAvailable(activity, marketIntent)) {
+		if (isIntentAvailable(activity, marketIntent)) {
 			if (setFlags) {
 				marketIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 				marketIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -431,7 +286,9 @@ public class Utils {
                         directoryCursor.getColumnIndex(EllucianContract.ModulesProperties.MODULE_PROPERTIES_VALUE));
             }
         }
-        directoryCursor.close();
+        if (directoryCursor != null) {
+            directoryCursor.close();
+        }
 
         if (TextUtils.isEmpty(directoryModuleVersion)) {
             return true; // legacy should be secure
@@ -447,15 +304,6 @@ public class Utils {
 		
 		return moduleConfig != null ? moduleConfig.secure : false;
 	}
-	
-	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-	public static boolean isSystemLayoutDirectionRtl() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            return TextUtils.getLayoutDirectionFromLocale(null)
-                    == View.LAYOUT_DIRECTION_RTL;
-        }
-        return false;
-    }
 
     public static void hideProgressIndicator(Activity activity) {
         View progressSpinner = activity.findViewById(R.id.progress_spinner);
@@ -485,47 +333,6 @@ public class Utils {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    public static int getColorHelper(Context context, int colorId) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return context.getResources().getColor(colorId, null);
-        } else {
-            return context.getResources().getColor(colorId);
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    public static Drawable getDrawableHelper(Context context, int drawableId) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            return context.getResources().getDrawable(drawableId, null);
-        } else {
-            return context.getResources().getDrawable(drawableId);
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    public static void setDatabasePath(WebSettings webSettings, String databasePath) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-            // deprecated, but needed for earlier than API 19
-            webSettings.setDatabasePath(databasePath);
-        }
-    }
-
-    public static void enableMirroredDrawable(Drawable drawable) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            drawable.setAutoMirrored(true);
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    public static void setTextAppearanceHelper(Context context, TextView view, int resId) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            view.setTextAppearance(resId);
-        } else {
-            view.setTextAppearance(context, resId);
-        }
-    }
-
     public static boolean allowMaps(Context context) {
         // check if google play services is present
         try {
@@ -536,4 +343,135 @@ public class Utils {
             return false;
         }
     }
+
+    public static void showLoginDialog(AppCompatActivity activity) {
+        showLoginDialog(activity, null, null);
+    }
+
+    public static void showLoginDialog(AppCompatActivity activity, Intent intent,
+                                        List<String> roles) {
+
+
+        EllucianApplication application = ((EllucianActivity)activity).getEllucianApp();
+        // If the user enabled fingerprint auth, let them re-log in with that.
+        if (UserUtils.getUseFingerprintEnabled(application)) {
+            String previousUserName = UserUtils.getSavedUserName(application);
+            String previousPassword = UserUtils.getSavedUserPassword(application);
+
+            if (!TextUtils.isEmpty(previousUserName) &&
+                    !TextUtils.isEmpty(previousPassword)) {
+                showFingerprintDialog(activity, intent, roles, true, previousUserName, previousPassword);
+                return;
+            }
+        }
+
+        LoginDialogFragment loginFragment = new LoginDialogFragment();
+        if (intent != null) {
+            loginFragment.queueIntent(intent, roles);
+        }
+        loginFragment.show(activity.getSupportFragmentManager(),
+                LoginDialogFragment.LOGIN_DIALOG);
+
+    }
+
+    public static void showFingerprintDialog(AppCompatActivity activity, Intent intent,
+                                             List<String> roles) {
+        showFingerprintDialog(activity, intent, roles, false, null, null);
+    }
+
+    private static void showFingerprintDialog(AppCompatActivity activity, Intent intent,
+                                             List<String> roles, boolean refreshRoles,
+                                             String userName, String password) {
+        FingerprintDialogFragment fingerprintFragment = new FingerprintDialogFragment();
+        if (intent != null) {
+            fingerprintFragment.queueIntent(intent, roles);
+        }
+        fingerprintFragment.setRefreshRoles(refreshRoles);
+        if (!TextUtils.isEmpty(userName) && !TextUtils.isEmpty(password)) {
+            fingerprintFragment.setUserName(userName);
+            fingerprintFragment.setPassword(password);
+        }
+        fingerprintFragment.show(activity.getSupportFragmentManager(),
+                FingerprintDialogFragment.FINGERPRINT_DIALOG);
+    }
+
+    public static void showLoginForQueuedIntent(Activity activity, String moduleId, String moduleType) {
+        // Pass the incoming Intent as an extra, so after authentication
+        // user is directed back here.
+
+        QueuedIntentHolder queuedIntentHolder = buildQueuedIntentHolder(activity, moduleId, moduleType);
+
+        Intent mainIntent = new Intent(activity, MainActivity.class);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        if (UserUtils.getUseFingerprintEnabled(activity)) {
+            mainIntent.putExtra(MainActivity.REQUEST_FINGERPRINT, true);
+        } else {
+            mainIntent.putExtra(MainActivity.SHOW_LOGIN, true);
+        }
+
+        mainIntent.putExtra(QueuedIntentHolder.QUEUED_INTENT_HOLDER, queuedIntentHolder);
+        activity.startActivity(mainIntent);
+        activity.finish();
+        return;
+    }
+
+    private static QueuedIntentHolder buildQueuedIntentHolder(Activity activity, String moduleId, String moduleType) {
+        Intent queuedIntent = activity.getIntent();
+        if (moduleId == null) {
+            Cursor cursor = activity.getContentResolver().query(EllucianContract.Modules.CONTENT_URI,
+                    new String[] {EllucianContract.Modules.MODULES_ID},
+                    EllucianContract.Modules.MODULE_TYPE + "= ?",
+                    new String[]{moduleType},
+                    null);
+            if (cursor.moveToFirst()) {
+                moduleId = cursor.getString(cursor.getColumnIndex(EllucianContract.Modules.MODULES_ID));
+            }
+            cursor.close();
+        }
+
+        QueuedIntentHolder queuedIntentHolder = new QueuedIntentHolder(moduleId, queuedIntent);
+        return queuedIntentHolder;
+    }
+
+    @SuppressWarnings("deprecation")
+    public static boolean isLocationEnabled(Context context) {
+        int locationMode = 0;
+        String locationProviders;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            try {
+                locationMode = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE);
+
+            } catch (Settings.SettingNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            return locationMode != Settings.Secure.LOCATION_MODE_OFF;
+
+        } else {
+            locationProviders = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+            return !TextUtils.isEmpty(locationProviders);
+        }
+
+    }
+
+    public static boolean hasPlayServicesAvailable(Activity activity) {
+        GoogleApiAvailability googleAPI = GoogleApiAvailability.getInstance();
+
+        int status = googleAPI.isGooglePlayServicesAvailable(activity);
+
+        if (status != ConnectionResult.SUCCESS) {
+            if (googleAPI.isUserResolvableError(status)) {
+                googleAPI.getErrorDialog(activity, status, PLAY_SERVICES_RESOLUTION_REQUEST).show();
+            }
+
+            Toast.makeText(activity, activity.getString(R.string.services_feature_not_supported), Toast.LENGTH_LONG).show();
+            return false;
+        }
+
+        return true;
+    }
+
 }

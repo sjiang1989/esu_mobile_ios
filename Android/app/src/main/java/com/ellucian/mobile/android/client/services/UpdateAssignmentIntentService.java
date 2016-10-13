@@ -11,6 +11,7 @@ import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.ilp.widget.AssignmentsWidgetProvider;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.Date;
@@ -27,7 +28,7 @@ public class UpdateAssignmentIntentService extends IntentService {
 
         EllucianApplication app = (EllucianApplication) this.getApplicationContext();
 
-        String ilpUrl = Utils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.ILP_URL, null);
+        String ilpUrl = PreferencesUtils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.ILP_URL, null);
 
         LocalBroadcastManager bm = LocalBroadcastManager.getInstance(app.getApplicationContext());
         Intent broadcastIntent = new Intent();

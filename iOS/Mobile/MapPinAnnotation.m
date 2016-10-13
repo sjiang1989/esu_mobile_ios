@@ -7,7 +7,6 @@
 //
 
 #import "MapPinAnnotation.h"
-#import "MapPOIType.h"
 
 @implementation MapPinAnnotation
 

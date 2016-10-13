@@ -19,6 +19,7 @@ public class MeetingPattern implements Parcelable {
 	public String building;
 	public String buildingId;
 	public String campusId;
+    public String campus;
 	public String sisStartTimeWTz;
 	public String sisEndTimeWTz;
 	
@@ -41,6 +42,7 @@ public class MeetingPattern implements Parcelable {
 		building = in.readString();
 		buildingId = in.readString();
 		campusId = in.readString();
+        campus = in.readString();
 		sisStartTimeWTz = in.readString();
 		sisEndTimeWTz = in.readString();
 	
@@ -64,6 +66,7 @@ public class MeetingPattern implements Parcelable {
 		dest.writeString(building);
 		dest.writeString(buildingId);
 		dest.writeString(campusId);
+        dest.writeString(campus);
 		dest.writeString(sisStartTimeWTz);
 		dest.writeString(sisEndTimeWTz);
 		

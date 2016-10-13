@@ -46,6 +46,7 @@ import com.ellucian.mobile.android.provider.EllucianContract.GradesCourses;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -533,7 +534,7 @@ public class GradesActivity extends EllucianActivity {
             tabLayout.setVisibility(View.VISIBLE);
             tabLayout.setupWithViewPager(viewPager);
             tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-            tabLayout.setSelectedTabIndicatorColor(Utils.getColorHelper(GradesActivity.this, R.color.tab_indicator_color));
+            tabLayout.setSelectedTabIndicatorColor(VersionSupportUtils.getColorHelper(GradesActivity.this, R.color.tab_indicator_color));
 
         }
 
@@ -566,11 +567,11 @@ public class GradesActivity extends EllucianActivity {
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
+            Utils.hideProgressIndicator(activity);
 			boolean updated = intent.getBooleanExtra(GradesIntentService.PARAM_OUT_DATABASE_UPDATED, false);
 			Log.d("GradesIntentServiceReceiver", "onReceive: database updated = " + updated);
 			if(updated) {
 				Log.d("GradesIntentServiceReceiver.onReceive", "All grades retrieved and database updated");
-                Utils.hideProgressIndicator(activity);
                 new LoadTermsFromDatabaseTask().execute();
 			}
 		}

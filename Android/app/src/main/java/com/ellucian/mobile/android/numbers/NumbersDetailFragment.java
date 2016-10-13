@@ -32,6 +32,7 @@ import com.ellucian.mobile.android.maps.MapUtils;
 import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.provider.EllucianContract.MapsBuildings;
 import com.ellucian.mobile.android.provider.EllucianContract.MapsCampuses;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.io.UnsupportedEncodingException;
@@ -99,7 +100,7 @@ public class NumbersDetailFragment extends EllucianDefaultDetailFragment {
 				Log.d(TAG, "latitude or longitude is missing, setting views from buildingId");
 				
 				if (!TextUtils.isEmpty(buildingId)) {
-					buildingUrl = Utils.getStringFromPreferences(getActivity(), Utils.CONFIGURATION, Utils.MAP_BUILDINGS_URL, null);
+					buildingUrl = PreferencesUtils.getStringFromPreferences(getActivity(), Utils.CONFIGURATION, Utils.MAP_BUILDINGS_URL, null);
 					setViewsFromBuildingId();
 				} else {
 					Log.d(TAG, "buildingId is also missing showing data from args only");

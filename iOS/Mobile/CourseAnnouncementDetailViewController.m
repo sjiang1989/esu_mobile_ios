@@ -7,8 +7,6 @@
 //
 
 #import "CourseAnnouncementDetailViewController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
-#import "AppearanceChanger.h"
 #import "Ellucian_GO-Swift.h"
 
 @interface CourseAnnouncementDetailViewController ()
@@ -33,11 +31,6 @@
     [super viewDidLoad];
     
     self.navigationController.navigationBar.translucent = NO;
-    
-    if([AppearanceChanger isIOS8AndRTL]) {
-        self.titleLabel.textAlignment = NSTextAlignmentRight;
-        self.descriptionTextView.textAlignment = NSTextAlignmentRight;
-    }
     
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
         [self.navigationController setToolbarHidden:NO animated:NO];
@@ -71,11 +64,11 @@
     self.dateLabel.text = [dateFormatter stringFromDate:self.itemPostDateTime];
     self.descriptionTextView.text = self.itemContent;
     
-    self.backgroundView.backgroundColor = [UIColor accentColor];
-    self.titleLabel.textColor = [UIColor subheaderTextColor];
-    self.courseNameLabel.textColor = [UIColor subheaderTextColor];
-    self.dateLabel.textColor = [UIColor subheaderTextColor];
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionSearch withLabel:@"ILP Announcements Detail" withValue:nil forModuleNamed:self.module.name];
+    self.backgroundView.backgroundColor = [UIColor accent];
+    self.titleLabel.textColor = [UIColor subheaderText];
+    self.courseNameLabel.textColor = [UIColor subheaderText];
+    self.dateLabel.textColor = [UIColor subheaderText];
+    [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Search label:@"ILP Announcements Detail" moduleName:self.module.name];
 }
 
 -(void)viewWillDisappear:(BOOL)animated
@@ -92,13 +85,13 @@
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Course activity detail" forModuleNamed:self.module.name];
+    [self sendView:@"Course activity detail" moduleName:self.module.name];
 }
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     if ([[segue identifier] isEqualToString:@"Show Website"]) {
-        WebViewController *detailController = (WebViewController *)[segue destinationViewController];
+        WKWebViewController *detailController = (WKWebViewController *)[segue destinationViewController];
         detailController.loadRequest = [[NSURLRequest alloc] initWithURL:[NSURL URLWithString:self.itemLink]];
         detailController.title = self.itemTitle;
         detailController.analyticsLabel = self.module.name;
@@ -106,26 +99,9 @@
 }
 
 - (IBAction) takeAction:(id)sender {
-    [self sendEventToTracker1WithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionFollow_web withLabel:@"Open activity in web frame" withValue:nil forModuleNamed:self.module.name];
-    [self performSegueWithIdentifier:@"Show Website" sender:sender];
-}
-
-- (void)popoverControllerDidDismissPopover:(UIPopoverController *)popoverController
-{
-    self.popover = nil;
-}
-
-- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
-{
-    [self closePopover];
-}
-
-- (void)closePopover
-{
-    if (self.popover)
-    {
-        [self.popover dismissPopoverAnimated:YES];
-        self.popover = nil;
+    if (self.itemTitle != nil) {
+        [self sendEventToTracker1WithCategory:Analytics.UI_Action action:Analytics.Follow_web label:@"Open activity in web frame" moduleName:self.module.name];
+        [self performSegueWithIdentifier:@"Show Website" sender:sender];
     }
 }
 
@@ -166,10 +142,6 @@
     {
         [self setCourseAnnouncement:(CourseAnnouncement *)newCourseAnnouncement];
         [self setModule:myModule];
-        
-        if (_masterPopover != nil) {
-            [_masterPopover dismissPopoverAnimated:YES];
-        }
     }
 }
 

@@ -1,12 +1,13 @@
-// Copyright 2014 Ellucian Company L.P and its affiliates.
+// Copyright 2014-2016 Ellucian Company L.P and its affiliates.
 
 package com.ellucian.mobile.android.registration;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.app.EllucianDialogFragment;
@@ -16,16 +17,18 @@ public class DropConfirmDialogFragment extends EllucianDialogFragment {
 	private RegistrationActivity registrationActivity;
 	
 	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
+	public void onAttach(Context context) {
+		super.onAttach(context);
 		try {
-			registrationActivity = (RegistrationActivity) activity;
+			registrationActivity = (RegistrationActivity) context;
         } catch (ClassCastException e) {
             throw new ClassCastException("Attached Activity must of type: RegistrationActivity");
         }
 	}
 	
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
+	@Override
+    @NonNull
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());
 		

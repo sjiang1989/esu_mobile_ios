@@ -62,16 +62,16 @@ public class CoursesFullScheduleIntentService extends IntentService {
 				}
 				Log.d("CoursesFullScheduleIntentService", "Batch executed.");
 				
-				LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
-				Intent broadcastIntent = new Intent();
-				broadcastIntent.setAction(ACTION_FINISHED);
-				broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
-				bm.sendBroadcast(broadcastIntent);
 			}
 		} else {
 			Log.d("CoursesFullScheduleIntentService", "Response Object was null");
 		}
-		
+
+        LocalBroadcastManager bm = LocalBroadcastManager.getInstance(this);
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_FINISHED);
+        broadcastIntent.putExtra(PARAM_OUT_DATABASE_UPDATED, success);
+        bm.sendBroadcast(broadcastIntent);
 	}
 
 }

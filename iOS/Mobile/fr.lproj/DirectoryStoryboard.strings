@@ -17,7 +17,7 @@
 "FCy-WJ-R5o.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "FNX-hT-f2J"; */
-"FNX-hT-f2J.text" = "Étiquette";
+"FNX-hT-f2J.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "I8X-eA-chg"; */
 "I8X-eA-chg.text" = "Libellé";
@@ -38,22 +38,22 @@
 "MvU-fw-yWO.text" = "Libellé";
 
 /* Class = "UILabel"; text = "More contact information may be displayed if you are signed in."; ObjectID = "NDu-ar-4zk"; */
-"NDu-ar-4zk.text" = "De plus amples informations de contact peuvent être affichées si vous êtes connecté.";
+"NDu-ar-4zk.text" = "Des informations supplémentaires sont peut-être disponibles après connexion.";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "P0R-te-cLg"; */
 "P0R-te-cLg.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "R7L-ED-0Bh"; */
-"R7L-ED-0Bh.text" = "Étiquette";
+"R7L-ED-0Bh.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "UmV-de-XLq"; */
-"UmV-de-XLq.text" = "Étiquette";
+"UmV-de-XLq.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "W1R-yV-kGy"; */
-"W1R-yV-kGy.text" = "Étiquette";
+"W1R-yV-kGy.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "WQs-H5-Q3E"; */
-"WQs-H5-Q3E.text" = "Étiquette";
+"WQs-H5-Q3E.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "Xzd-qc-Avt"; */
 "Xzd-qc-Avt.text" = "Libellé";
@@ -61,7 +61,7 @@
 /* Class = "UILabel"; text = "PO Box\nStreet\nCity State Zip\nCountry"; ObjectID = "Ymg-LR-Cb5"; */
 "Ymg-LR-Cb5.text" = "Boîte postale
 Rue
-Ville Département CP
+Ville Région Code postal
 Pays";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "cqF-p7-CSY"; */
@@ -92,7 +92,7 @@ Pays";
 "qS0-X8-pbp.text" = "Libellé";
 
 /* Class = "UILabel"; text = "More contact information may be displayed if you are signed in."; ObjectID = "vfI-jE-VD0"; */
-"vfI-jE-VD0.text" = "De plus amples informations de contact peuvent être affichées si vous êtes connecté.";
+"vfI-jE-VD0.text" = "Des informations supplémentaires sont peut-être disponibles après connexion.";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "vgR-xa-ywk"; */
 "vgR-xa-ywk.text" = "Libellé";

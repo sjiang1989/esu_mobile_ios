@@ -10,5 +10,8 @@
     <string name="app_intent_filter_host" translatable="false">mobile.elluciancloud.com</string>
     <string name="app_intent_filter_scheme" translatable="false">ellucianmobile</string>
 
+    <!-- User Preference Keys (settings) -->
+    <string name="pref_key_user_fingerprint_opt_in" translatable="false">pref_key_user_fingerprint_opt_in</string>
+
 </resources>
 

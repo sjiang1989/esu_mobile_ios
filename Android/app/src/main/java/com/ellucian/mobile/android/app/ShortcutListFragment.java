@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -27,10 +28,15 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.ellucian.elluciango.R;
+import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.MainActivity;
+import com.ellucian.mobile.android.ModuleType;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
 import com.ellucian.mobile.android.util.FastBlur;
+import com.ellucian.mobile.android.util.PreferencesUtils;
+import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,15 +47,13 @@ public class ShortcutListFragment extends EllucianFragment {
     private LinearLayout shortcutParentLayout;
     private MainActivity mainActivity;
     private static final String TAG = ShortcutListFragment.class.getSimpleName();
-    public static final String SHORTCUT_ITEMS = "shortcutItems";
+    private static final String SHORTCUT_ITEMS = "shortcutItems";
     private static final String DARK_OVERLAY = "dark";
     private Animation animation;
 
     private static final float scaleFactor = 8;
     private static float radius;
     private static int color;
-
-    String overlayConfig;
 
     public static ShortcutListFragment newInstance(ArrayList<ShortcutItem> shortcutItems) {
         ShortcutListFragment f = new ShortcutListFragment();
@@ -60,7 +64,7 @@ public class ShortcutListFragment extends EllucianFragment {
         return f;
     }
 
-    public ArrayList<ShortcutItem> getShortcutItems() {
+    private ArrayList<ShortcutItem> getShortcutItems() {
         return getArguments().getParcelableArrayList(SHORTCUT_ITEMS);
     }
 
@@ -78,9 +82,10 @@ public class ShortcutListFragment extends EllucianFragment {
     }
     
     private static class RowViewHolder {
-        public ImageView iconView;
-        public TextView textView;
-        public ImageView lockView;
+        ImageView iconView;
+        TextView textView;
+        ImageView lockView;
+        TextView notificationCountView;
     }
 
     @Override
@@ -98,7 +103,7 @@ public class ShortcutListFragment extends EllucianFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        overlayConfig = Utils.getStringFromPreferences(mainActivity, Utils.CONFIGURATION, Utils.HOME_SCREEN_OVERLAY, "light");
+        String overlayConfig = PreferencesUtils.getStringFromPreferences(mainActivity, Utils.CONFIGURATION, Utils.HOME_SCREEN_OVERLAY, "light");
 
         if (TextUtils.equals(overlayConfig, DARK_OVERLAY)) {
             radius = 4;
@@ -150,6 +155,7 @@ public class ShortcutListFragment extends EllucianFragment {
                 holder.textView = (TextView) shortcutView.findViewById(R.id.shortcut_item_label);
                 holder.iconView = (ImageView) shortcutView.findViewById(R.id.shortcut_item_image);
                 holder.lockView = (ImageView) shortcutView.findViewById(R.id.shortcut_item_lock_image);
+                holder.notificationCountView = (TextView) shortcutView.findViewById(R.id.shortcut_item_right_text);
                 shortcutView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -179,10 +185,23 @@ public class ShortcutListFragment extends EllucianFragment {
                     holder.lockView.setVisibility(View.GONE);
                 }
 
-                if (TextUtils.equals(overlayConfig, DARK_OVERLAY)) {
-                    Utils.setTextAppearanceHelper(mainActivity, holder.textView, R.style.homeScreenShortcutText_Dark);
+                if(shortcut.type.equals(ModuleType.NOTIFICATIONS)
+                        && ((EllucianApplication) getActivity().getApplication()).isUserAuthenticated()) {
+                    int count = UserUtils.getUnreadNotificationsCount(getContext());
+                    if (count > 0) {
+                        holder.notificationCountView.setVisibility(View.VISIBLE);
+                        holder.notificationCountView.setText(Integer.toString(count));
+                    } else {
+                        holder.notificationCountView.setVisibility(View.GONE);
+                    }
                 } else {
-                    Utils.setTextAppearanceHelper(mainActivity, holder.textView, R.style.homeScreenShortcutText);
+                    holder.notificationCountView.setVisibility(View.GONE);
+                }
+
+                if (TextUtils.equals(overlayConfig, DARK_OVERLAY)) {
+                    VersionSupportUtils.setTextAppearanceHelper(mainActivity, holder.textView, R.style.homeScreenShortcutText_Dark);
+                } else {
+                    VersionSupportUtils.setTextAppearanceHelper(mainActivity, holder.textView, R.style.homeScreenShortcutText);
                 }
                 shortcutListLayout.addView(shortcutView);
             }
@@ -239,7 +258,7 @@ public class ShortcutListFragment extends EllucianFragment {
             this.order = order;
         }
 
-        public ShortcutItem(Parcel in) {
+        ShortcutItem(Parcel in) {
             readFromParcel(in);
         }
 
@@ -284,7 +303,7 @@ public class ShortcutListFragment extends EllucianFragment {
         };
 
         @Override
-        public int compareTo(ShortcutItem another) {
+        public int compareTo(@NonNull ShortcutItem another) {
             return this.order > another.order ? +1 :
                    this.order < another.order ? -1 :
                    0;
@@ -313,17 +332,12 @@ public class ShortcutListFragment extends EllucianFragment {
         Paint paint = new Paint();
         paint.setFlags(Paint.FILTER_BITMAP_FLAG);
         canvas.drawBitmap(bkg, 0, 0, paint);
-        int colorHelper = Utils.getColorHelper(mainActivity, color);
+        int colorHelper = VersionSupportUtils.getColorHelper(mainActivity, color);
         canvas.drawColor(colorHelper);
 
         overlay = FastBlur.doBlur(overlay, (int)radius, true);
 
-        int sdk = android.os.Build.VERSION.SDK_INT;
-        if(sdk < android.os.Build.VERSION_CODES.JELLY_BEAN) {
-            view.setBackgroundDrawable(new BitmapDrawable(getResources(), overlay));
-        } else {
-            view.setBackground(new BitmapDrawable(getResources(), overlay));
-        }
+        view.setBackground(new BitmapDrawable(getResources(), overlay));
 
         long blurTime = System.currentTimeMillis() - startMs;
         Log.v(TAG, String.format("Time to blur: %d ms", blurTime));

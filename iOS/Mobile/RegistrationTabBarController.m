@@ -10,18 +10,12 @@
 #import "RegistrationTabBarController.h"
 #import "RegistrationSearchViewController.h"
 #import "UIViewController+ECSlidingViewController.h"
-#import "AppearanceChanger.h"
 #import "RegistrationCartViewController.h"
 #import "MBProgressHUD.h"
-#import "AuthenticatedRequest.h"
-#import "Module+Attributes.h"
-#import "CurrentUser.h"
 #import "RegistrationTerm.h"
 #import "RegistrationPlannedSection.h"
 #import "RegistrationPlannedSectionMeetingPattern.h"
 #import "RegistrationPlannedSectionInstructor.h"
-#import "NSMutableURLRequest+BasicAuthentication.h"
-#import "Module+Attributes.h"
 #import "Ellucian_GO-Swift.h"
 
 @interface RegistrationTabBarController ()
@@ -47,13 +41,7 @@
     
     self.searchedSections = [NSMutableArray new];
     
-    if([CurrentUser sharedInstance].isLoggedIn) {
-        
-        [self loadRegistration:self];
-    }
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(loadRegistration:) name:kLoginExecutorSuccess object:nil];
-
+    [self loadRegistration:self];
 }
 
 -(void) loadRegistration:(id)sender
@@ -73,51 +61,61 @@
     if ( match ) {
         
         MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-        hud.labelText = NSLocalizedString(@"Retrieving terms", @"loading message while fetching terms to use for search");
+        hud.label.text = NSLocalizedString(@"Retrieving terms", @"loading message while fetching terms to use for search");
         
         dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.01 * NSEC_PER_SEC);
         dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
             
-            [self fetchTerms];
-            [MBProgressHUD hideHUDForView:self.view animated:YES];
-            
-            MBProgressHUD *hud2 = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-            hud2.labelText = NSLocalizedString(@"Checking Eligibility", @"checking registration eligibility message");
-            
-            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                
-                self.registrationAllowed = [self checkRegistrationEligibility:self];
+            if ([self fetchTerms]) {
                 [MBProgressHUD hideHUDForView:self.view animated:YES];
                 
-                MBProgressHUD *hud3 = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-                hud3.labelText = NSLocalizedString(@"Fetching saved course sections", @"Fetching saved course sections message");
+                MBProgressHUD *hud2 = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
+                hud2.label.text = NSLocalizedString(@"Checking Eligibility", @"checking registration eligibility message");
                 
                 dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                    [self fetchRegistrationPlans:self];
+                    
+                    self.registrationAllowed = [self checkRegistrationEligibility:self];
                     [MBProgressHUD hideHUDForView:self.view animated:YES];
-
-                    if([self itemsInCartCount] == 0 && !self.ineligibleMessage) {
-                        self.selectedIndex = 1;
-                    }
                     
-                    if (self.planId == nil) {
-                        //disable ability to add items to cart
-                        [self passCartPermissionToSearchController:NO];
-                    } else {
-                        [self passCartPermissionToSearchController:YES];
-                    }
+                    MBProgressHUD *hud3 = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
+                    hud3.label.text = NSLocalizedString(@"Fetching saved course sections", @"Fetching saved course sections message");
                     
-                    if(self.ineligibleMessage) {
-                        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Ineligible for Registration", @"Ineligible for Registration") message:self.ineligibleMessage delegate:self cancelButtonTitle:NSLocalizedString(@"OK", @"OK") otherButtonTitles:nil];
-                        alert.tag = 1;
-                        [alert show];
-                    }
+                    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                        [self fetchRegistrationPlans:self];
+                        [MBProgressHUD hideHUDForView:self.view animated:YES];
+                        
+                        if([self itemsInCartCount] == 0 && !self.ineligibleMessage) {
+                            self.selectedIndex = 1;
+                        }
+                        
+                        if (self.planId == nil) {
+                            //disable ability to add items to cart
+                            [self passCartPermissionToSearchController:NO];
+                        } else {
+                            [self passCartPermissionToSearchController:YES];
+                        }
+                        
+                        if(self.ineligibleMessage) {
+                            UIAlertController *alertController = [UIAlertController
+                                                                  alertControllerWithTitle:NSLocalizedString(@"Ineligible for Registration", @"Ineligible for Registration")
+                                                                  message:self.ineligibleMessage
+                                                                  preferredStyle:UIAlertControllerStyleAlert];
+                            UIAlertAction *resetAction = [UIAlertAction
+                                                          actionWithTitle:NSLocalizedString(@"OK", @"OK")
+                                                          style:UIAlertActionStyleDestructive
+                                                          handler:nil];
+                            [alertController addAction:resetAction];
+                            [self presentViewController:alertController animated:YES completion:nil];
+                        }
+                    });
                 });
-            });
+            } else {
+                [MBProgressHUD hideHUDForView:self.view animated:YES];
+            }
         });
     } 
     
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:kLoginExecutorSuccess object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:CurrentUser.LoginExecutorSuccessNotification object:nil];
     
 }
 
@@ -142,7 +140,7 @@
 {
     NSError *error;
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/eligibility", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/eligibility", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]];
 
     AuthenticatedRequest *authenticatedRequest = [AuthenticatedRequest new];
     NSDictionary *headers = @{@"Accept": @"application/vnd.hedtech.v1+json"};
@@ -217,7 +215,7 @@
 {
     NSError *error;
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/plans", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/plans", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]];
     NSString* planningTool = [self.module propertyForKey:@"planningTool"];
     if(planningTool) {
         urlString = [NSString stringWithFormat:@"%@?planningTool=%@", urlString, planningTool];
@@ -382,6 +380,13 @@
                     plannedSection.instructors = [instructors copy];
                     [plannedSections addObject:plannedSection];
                     
+                    if([plannedSectionJson objectForKey:@"authorizationCodeRequired"] != [NSNull null]) {
+                        plannedSection.authorizationCodeRequired = [[plannedSectionJson objectForKey:@"authorizationCodeRequired"] boolValue];
+                    }
+                    if([plannedSectionJson objectForKey:@"authorizationCodePresented"] != [NSNull null]) {
+                        plannedSection.authorizationCode = [plannedSectionJson objectForKey:@"authorizationCodePresented"];
+                    }
+                    
                     if([searchedSections containsObject:plannedSection]) {
                         [searchedSections removeObject:plannedSection];
                     }
@@ -436,12 +441,12 @@
     return [results count] > 0;
 }
 
--(void) fetchTerms
+-(BOOL) fetchTerms
 {
     NSError *error;
 
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/terms", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/terms", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]];
     AuthenticatedRequest *authenticatedRequest = [AuthenticatedRequest new];
     NSData *responseData = [authenticatedRequest requestURL:[NSURL URLWithString:urlString] fromView:self];
 
@@ -464,9 +469,12 @@
             term.endDate = [termJson objectForKey:@"endDate"];
         }
         self.terms = [terms copy];
+        return YES;
     } else {
         [self reportError:authenticatedRequest.error.localizedDescription];
+        return NO;
     }
+    return NO;
 }
 
 -(NSString *) termName:(NSString *)termId
@@ -548,9 +556,18 @@
 
 -(void) reportError:(NSString *)error
 {
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Error", @"Error") message:error delegate:self cancelButtonTitle:NSLocalizedString(@"OK", @"OK") otherButtonTitles:nil];
-    alert.tag = 3;
-    [alert show];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIAlertController *alertController = [UIAlertController
+                                              alertControllerWithTitle:NSLocalizedString(@"Error", @"Error")
+                                              message:error
+                                              preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction *okAction = [UIAlertAction
+                                   actionWithTitle:NSLocalizedString(@"OK", @"OK")
+                                   style:UIAlertActionStyleDefault
+                                   handler:nil];
+        [alertController addAction:okAction];
+        [self presentViewController:alertController animated:YES completion:nil];
+    });
 }
 
 -(void) removeSection:(RegistrationPlannedSection *)section
@@ -604,7 +621,7 @@
     NSError *jsonError;
     NSData * jsonData = [NSJSONSerialization dataWithJSONObject:postDictionary options:NSJSONWritingPrettyPrinted error:&jsonError];
     
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/update-cart", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/update-cart", [self.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]];
     NSString* planningTool = [self.module propertyForKey:@"planningTool"];
     if(planningTool) {
         urlString = [NSString stringWithFormat:@"%@?planningTool=%@", urlString, planningTool];
@@ -620,7 +637,8 @@
     
     [urlRequest setHTTPMethod:@"PUT"];
     [urlRequest setHTTPBody:jsonData];
-    [NSURLConnection sendAsynchronousRequest:urlRequest queue:[[NSOperationQueue alloc] init] completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+    
+    NSURLSessionDataTask *downloadTask = [[NSURLSession sharedSession] dataTaskWithRequest:urlRequest completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if(data)
         {
             
@@ -639,8 +657,9 @@
                 }
             }
         }
-        
     }];
+    [downloadTask resume];
+    
     [[NSNotificationCenter defaultCenter] postNotificationName:kRegistrationItemRemovedFromCart object:nil];
 }
 

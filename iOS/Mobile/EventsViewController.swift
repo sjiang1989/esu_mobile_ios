@@ -8,37 +8,37 @@
 
 import Foundation
 
-class EventsViewController : UITableViewController, UISearchResultsUpdating , NSFetchedResultsControllerDelegate, EventsFilterDelegate {
+class EventsViewController : UITableViewController, UISearchResultsUpdating , NSFetchedResultsControllerDelegate, EventsFilterDelegate, EllucianMobileLaunchableControllerProtocol {
 
     @IBOutlet var filterButton: UIBarButtonItem!
     
     let searchController = UISearchController(searchResultsController: nil)
-    var module : Module?
+    var module : Module!
     var eventModule : EventModule?
     var hiddenCategories = NSMutableSet()
     var searchString : String?
     
-    let datetimeOutputFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    let datetimeOutputFormatter : DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
         
         }()
-    let dateFormatterSectionHeader : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .ShortStyle
-        formatter.timeStyle = .NoStyle
+    let dateFormatterSectionHeader : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
         formatter.doesRelativeDateFormatting = true
         return formatter
         }()
-    let timeFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .NoStyle
-        formatter.timeStyle = .ShortStyle
+    let timeFormatter : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
         return formatter
     }()
-    let dateFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    let dateFormatter : DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
         return formatter
     }()
@@ -51,24 +51,44 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
         tableView.rowHeight = UITableViewAutomaticDimension
         buildSearchBar()
         
-        if UIScreen.mainScreen().traitCollection.userInterfaceIdiom == .Pad {
-            self.splitViewController?.preferredDisplayMode = .AllVisible;
+        if UIScreen.main.traitCollection.userInterfaceIdiom == .pad {
+            self.splitViewController?.preferredDisplayMode = .allVisible;
         } else {
-            self.splitViewController?.preferredDisplayMode = .Automatic;
+            self.splitViewController?.preferredDisplayMode = .automatic;
         }
+        
+        // Recieve notification to ensure that EventsViewController searchController resets
+        NotificationCenter.default.addObserver(self, selector: #selector(EventsViewController.detailViewWillAppear(_:)), name: EventsDetailViewController.eventsDetailNotification, object: nil)
         
         fetchEvents()
         reloadData()
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        sendView("Events List", forModuleNamed: self.module?.name)
+        sendView("Events List", moduleName: self.module.name)
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        
+        // Make sure iPhone Plus behaves appropriately
+        if UIScreen.main.traitCollection.userInterfaceIdiom != .pad {
+            if self.splitViewController?.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClass.regular {
+                self.searchController.isActive = false
+                self.searchController.searchBar.setShowsCancelButton(false, animated: true)
+            }
+        }
+    }
+    
+    func detailViewWillAppear(_ notif: Notification) {
+        self.searchController.isActive = false
+        self.searchController.searchBar.setShowsCancelButton(false, animated: true)
     }
     
     // MARK: UISearchResultsUpdating delegate
-    func updateSearchResultsForSearchController(searchController: UISearchController) {
-        self.sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction:kAnalyticsActionSearch, withLabel:"Search", withValue:nil, forModuleNamed:self.module!.name);
+    func updateSearchResults(for searchController: UISearchController) {
+        self.sendEventToTracker1(category: .ui_Action, action: .search, label:"Search", moduleName:self.module!.name);
         _fetchedResultsController = nil
         self.tableView.reloadData()
     }
@@ -78,72 +98,74 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
         self.searchController.searchResultsUpdater = self
         self.searchController.hidesNavigationBarDuringPresentation = false
         self.searchController.dimsBackgroundDuringPresentation = false
-        self.searchController.definesPresentationContext = true
         self.searchController.searchBar.sizeToFit()
         self.tableView.tableHeaderView = searchController.searchBar
+        
+        self.definesPresentationContext = true
     }
     
     // MARK: data retrieval
     func fetchEvents() {
-        let privateContext = NSManagedObjectContext(concurrencyType: .PrivateQueueConcurrencyType)
-        privateContext.parentContext = self.module?.managedObjectContext
+        let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        privateContext.parent = self.module?.managedObjectContext
         privateContext.undoManager = nil
         
-        let urlString = self.module?.propertyForKey("events")
+        let urlString = self.module?.property(forKey: "events")
         
         if self.fetchedResultsController.fetchedObjects!.count <= 0 {
-            let hud = MBProgressHUD.showHUDAddedTo(self.view, animated: true)
-            hud.labelText = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
         }
         
-        privateContext.performBlock { () -> Void in
+        privateContext.perform { () -> Void in
             
-            UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+            UIApplication.shared.isNetworkActivityIndicatorVisible = true
             
             defer {
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.async {
                     
-                    UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     
-                    MBProgressHUD.hideHUDForView(self.view, animated: true)
+                    MBProgressHUD.hide(for: self.view, animated: true)
                 }
             }
             
             do {
-                let url = NSURL(string: urlString!)
-                let responseData = try NSData(contentsOfURL: url!, options:NSDataReadingOptions())
+                let url = URL(string: urlString!)
+                let responseData = try Data(contentsOf: url!, options:NSData.ReadingOptions())
                 let json = JSON(data: responseData)
                 
                 var previousEvents = [Event]()
                 var existingEvents = [Event]()
                 var newKeys = [String]()
                 
-                let request = NSFetchRequest(entityName: "Event")
-                request.predicate = NSPredicate(format:"module.name = %@", self.module!.name)
-                let oldObjects = try privateContext
-                    .executeFetchRequest(request) as! [Event]
+                let request = NSFetchRequest<Event>(entityName: "Event")
+                if let name = self.module?.name {
+                    request.predicate = NSPredicate(format:"module.name = %@", name)
+                }
+                let oldObjects = try privateContext.fetch(request)
                 for oldObject in oldObjects {
                     previousEvents.append(oldObject)
                 }
                 
-                let moduleRequest = NSFetchRequest(entityName: "EventModule")
+                let moduleRequest = NSFetchRequest<EventModule>(entityName: "EventModule")
                 moduleRequest.predicate = NSPredicate(format: "name = %@", self.module!.name)
-                let eventModules = try privateContext.executeFetchRequest(moduleRequest)
+                let eventModules = try privateContext.fetch(moduleRequest)
                 let eventModule : EventModule
                 if eventModules.count > 0 {
-                    eventModule = eventModules.last as! EventModule
+                    eventModule = eventModules.last!
                 } else {
-                    eventModule = NSEntityDescription.insertNewObjectForEntityForName("EventModule", inManagedObjectContext: privateContext) as! EventModule
+                    eventModule = NSEntityDescription.insertNewObject(forEntityName: "EventModule", into: privateContext) as! EventModule
                     eventModule.name = self.module?.name
                     
                     
                 }
                 
-                let categoryRequest = NSFetchRequest(entityName: "EventCategory")
+                let categoryRequest = NSFetchRequest<EventCategory>(entityName: "EventCategory")
                 categoryRequest.predicate = NSPredicate(format: "moduleName = %@", self.module!.name)
-                let categoryArray = try privateContext.executeFetchRequest(categoryRequest)
+                let categoryArray = try privateContext.fetch(categoryRequest)
                 var categoryMap = [String: EventCategory]()
-                for eventCategory in categoryArray as! [EventCategory]  {
+                for eventCategory in categoryArray {
                     categoryMap[eventCategory.name] = eventCategory
                 }
                 
@@ -151,7 +173,7 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
                 for (key, _) in json {
                     orderedKeys.append(key)
                 }
-                orderedKeys.sortInPlace(){ $0 < $1 }
+                orderedKeys.sort(){ $0 < $1 }
                 
                 for key in orderedKeys {
                     let eventsForDate = json[key]
@@ -165,31 +187,31 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
                         if filteredArray.count > 0 {
                             existingEvents.append(filteredArray[0])
                         } else {
-                            let event = NSEntityDescription.insertNewObjectForEntityForName("Event", inManagedObjectContext: privateContext) as! Event
+                            let event = NSEntityDescription.insertNewObject(forEntityName: "Event", into: privateContext) as! Event
                             event.module = eventModule
                             eventModule.addEventsObject(event)
                             event.uid = uid
                             newKeys.append(uid!)
-                            if let contact = jsonEvent["title"].string where contact != "" {
+                            if let contact = jsonEvent["title"].string , contact != "" {
                                 event.contact = contact
                             }
-                            let start = self.dateFormatter.dateFromString(jsonEvent["start"].string!)
-                            let end = self.dateFormatter.dateFromString(jsonEvent["end"].string!)
+                            let start = self.dateFormatter.date(from: jsonEvent["start"].string!)
+                            let end = self.dateFormatter.date(from: jsonEvent["end"].string!)
                             
-                            event.dateLabel = self.datetimeOutputFormatter.stringFromDate(start!)
+                            event.dateLabel = self.datetimeOutputFormatter.string(from: start!)
                             
                            if let description = jsonEvent["description"].string  {
                                 event.description_ = description
                             }
                             event.endDate = end
-                            if let location = jsonEvent["location"].string where location != "" {
+                            if let location = jsonEvent["location"].string , location != "" {
                                 event.location = location
                             }
                             event.startDate = start
-                            if let summary = jsonEvent["summary"].string where summary != "" {
+                            if let summary = jsonEvent["summary"].string , summary != "" {
                                 event.summary = summary
                             }
-                            event.allDay = NSNumber(bool: jsonEvent["allDay"].bool!)
+                            event.allDay = NSNumber(value: jsonEvent["allDay"].bool!)
                             let categories = jsonEvent["categories"].arrayValue.map {
                                 return $0["name"].string
                             }
@@ -197,7 +219,7 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
                             for categoryLabel in categories {
                                 var category = categoryMap[categoryLabel!]
                                 if category == nil {
-                                    category = NSEntityDescription.insertNewObjectForEntityForName("EventCategory", inManagedObjectContext: privateContext) as? EventCategory
+                                    category = NSEntityDescription.insertNewObject(forEntityName: "EventCategory", into: privateContext) as? EventCategory
                                     category!.name = categoryLabel
                                     category!.moduleName = self.module?.name
                                     categoryMap[categoryLabel!] = category
@@ -212,12 +234,12 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
                 try privateContext.save()
                 for oldObject in previousEvents {
                     if !existingEvents.contains(oldObject) {
-                        privateContext.deleteObject(oldObject)
+                        privateContext.delete(oldObject)
                     }
                 }
                 try privateContext.save()
                 
-                privateContext.parentContext?.performBlock({
+                privateContext.parent?.perform({
                     do {
                         try privateContext.save()
                     } catch let error {
@@ -225,9 +247,9 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
                     }
                 })
 
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.async {
                     self.readEventModule()
-                    self.filterButton.enabled = true
+                    self.filterButton.isEnabled = true
                     
                 }
                 
@@ -240,18 +262,18 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
     
     //MARK: segue
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "Show Event Filter" {
-            self.sendEventWithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionList_Select, withLabel: "Select filter", withValue: nil, forModuleNamed: self.module?.name)
-            let navigationController = segue.destinationViewController as! UINavigationController
+            self.sendEvent(category: .ui_Action, action: .list_Select, label: "Select filter", moduleName: self.module?.name)
+            let navigationController = segue.destination as! UINavigationController
             let detailController = navigationController.viewControllers[0] as! EventsFilterViewController
             detailController.eventModule = self.eventModule
             detailController.hiddenCategories = self.hiddenCategories
             detailController.module = self.module
             detailController.delegate = self
         } else if segue.identifier == "Show Detail" {
-            let detailController = (segue.destinationViewController as! UINavigationController).topViewController as! EventsDetailViewController
-            let event = fetchedResultsController.objectAtIndexPath(self.tableView.indexPathForSelectedRow!) as! Event
+            let detailController = (segue.destination as! UINavigationController).topViewController as! EventsDetailViewController
+            let event = fetchedResultsController.object(at: self.tableView.indexPathForSelectedRow!)
             detailController.event = event
             detailController.module = self.module
         }
@@ -259,16 +281,16 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
     
     //MARK reaad
     func readEventModule() {
-        let request = NSFetchRequest(entityName: "EventModule")
+        let request = NSFetchRequest<EventModule>(entityName: "EventModule")
         request.predicate = NSPredicate(format: "name = %@", self.module!.name)
         request.fetchLimit = 1
         do {
-            let results = try self.module?.managedObjectContext?.executeFetchRequest(request) as! [EventModule]
+            let results = try self.module!.managedObjectContext!.fetch(request)
             if results.count > 0 {
                 self.eventModule = results[0]
                 let hiddenCategories = self.eventModule?.hiddenCategories
                 if let hiddenCategories = hiddenCategories {
-                    let array = hiddenCategories.componentsSeparatedByString(",")
+                    let array = hiddenCategories.components(separatedBy: ",")
                     self.hiddenCategories = NSMutableSet(array: array)
                     
                 } else {
@@ -292,22 +314,20 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
     }
     
     // MARK: fetch
-    var fetchedResultsController: NSFetchedResultsController {
+    var fetchedResultsController: NSFetchedResultsController<Event> {
         // return if already initialized
         if self._fetchedResultsController != nil {
             return self._fetchedResultsController!
         }
-        let managedObjectContext = CoreDataManager.shared.managedObjectContext
+        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
         
-        let request = NSFetchRequest()
-        request.entity = NSEntityDescription.entityForName("Event", inManagedObjectContext: managedObjectContext)
-        
+        let request = NSFetchRequest<Event>(entityName: "Event")
         
         var subPredicates = [NSPredicate]()
         
         subPredicates.append( NSPredicate(format: "module.name = %@", self.module!.name) )
         
-        if let searchString = self.searchController.searchBar.text where searchString.characters.count > 0 {
+        if let searchString = self.searchController.searchBar.text , searchString.characters.count > 0 {
             subPredicates.append( NSPredicate(format: "((summary CONTAINS[cd] %@) OR (description_ CONTAINS[cd] %@) OR (location CONTAINS[cd] %@))", searchString, searchString, searchString) )
         }
         
@@ -332,54 +352,54 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
         
         return self._fetchedResultsController!
     }
-    var _fetchedResultsController: NSFetchedResultsController?
+    var _fetchedResultsController: NSFetchedResultsController<Event>?
     
     //MARK :UITable
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         return (fetchedResultsController.sections?.count)!
     }
     
-    override func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
-        let view = UIView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.frame), 30))
-        let label = UILabel(frame: CGRectMake(8,0,CGRectGetWidth(tableView.frame), 30))
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 30))
+        let label = UILabel(frame: CGRect(x: 8,y: 0,width: tableView.frame.width, height: 30))
         label.translatesAutoresizingMaskIntoConstraints = false
         
         if let sections = fetchedResultsController.sections {
             let currentSection = sections[section] as NSFetchedResultsSectionInfo
             let header = currentSection.name
-            let date = datetimeOutputFormatter.dateFromString(header)
-            label.text = dateFormatterSectionHeader.stringFromDate(date!)
+            let date = datetimeOutputFormatter.date(from: header)
+            label.text = dateFormatterSectionHeader.string(from: date!)
         }
         
         label.textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)
         view.backgroundColor = UIColor(rgba: "#e6e6e6")
-        label.font = UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline)
+        label.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline)
         
         view.addSubview(label)
         
         let viewsDictionary = ["label": label, "view": view]
         
         // Create and add the vertical constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|-1-[label]-1-|",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-1-[label]-1-|",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         
         // Create and add the horizontal constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-[label]",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-[label]",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         return view;
         
     }
     
-    override func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 30
     }
     
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let sections = fetchedResultsController.sections {
             let currentSection = sections[section] as NSFetchedResultsSectionInfo
             return currentSection.numberOfObjects
@@ -388,11 +408,11 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
         return 0
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let event = fetchedResultsController.objectAtIndexPath(indexPath) as! Event
+        let event = fetchedResultsController.object(at: indexPath)
     
-        let cell : UITableViewCell  = tableView.dequeueReusableCellWithIdentifier("Event Cell", forIndexPath: indexPath) as UITableViewCell
+        let cell : UITableViewCell  = tableView.dequeueReusableCell(withIdentifier: "Event Cell", for: indexPath) as UITableViewCell
 
         let summaryLabel = cell.viewWithTag(1) as! UILabel
         let dateLabel = cell.viewWithTag(2) as! UILabel
@@ -405,24 +425,24 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
         if event.allDay.boolValue == true {
             dateLabel.text = NSLocalizedString("All Day", comment: "label for all day event")
         } else {
-            if let startDate = event.startDate, endDate = event.endDate {
-                let formattedStart = self.timeFormatter.stringFromDate(startDate)
-                let formattedEnd = self.timeFormatter.stringFromDate(endDate)
+            if let startDate = event.startDate, let endDate = event.endDate {
+                let formattedStart = self.timeFormatter.string(from: startDate)
+                let formattedEnd = self.timeFormatter.string(from: endDate)
                 dateLabel.text = String(format: NSLocalizedString("%@ - %@", comment: "event start - end"), formattedStart, formattedEnd)
             } else {
-                dateLabel.text = self.timeFormatter.stringFromDate(event.startDate)
+                dateLabel.text = self.timeFormatter.string(from: event.startDate)
             }
         }
         let categoriesArray = event.category.map{ m -> String in
             let category = m as! EventCategory
             return category.name
         }
-        let categories = categoriesArray.joinWithSeparator(", ")
+        let categories = categoriesArray.joined(separator: ", ")
         
         categoryLabel.text = categories
         locationLabel.text = event.location
         if let description = event.description_ {
-            descriptionLabel.text = description.stringByConvertingHTMLToPlainText()
+            descriptionLabel.text = description.convertingHTMLToPlainText()
         } else {
             descriptionLabel.text = ""
         }
@@ -432,42 +452,42 @@ class EventsViewController : UITableViewController, UISearchResultsUpdating , NS
         return cell
     }
     
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.beginUpdates()
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         switch type{
-        case NSFetchedResultsChangeType.Insert:
-            self.tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: UITableViewRowAnimation.Top)
+        case NSFetchedResultsChangeType.insert:
+            self.tableView.insertRows(at: [newIndexPath!], with: UITableViewRowAnimation.top)
             break
-        case NSFetchedResultsChangeType.Delete:
-            self.tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: UITableViewRowAnimation.Left)
+        case NSFetchedResultsChangeType.delete:
+            self.tableView.deleteRows(at: [indexPath!], with: UITableViewRowAnimation.left)
             break
-        case NSFetchedResultsChangeType.Update:
-            self.tableView.cellForRowAtIndexPath(indexPath!)?.setNeedsLayout()
+        case NSFetchedResultsChangeType.update:
+            self.tableView.cellForRow(at: indexPath!)?.setNeedsLayout()
             break
         default:
             return
         }
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeSection sectionInfo: NSFetchedResultsSectionInfo, atIndex sectionIndex: Int, forChangeType type: NSFetchedResultsChangeType) {
-        let indexSet = NSIndexSet(index: sectionIndex)
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
+        let indexSet = IndexSet(integer: sectionIndex)
         switch type {
-        case NSFetchedResultsChangeType.Insert:
-            self.tableView.insertSections(indexSet, withRowAnimation: UITableViewRowAnimation.Fade)
-        case NSFetchedResultsChangeType.Delete:
-            self.tableView.deleteSections(indexSet, withRowAnimation: UITableViewRowAnimation.Fade)
-        case NSFetchedResultsChangeType.Update:
+        case NSFetchedResultsChangeType.insert:
+            self.tableView.insertSections(indexSet, with: UITableViewRowAnimation.fade)
+        case NSFetchedResultsChangeType.delete:
+            self.tableView.deleteSections(indexSet, with: UITableViewRowAnimation.fade)
+        case NSFetchedResultsChangeType.update:
             break
-        case NSFetchedResultsChangeType.Move:
+        case NSFetchedResultsChangeType.move:
             break
         }
     }
     
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.tableView.endUpdates()
     }
 }

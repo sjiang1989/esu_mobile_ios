@@ -1,5 +1,5 @@
 /* Class = "UILabel"; text = "Label"; ObjectID = "4Av-6h-Rtv"; */
-"4Av-6h-Rtv.text" = "Étiquette";
+"4Av-6h-Rtv.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "6ad-JB-HWi"; */
 "6ad-JB-HWi.text" = "Étiquette";
@@ -16,9 +16,6 @@
 /* Class = "UILabel"; text = "No Grades Recorded"; ObjectID = "KqY-iF-mie"; */
 "KqY-iF-mie.text" = "Aucune note enregistrée";
 
-/* Class = "UILabel"; text = "Loading"; ObjectID = "NNK-D3-ucv"; */
-"NNK-D3-ucv.text" = "Chargement en cours";
-
 /* Class = "UINavigationItem"; title = "Root View Controller"; ObjectID = "Qk7-HK-Uqh"; */
 "Qk7-HK-Uqh.title" = "Contrôleur de vue racine";
 
@@ -26,11 +23,11 @@
 "Xdn-pe-AJg.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "nnO-LO-vWg"; */
-"nnO-LO-vWg.text" = "Étiquette";
+"nnO-LO-vWg.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "wxe-vn-Hgb"; */
-"wxe-vn-Hgb.text" = "Étiquette";
+"wxe-vn-Hgb.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "zMU-BZ-jZT"; */
-"zMU-BZ-jZT.text" = "Étiquette";
+"zMU-BZ-jZT.text" = "Libellé";
 

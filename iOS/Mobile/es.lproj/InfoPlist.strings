@@ -1,3 +1,18 @@
-﻿/* Localized versions of Info.plist keys */
+/* (No Commment) */
+NSBluetoothPeripheralUsageDescription = "El Bluetooth se utiliza en su institución para prevenirle cuando está cerca de servicios o información específica a la ubicación.";
 
-NSLocationWhenInUseUsageDescription = "Su ubicación nos permite mostrarle el campus más cercano y proporcionarle indicaciones para llegar.";
+/* (No Commment) */
+NSCalendarsUsageDescription = "Su calendario se utiliza cuando agrega un elemento de calendario de eventos o cursos.";
+
+/* (No Commment) */
+NSContactsUsageDescription = "Sus contactos se utilizan cuando agrega un contacto del directorio.";
+
+/* (No Commment) */
+NSLocationAlwaysUsageDescription = "Aún cuando no esté utilizando la aplicación su información de ubicación puede ser utilizada para notificarle cuando esté cerca de una zona del campus que puede ofrecerle información o servicios útiles.  La aplicación utiliza un monitoreo de balizas de consumo eficiente para reconocer cuando se está cerca de un punto de interés y no utilizará su ubicación GPS.";
+
+/* (No Commment) */
+NSLocationWhenInUseUsageDescription = "Cuando se está en la aplicación, la información de ubicación se utiliza para mostrar su ubicación en el mapa del campus y para notificarle cuando esté cerca de una zona del campus que puede ofrecerle información o servicios útiles.";
+
+/* (No Commment) */
+NSRemindersUsageDescription = "Sus recordatorios se utilizan cuando agrega un recordatorio de asignación.";
+

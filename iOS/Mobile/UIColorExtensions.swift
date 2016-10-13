@@ -17,23 +17,23 @@ extension UIColor {
     
     class func hasCustomizationColors() -> Bool {
         let defaults = AppGroupUtilities.userDefaults()
-        let color = defaults?.objectForKey("primaryColor") as? String
+        let color = defaults?.object(forKey: "primaryColor") as? String
         return color != nil
     }
     
-    class func primaryColor() -> UIColor {
+    public class var primary : UIColor {
         let defaults = AppGroupUtilities.userDefaults()
-        let color = defaults?.objectForKey("primaryColor") as? String
+        let color = defaults?.object(forKey: "primaryColor") as? String
         if let color = color {
             return UIColor(rgba: color)
         } else {
             return UIColor(rgba: kSchoolCustomizationPrimaryColor)
         }
     }
-    
-    class func headerTextColor() -> UIColor {
+
+    public class var headerText : UIColor {
         let defaults = AppGroupUtilities.userDefaults()
-        let color = defaults?.objectForKey("headerTextColor") as? String
+        let color = defaults?.object(forKey: "headerTextColor") as? String
         if let color = color {
             return UIColor(rgba: color)
         } else {
@@ -41,9 +41,9 @@ extension UIColor {
         }
     }
     
-    class func accentColor() -> UIColor {
+    public class var accent : UIColor {
         let defaults = AppGroupUtilities.userDefaults()
-        let color = defaults?.objectForKey("accentColor") as? String
+        let color = defaults?.object(forKey: "accentColor") as? String
         if let color = color {
             return UIColor(rgba: color)
         } else {
@@ -51,9 +51,9 @@ extension UIColor {
         }
     }
     
-    class func subheaderTextColor() -> UIColor {
+    public class var subheaderText : UIColor {
         let defaults = AppGroupUtilities.userDefaults()
-        let color = defaults?.objectForKey("subheaderTextColor") as? String
+        let color = defaults?.object(forKey: "subheaderTextColor") as? String
         if let color = color {
             return UIColor(rgba: color)
         } else {
@@ -61,11 +61,11 @@ extension UIColor {
         }
     }
     
-    class func defaultPrimaryColor() -> UIColor {
+    public class var defaultPrimary : UIColor {
         return UIColor(rgba: kSchoolCustomizationPrimaryColor)
     }
     
-    class func defaultHeaderColor() -> UIColor {
+    public class var defaultHeader : UIColor {
         return UIColor(rgba: kSchoolCustomizationHeaderColor)
     }
     
@@ -80,11 +80,11 @@ extension UIColor {
             rgba = "#\(rgba)"
         }
         if rgba.hasPrefix("#") {
-            let index   = rgba.startIndex.advancedBy(1)
-            let hex     = rgba.substringFromIndex(index)
-            let scanner = NSScanner(string: hex)
+            let index   = rgba.index(rgba.startIndex, offsetBy: 1)
+            let hex     = rgba.substring(from: index)
+            let scanner = Scanner(string: hex)
             var hexValue: CUnsignedLongLong = 0
-            if scanner.scanHexLongLong(&hexValue) {
+            if scanner.scanHexInt64(&hexValue) {
                 switch (hex.characters.count) {
                 case 3:
                     red   = CGFloat((hexValue & 0xF00) >> 8)       / 15.0

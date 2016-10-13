@@ -35,7 +35,6 @@
 		        android:textStyle="bold"
 		        android:textColor="@color/status_important_text_color"
 				android:drawableStart="@drawable/ic_status_important"
-				android:drawableLeft="@drawable/ic_status_important"
 				android:drawablePadding="8dp"
 		        />
 	        <TextView
@@ -44,10 +43,9 @@
 		        android:layout_height="wrap_content"
 		        android:text="@string/registration_results_important_sub"
 				android:paddingStart="46dp"
-				android:paddingLeft="46dp"
 	            android:paddingBottom="4dp"
 	            android:background="@drawable/bottom_line_1dp"
-				tools:ignore="NewApi,RtlSymmetry" />
+				tools:ignore="RtlSymmetry" />
 	        
 	    </LinearLayout>
 	    
@@ -71,7 +69,6 @@
 		        android:textStyle="bold"
 		        android:textColor="@color/status_success_text_color"
 		        android:drawableStart="@drawable/ic_status_success"
-				android:drawableLeft="@drawable/ic_status_success"
 				android:drawablePadding="8dp" />
 	        
 	        <TextView
@@ -80,10 +77,9 @@
 		        android:layout_height="wrap_content"
 		        android:text="@string/registration_results_success_sub"
 				android:paddingStart="46dp"
-				android:paddingLeft="46dp"
 	            android:paddingBottom="4dp"
 	            android:background="@drawable/bottom_line_1dp"
-				tools:ignore="NewApi,RtlSymmetry" />
+				tools:ignore="RtlSymmetry" />
 	        
 	        
 	    </LinearLayout>
@@ -108,7 +104,6 @@
 		        android:textStyle="bold"
 		        android:textColor="@color/status_error_text_color"
 		        android:drawableStart="@drawable/ic_status_error"
-				android:drawableLeft="@drawable/ic_status_error"
 				android:drawablePadding="8dp"
 		         />
 	        
@@ -118,10 +113,9 @@
 		        android:layout_height="wrap_content"
 		        android:text="@string/registration_results_failure_sub"
 				android:paddingStart="46dp"
-				android:paddingLeft="46dp"
 	            android:paddingBottom="4dp"
 	            android:background="@drawable/bottom_line_1dp"
-				tools:ignore="NewApi,RtlSymmetry" />
+				tools:ignore="RtlSymmetry" />
 	        
 	    </LinearLayout>       
 	

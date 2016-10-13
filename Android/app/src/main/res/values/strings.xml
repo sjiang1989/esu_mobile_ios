@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"
@@ -8,14 +8,14 @@
 
 
     <!-- Main -->
-    
+
     <string name="title_home_page">Home</string>
     <string name="main_sign_in">Sign In</string>
     <string name="main_sign_out">Sign Out</string>
     <string name="main_switch_school">Switch School</string>
 
     <!-- Menu -->
-    
+
     <string name="menu">Menu</string>
     <string name="menu_item_maps_title">Maps</string>
     <string name="menu_item_grades_title">Grades</string>
@@ -38,22 +38,22 @@
     <string name="menu_information">Information</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
-    
+
     <!-- Configuration and Institutions -->
-    
+
     <string name="title_activity_school_selection">Choose School</string>
     <string name="no_institutions">There are no institutions to display at this time.</string>
-    
+
     <!-- The translated string should keep \'%1$s\' as it is.  The backslash escapes the single quote and the %1$s is how java will import a substitution string -->
-    <string name="school_selection_confirmation">You have selected \'%1$s\'.  Is that correct?</string>  
+    <string name="school_selection_confirmation">You have selected \'%1$s\'.  Is that correct?</string>
     <string name="title_activity_configuration_loading">Configuration Loading</string>
     <string name="configuration_loading_failed">Configuration loading failed</string>
     <!-- Keep &#8230; as is to follow Android best practice of using the horizontal ellipse character -->
     <string name="configuration_loading_message">Loading Configuration. Please wait&#8230;</string>
-    <string name="configuration_loading_missing_config">"Unable to download the configuration from that link."</string> 
-    
+    <string name="configuration_loading_missing_config">"Unable to download the configuration from that link."</string>
+
     <!-- General Defaults, Dialogs, and Rows -->
-    
+
     <string name="label_name">Name</string>
     <string name="label_title">Title</string>
     <string name="label_phone">Phone</string>
@@ -75,16 +75,18 @@
     <string name="label_date">Date</string>
     <string name="label_location">Location</string>
     <string name="label_done">Done</string>
-       
+    <string name="content_desc_warning">Warning</string>
+    <string name="services_feature_not_supported">Feature is not supported by this device.</string>
+
     <string name="label_format">
 	    <xliff:g id="label" example="Name">%1$s</xliff:g>:
-	</string>	
+	</string>
 	<string name="label_string_content_format">
 	    <xliff:g id="label" example="Name">%1$s</xliff:g>: <xliff:g id="content" example="John Smith">%2$s</xliff:g>
-	</string>	
+	</string>
 	<string name="label_integer_content_format">
 	    <xliff:g id="label" example="Room">%1$s</xliff:g>: <xliff:g id="content" example="201">%2$d</xliff:g>
-	</string>	
+	</string>
 	<string name="label_float_content_format">
 	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="content" example="3.00">%2$.2f</xliff:g>
 	</string>
@@ -94,6 +96,8 @@
 
     <string name="dialog_sign_in">Sign In</string>
     <string name="dialog_sign_in_title">Sign In</string>
+    <string name="dialog_use_fingerprint">Use fingerprint to unlock</string>
+    <string name="dialog_use_fingerprint_summary">Allow me to sign in with my fingerprint</string>
     <string name="dialog_stay_signed_in">Stay signed in</string>
     <string name="dialog_username">Username</string>
     <string name="dialog_password">Password</string>
@@ -102,6 +106,15 @@
     <string name="dialog_signed_in">You have signed in.</string>
     <string name="dialog_signed_out">You have signed out.</string>
     <string name="dialog_idle_sign_out">You have been idle too long and have signed out.</string>
+
+    <!-- Fingerprint Authentication -->
+    <string name="fingerprint_cancel">Cancel</string>
+    <string name="fingerprint_use_password">Use password</string>
+    <string name="fingerprint_description">Confirm fingerprint to continue</string>
+    <string name="fingerprint_hint">Touch sensor</string>
+    <string name="fingerprint_not_recognized">Fingerprint not recognized. Try again</string>
+    <string name="fingerprint_success">Fingerprint recognized</string>
+
     <string name="dialog_select_categories">Select Categories</string>
     <!-- Keep &#8230; as is to follow Android best practice of using the horizontal ellipse character -->
     <string name="dialog_re_authenticate">Re-authenticating, please wait&#8230;</string>
@@ -111,7 +124,7 @@
 	<string name="dialog_cert_warning_statement">"There are problems with the security certificate for this site."</string>
 	<string name="dialog_field_empty">Field cannot be empty</string>
 	<string name="unauthorized_feature">You do not have permission to use this feature.</string>
-	
+
     <string name="row_category_label">\u2022</string>  <!-- This is a bullet -->
     <string name="row_contact_label">Contact:</string>
     <string name="row_email_label">Email:</string>
@@ -155,7 +168,7 @@
 	<string name="time_to_time_format">
 	    <xliff:g id="startTime" example="11:00 AM">%1$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%2$s</xliff:g>
 	</string>
-	
+
 	<string name="default_first_last_name_format">
 	    <xliff:g id="firstName" example="John">%1$s</xliff:g> <xliff:g id="lastName" example="Smith">%2$s</xliff:g>
 	</string>
@@ -184,9 +197,9 @@
         <xliff:g id="phoneNumber" example="123-123-1234">%1$s</xliff:g> ext. <xliff:g id="phoneExtension" example="7890">%2$s</xliff:g>
     </string>
 
-	
+
     <!-- About -->
-    
+
     <string name="title_activity_about">About</string>
     <string name="about">About</string>
     <string name="about_logo_description">School Logo</string>
@@ -200,7 +213,7 @@
     <string name="about_ellucian_privacy_policy">Ellucian Privacy Policy</string>
     <string name="about_powered_by">Powered by</string>
     <string name="about_powered_by_ellucian">Powered by Ellucian</string>
-    
+
     <!-- AppLauncher -->
 
     <string name="title_activity_app_launcher">App Launcher</string>
@@ -210,7 +223,7 @@
     <string name="app_launcher_install_text">You do not have the required app. Would you like to install it?</string>
 
     <!-- Courses -->
-    
+
     <string name="title_activity_courses">Courses</string>
     <string name="title_activity_courses_schedule">Courses</string>
     <string name="title_activity_course_overview">Course Overview</string>
@@ -244,14 +257,22 @@
     <string name="course_events">Events</string>
     <string name="course_details_no_directory">No Directory module installed</string>
     <string name="course_details_no_maps">No Maps module installed</string>
+    <string name="course_details_no_faculty">No instructors assigned</string>
+    <string name="course_details_no_meetings">No specified meeting times</string>
     <string name="course_assignments_no_assignments">No assignments</string>
     <string name="course_assignments_due">Due:</string>
     <string name="course_assignments_none_assigned">None assigned</string>
     <string name="label_left_button">Left Button</string>
 	<string name="label_right_button">Right Button</string>
+    <string name="course_details_date_time">
+        <xliff:g id="dateString" example="12/16/2016 - 12/28/2016">%1$s</xliff:g> <xliff:g id="timeString" example="10:00 AM - 11:30 AM">%2$s</xliff:g>
+    </string>
+    <string name="course_details_date_time_type">
+        <xliff:g id="dateAndTime" example="12/16/2016 - 12/28/2016 10:00 AM - 11:30 AM">%1$s</xliff:g> | <xliff:g id="instructionalType" example="TR">%2$s</xliff:g>
+    </string>
 
     <!-- Directory -->
-    
+
     <string name="title_activity_directory">Directory</string>
     <string name="title_activity_directory_detail">Directory Detail</string>
     <string name="title_activity_directory_list_all">Directory</string>
@@ -289,7 +310,7 @@
     <string name="finances_balance">BALANCE</string>
 
     <!-- Grades -->
-    
+
     <string name="title_activity_grades">Grades</string>
     <string name="grades_last_updated">Last Updated:</string>
     <string name="no_grades_in_term">There are no grades for this term</string>
@@ -319,11 +340,29 @@
     <string name="ilp_events_none_today">No events scheduled for today</string>
     <string name="ilp_announcements_none_today">No announcements for today</string>
 
-    
+    <!-- Location Awareness -->
+    <string name="title_activity_launchModule">Launch Module</string>
+    <string name="location_permissions_title">Permission requested</string>
+    <string name="location_permissions_message">Your location information can be used to notify you
+        whenever you are near an area on campus that can provide useful information or services.
+        The app uses energy efficient beacon monitoring to recognize when you are near a point of
+        interest and will not utilize your GPS location.
+    </string>
+    <string name="location_services_title">Location Access Disabled</string>
+    <string name="location_services_message">Location services are used at your institution to
+        alert you when you are near location specific information or services. Please allow location
+        access in your device settings.</string>
+    <string name="bluetooth_permissions_title">Bluetooth Disabled</string>
+    <string name="bluetooth_permissions_message">Bluetooth is used at your institution to alert you
+        when you are near location specific information or services. Please enable Bluetooth in your
+        device settings.</string>
+    <string name="location_notification_action_mute">Mute Forever</string>
+    <string name="location_notification_action_mute_for_today">Mute Today</string>
+
     <!-- Maps -->
-    
+
     <string name="title_activity_maps">Maps</string>
-    <string name="maps_campus_selection_title">Choose campus</string>
+    <string name="maps_campus_selection_title">Select campus</string>
     <string name="maps_get_directions_label">Directions</string>
     <string name="maps_show_details_label">Show Details</string>
     <string name="maps_map_view_label">Map View</string>
@@ -335,7 +374,6 @@
     <string name="maps_show_map">Map</string>
     <string name="maps_building_image_label">Building image</string>
     <string name="maps_no_buildings_message">There are no buildings to display.</string>
-    <string name="maps_blank"></string>
     <string name="search_results_label">Search Results</string>
     <string name="searchable_buildings_hint">Search Buildings</string>
     <string name="searchable_buildings_label">Search Buildings</string>
@@ -345,27 +383,24 @@
     <string name="maps_type_satellite">Satellite</string>
     <string name="maps_type_terrain">Terrain</string>
     <string name="legal">Legal</string>
-    <string name="maps_feature_not_supported">Feature is not supported by this device.</string>
     <string name="maps_building_additional_services_label">Additional Services:</string>
-    <string name="maps_storage_alert_title">Permission Requested</string>
-    <string name="maps_storage_alert_message">To utilize Maps inside of this app the Maps API requires access to maps based data on your device. Please enable the Storage setting.</string>
-    <string name="maps_storage_not_granted">Maps cannot be displayed without Storage permission for this app.</string>
-    
+    <string name="maps_enable_location_services">Turn on location services to determine your location</string>
+
     <!-- Multimedia -->
-    
+
     <string name="title_activity_video">Video</string>
     <string name="title_activity_audio">Audio</string>
-    
+
     <!-- News -->
-    
+
     <string name="title_activity_news">News</string>
     <string name="title_activity_news_detail">News Detail</string>
     <string name="news_no_news">No News to Display</string>
     <string name="searchable_news_hint">Search News</string>
     <string name="searchable_news_label">Search News</string>
-       
+
     <!-- Notifications -->
-    
+
     <string name="title_activity_notifications">Notifications</string>
     <string name="notifications_detail_date_posted">Date Posted:</string>
     <string name="notifications_detail_link_action">Take Action</string>
@@ -375,17 +410,17 @@
     <string name="notifications_delete">Delete</string>
     <string name="notifications_unable_to_delete_message">Unable to delete this notification.</string>
     <string name="notifications_dialog_delete_message">Are you sure you want to delete this notification?</string>
-    
+
     <!-- Numbers -->
-    
+
     <string name="title_number_list">Numbers</string>
     <string name="title_number_detail">Number Detail</string>
     <string name="numbers_no_entries">There are no important numbers</string>
     <string name="searchable_numbers_hint">Search Numbers</string>
     <string name="searchable_numbers_label">Search Numbers</string>
-    
+
     <!-- Registration -->
-    
+
     <string name="title_activity_registration">Registration</string>
     <string name="title_activity_registration_detail">Registration Detail</string>
     <string name="registration_tab_cart">Cart</string>
@@ -438,7 +473,7 @@
     <string name="registration_ineligible_to_register">Ineligible for Registration</string>
     <string name="registration_remove">Remove</string>
     <string name="registration_drop">Drop</string>
-    
+
     <string name="registration_added_to_cart_success_format">
 	    <xliff:g id="courseName" example="HIST-205">%1$s</xliff:g>-<xliff:g id="courseSectionNumber" example="01">%2$s</xliff:g> added to cart.
 	</string>
@@ -462,10 +497,25 @@
 	</string>
     <string name="available_seats">Available Seats:</string>
     <string name="remaining_capacity">
-	    <xliff:g id="remaining" example="15">%1$s</xliff:g>/<xliff:g id="capacity" example="30">%2$s</xliff:g>
+	    <xliff:g id="remaining" example="15">%1$d</xliff:g>/<xliff:g id="capacity" example="30">%2$d</xliff:g>
     </string>
-    
-        
+    <string name="registration_approval_required">Instructor approval required</string>
+    <string name="registration_auth_code">Authorization Code</string>
+    <string name="registration_auth_code_dialog_title">Enter your authorization code.</string>
+
+    <!-- Settings Module -->
+
+    <string name="title_activity_settings">Settings</string>
+    <string name="settings_category_security">Security</string>
+    <string name="settings_category_location">Location Awareness</string>
+    <string name="settings_reset_locations_title">Un-mute all Locations</string>
+    <string name="settings_reset_locations_summary">You will be notified at all locations</string>
+    <string name="settings_reset_locations_dialog_message">Are you sure? You will be notified at all locations that have associated information or services.</string>
+    <string name="settings_reset_locations_reset_button">Reset</string>
+    <string name="settings_reset_locations_cancel_button">Cancel</string>
+    <string name="settings_location_disabled_title">Location Access Disabled</string>
+    <string name="settings_location_disabled_summary">Tap to enable Location permission</string>
+
 	<!-- Versioning -->
 	<string name="version_upgrade">Upgrade</string>
 	<string name="version_outdated">Outdated</string>

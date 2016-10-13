@@ -5,6 +5,32 @@
 	<key>PreferenceSpecifiers</key>
 	<array>
 		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Un-mute All Locations</string>
+			<key>Key</key>
+			<string>settings-notification-reset-muted-locations</string>
+			<key>DefaultValue</key>
+			<false/>
+		</dict>
+        <dict>
+            <key>Title</key>
+            <string>Security</string>
+            <key>Type</key>
+            <string>PSGroupSpecifier</string>
+        </dict>
+        <dict>
+            <key>Type</key>
+            <string>PSToggleSwitchSpecifier</string>
+            <key>Title</key>
+            <string>Use Fingerprint To Unlock</string>
+            <key>Key</key>
+            <string>login-fingerprint</string>
+            <key>DefaultValue</key>
+            <string>Reminders</string>
+        </dict>
+		<dict>
 			<key>Title</key>
 			<string>Assignments</string>
 			<key>Type</key>

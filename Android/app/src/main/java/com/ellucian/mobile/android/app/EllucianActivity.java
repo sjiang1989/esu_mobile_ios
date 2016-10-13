@@ -4,17 +4,24 @@
 
 package com.ellucian.mobile.android.app;
 
+import android.Manifest;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -38,14 +45,20 @@ import android.widget.ListView;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
+import com.ellucian.mobile.android.MainActivity;
 import com.ellucian.mobile.android.client.MobileClient;
 import com.ellucian.mobile.android.client.configuration.LastUpdatedResponse;
+import com.ellucian.mobile.android.client.locations.EllucianBeaconManager;
+import com.ellucian.mobile.android.client.locations.PermissionsDialogFragment;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
 import com.ellucian.mobile.android.client.services.ConfigurationUpdateService;
+import com.ellucian.mobile.android.client.services.NotificationsIntentService;
+import com.ellucian.mobile.android.settings.SettingsUtils;
 import com.ellucian.mobile.android.util.ConfigurationProperties;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
+import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
-
 import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
@@ -53,65 +66,71 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
 @SuppressWarnings("JavaDoc")
-public abstract class EllucianActivity extends AppCompatActivity implements DrawerLayoutActivity {
-	private static final String TAG = EllucianActivity.class.getSimpleName();
+public abstract class EllucianActivity extends AppCompatActivity implements DrawerLayoutActivity, ActivityCompat.OnRequestPermissionsResultCallback {
+    private static final String TAG = EllucianActivity.class.getSimpleName();
 
-    private static final long REFRESH_INTERVAL = 20*60*1000;  // 20 minutes
+    private static final long REFRESH_INTERVAL = 20 * Utils.ONE_MINUTE;  // 20 minutes
 	public String moduleId;
 	public String moduleName;
 	public String requestUrl;
 	private DrawerLayoutHelper drawerLayoutHelper;
 	private MainAuthenticationReceiver mainAuthenticationReceiver;
+    private NotificationUpdateReceiver notificationUpdateReceiver;
 	private ConfigurationUpdateReceiver configReceiver;
 	private SendToSelectionReceiver resetReceiver;
 	private OutdatedReceiver outdatedReceiver;
 	private UnauthenticatedUserReceiver unauthenticatedUserReceiver;
+
     private int mPrimaryColor;
     private int mHeaderTextColor;
-	
-	protected void onCreate(Bundle savedInstanceState) {
+
+    private static final int LOCATION_REQUEST_ID = 1;
+    public static final int LOCATION_ALERT_DIALOG = 1;
+    public static final int BLUETOOTH_ALERT_DIALOG = 2;
+    private static final long DAY_IN_MILLISECS = 86400000;
+
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-		String tag = getClass().getName();
-       
+        String tag = getClass().getName();
+
         Intent incomingIntent = getIntent();
         if (incomingIntent.hasExtra(Extra.MODULE_ID)) {
-        	moduleId = incomingIntent.getStringExtra(Extra.MODULE_ID);
-        	Log.d(tag, "Activity moduleId set to: " + moduleId);
-        } 
-               
-        if (incomingIntent.hasExtra(Extra.MODULE_NAME)) {
-        	moduleName = incomingIntent.getStringExtra(Extra.MODULE_NAME);
-        	Log.d(tag, "Activity moduleId set to: " + moduleId);
-        } 
-        
-        if (incomingIntent.hasExtra(Extra.REQUEST_URL))	{
-        	requestUrl = incomingIntent.getStringExtra(Extra.REQUEST_URL);
-        	Log.d(tag, "Activity requestUrl set to: " + requestUrl);
-        } else {
-        	requestUrl = "";
+            moduleId = incomingIntent.getStringExtra(Extra.MODULE_ID);
+            Log.d(tag, "Activity moduleId set to: " + moduleId);
         }
 
-	}
+        if (incomingIntent.hasExtra(Extra.MODULE_NAME)) {
+            moduleName = incomingIntent.getStringExtra(Extra.MODULE_NAME);
+            Log.d(tag, "Activity moduleId set to: " + moduleId);
+        }
 
-	@Override
-	public void setContentView(View view) {
-		super.setContentView(view);
-		configureActionBar();
-    	configureNavigationDrawer();
-	}
-	
+        if (incomingIntent.hasExtra(Extra.REQUEST_URL)) {
+            requestUrl = incomingIntent.getStringExtra(Extra.REQUEST_URL);
+            Log.d(tag, "Activity requestUrl set to: " + requestUrl);
+        } else {
+            requestUrl = "";
+        }
+    }
+
     @Override
-	public void setContentView(View view, LayoutParams params) {
-		super.setContentView(view, params);
-		configureActionBar();
-    	configureNavigationDrawer();
-	}
+    public void setContentView(View view) {
+        super.setContentView(view);
+        configureActionBar();
+        configureNavigationDrawer();
+    }
 
-	public void setContentView(int layoutResId) {
-    	super.setContentView(layoutResId);
-    	configureActionBar();
-    	configureNavigationDrawer();
+    @Override
+    public void setContentView(View view, LayoutParams params) {
+        super.setContentView(view, params);
+        configureActionBar();
+        configureNavigationDrawer();
+    }
+
+    public void setContentView(int layoutResId) {
+        super.setContentView(layoutResId);
+        configureActionBar();
+        configureNavigationDrawer();
     }
 
     public void setContentViewHomeScreen(int layoutResId) {
@@ -120,48 +139,48 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
         configureNavigationDrawer();
     }
 
-	public void configureNavigationDrawer() {
-		DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-    	ListView drawerList = (ListView) findViewById(R.id.left_drawer);
-    	if(drawerLayout != null && drawerList != null) {
-    		drawerLayoutHelper = new DrawerLayoutHelper(this, getEllucianApp().getModuleMenuAdapter());
-    	}
-	}
-    
-	/*
+    public void configureNavigationDrawer() {
+        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ListView drawerList = (ListView) findViewById(R.id.left_drawer);
+        if (drawerLayout != null && drawerList != null) {
+            drawerLayoutHelper = new DrawerLayoutHelper(this, getEllucianApp().getModuleMenuAdapter());
+        }
+    }
+
+    /*
 	 * 'standard' method that reads preferences for these values
 	 * valid after a configuration has been loaded
 	 */
-	protected void configureActionBar() {
-	    int primaryColor = Utils.getPrimaryColor(this);
-	    int headerTextColor = Utils.getHeaderTextColor(this);
-	    
-	    configureActionBarDirect(primaryColor, headerTextColor);
-	}
-    
-	/*
+    protected void configureActionBar() {
+        int primaryColor = Utils.getPrimaryColor(this);
+        int headerTextColor = Utils.getHeaderTextColor(this);
+
+        configureActionBarDirect(primaryColor, headerTextColor);
+    }
+
+    /*
 	 * a 'direct' method that bypasses the preferences (used by 
 	 * school selection, which can be called before any config
 	 * has ever been loaded on the device
 	 */
-	protected void configureActionBarDirect(int primaryColor, int headerTextColor) {
+    protected void configureActionBarDirect(int primaryColor, int headerTextColor) {
 
         mPrimaryColor = primaryColor;
         mHeaderTextColor = headerTextColor;
-		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-		setSupportActionBar(toolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-    	ActionBar bar = getSupportActionBar();
-		if (bar != null) {
-			bar.setDisplayHomeAsUpEnabled(true);
-			bar.setBackgroundDrawable(new ColorDrawable(primaryColor));
-			bar.setSplitBackgroundDrawable(new ColorDrawable(primaryColor));
-			bar.setStackedBackgroundDrawable(new ColorDrawable(primaryColor));
+        ActionBar bar = getSupportActionBar();
+        if (bar != null) {
+            bar.setDisplayHomeAsUpEnabled(true);
+            bar.setBackgroundDrawable(new ColorDrawable(primaryColor));
+            bar.setSplitBackgroundDrawable(new ColorDrawable(primaryColor));
+            bar.setStackedBackgroundDrawable(new ColorDrawable(primaryColor));
             TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
             if (tabLayout != null) {
                 tabLayout.setBackgroundColor(primaryColor);
             }
-		}
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             float[] hsv = new float[3];
@@ -177,7 +196,7 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
 
         setTitle(bar.getTitle());
 
-    	invalidateOptionsMenu();
+        invalidateOptionsMenu();
     }
 
     private void configureTransparentToolbar(int primaryColor) {
@@ -209,15 +228,15 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
     }
 
     public EllucianApplication getEllucianApp() {
-        return (EllucianApplication )this.getApplication();
+        return (EllucianApplication) this.getApplication();
     }
-    
+
     public ConfigurationProperties getConfigurationProperties() {
         return getEllucianApp().getConfigurationProperties();
     }
-    
+
     public DrawerLayoutHelper getDrawerLayoutHelper() {
-    	return drawerLayoutHelper;
+        return drawerLayoutHelper;
     }
 
     @Override
@@ -234,9 +253,10 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
         super.onUserInteraction();
         getEllucianApp().touch();
     }
-    
+
     /**
      * Send event to google analytics
+     *
      * @param category
      * @param action
      * @param label
@@ -244,11 +264,12 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
      * @param moduleName
      */
     public void sendEvent(String category, String action, String label, Long value, String moduleName) {
-    	getEllucianApp().sendEvent(category, action, label, value, moduleName);
+        getEllucianApp().sendEvent(category, action, label, value, moduleName);
     }
-    
+
     /**
      * Send event to google analytics for just tracker 1
+     *
      * @param category
      * @param action
      * @param label
@@ -256,11 +277,12 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
      * @param moduleName
      */
     public void sendEventToTracker1(String category, String action, String label, Long value, String moduleName) {
-    	getEllucianApp().sendEventToTracker1(category, action, label, value, moduleName);
+        getEllucianApp().sendEventToTracker1(category, action, label, value, moduleName);
     }
-    
+
     /**
      * Send event to google analytics for just tracker 2
+     *
      * @param category
      * @param action
      * @param label
@@ -268,161 +290,165 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
      * @param moduleName
      */
     public void sendEventToTracker2(String category, String action, String label, Long value, String moduleName) {
-    	getEllucianApp().sendEventToTracker2(category, action, label, value, moduleName);
+        getEllucianApp().sendEventToTracker2(category, action, label, value, moduleName);
     }
-    
-    
+
+
     /**
      * Send view to google analytics
+     *
      * @param appScreen
      */
     public void sendView(String appScreen, String moduleName) {
-    	getEllucianApp().sendView(appScreen, moduleName);
+        getEllucianApp().sendView(appScreen, moduleName);
     }
-    
+
     /**
      * Send view to google analytics for just tracker 1
+     *
      * @param appScreen
      */
     public void sendViewToTracker1(String appScreen, String moduleName) {
-    	getEllucianApp().sendViewToTracker1(appScreen, moduleName);
+        getEllucianApp().sendViewToTracker1(appScreen, moduleName);
     }
-    
+
     /**
      * Send view to google analytics for just tracker 2
+     *
      * @param appScreen
      */
     public void sendViewToTracker2(String appScreen, String moduleName) {
-    	getEllucianApp().sendViewToTracker2(appScreen, moduleName);
+        getEllucianApp().sendViewToTracker2(appScreen, moduleName);
     }
-    
-	/**
-	 * Send timing to google analytics
-	 * @param category
-	 * @param value
-	 * @param name
-	 * @param label
-	 * @param moduleName
-	 */
-	protected void sendUserTiming(String category, long value, String name, String label, String moduleName) {
-		getEllucianApp().sendUserTiming(category, value, name, label, moduleName);
-	}
 
-	/**
-	 * Send timing to google analytics for just tracker 1
-	 * @param category
-	 * @param value
-	 * @param name
-	 * @param label
-	 * @param moduleName
-	 */
-	public void sendUserTimingToTracker1(String category, long value, String name, String label, String moduleName) {
-		getEllucianApp().sendUserTimingToTracker1(category, value, name, label, moduleName);
-	}
+    /**
+     * Send timing to google analytics
+     *
+     * @param category
+     * @param value
+     * @param name
+     * @param label
+     * @param moduleName
+     */
+    protected void sendUserTiming(String category, long value, String name, String label, String moduleName) {
+        getEllucianApp().sendUserTiming(category, value, name, label, moduleName);
+    }
 
-	/**
-	 * Send timing to google analytics for just tracker 2
-	 * @param category
-	 * @param value
-	 * @param name
-	 * @param label
-	 * @param moduleName
-	 */
-	public void sendUserTimingToTracker2(String category, long value, String name, String label, String moduleName) {
-		getEllucianApp().sendUserTimingToTracker2(category, value, name, label, moduleName);
-	}
+    /**
+     * Send timing to google analytics for just tracker 1
+     *
+     * @param category
+     * @param value
+     * @param name
+     * @param label
+     * @param moduleName
+     */
+    public void sendUserTimingToTracker1(String category, long value, String name, String label, String moduleName) {
+        getEllucianApp().sendUserTimingToTracker1(category, value, name, label, moduleName);
+    }
 
-	/* Called whenever we call invalidateOptionsMenu() */
-	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-		// If the nav drawer is open, hide action items related to the content
-		// view
-		if (drawerLayoutHelper != null) {
-			drawerLayoutHelper.removeMenuItems(menu);
-		}
-		return super.onPrepareOptionsMenu(menu);
-	}
+    /**
+     * Send timing to google analytics for just tracker 2
+     *
+     * @param category
+     * @param value
+     * @param name
+     * @param label
+     * @param moduleName
+     */
+    public void sendUserTimingToTracker2(String category, long value, String name, String label, String moduleName) {
+        getEllucianApp().sendUserTimingToTracker2(category, value, name, label, moduleName);
+    }
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
+    /* Called whenever we call invalidateOptionsMenu() */
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // If the nav drawer is open, hide action items related to the content
+        // view
+        if (drawerLayoutHelper != null) {
+            drawerLayoutHelper.removeMenuItems(menu);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
 
-		// Pass the event to ActionBarDrawerToggle, if it returns
-		// true, then it has handled the app icon touch event
-		if (drawerLayoutHelper.drawerToggle.onOptionsItemSelected(item)) {
-			return true;
-		}
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        // Pass the event to ActionBarDrawerToggle, if it returns
+        // true, then it has handled the app icon touch event
+        if (drawerLayoutHelper.drawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
         // Handle your other action bar items...
-        
-		return super.onOptionsItemSelected(item);
-	}
 
-	@Override
-	protected void onPostCreate(Bundle savedInstanceState) {
-		super.onPostCreate(savedInstanceState);
-		if (drawerLayoutHelper != null) {
-			drawerLayoutHelper.drawerToggle.syncState();
-			invalidateOptionsMenu();
-		}
-	}
+        return super.onOptionsItemSelected(item);
+    }
 
-	@Override
-	public void onConfigurationChanged(Configuration newConfig) {
-		super.onConfigurationChanged(newConfig);
-		if (drawerLayoutHelper != null) {
-			drawerLayoutHelper.onConfigurationChanged(newConfig);
-			invalidateOptionsMenu();
-		}
-	}
-	
-	@Override
-	protected void onPause() {
-		super.onPause();
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        if (drawerLayoutHelper != null) {
+            drawerLayoutHelper.drawerToggle.syncState();
+            invalidateOptionsMenu();
+        }
+    }
 
-		LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
-		
-		lbm.unregisterReceiver(mainAuthenticationReceiver);
-		lbm.unregisterReceiver(configReceiver);
-		lbm.unregisterReceiver(resetReceiver);
-		lbm.unregisterReceiver(outdatedReceiver);
-		lbm.unregisterReceiver(unauthenticatedUserReceiver);
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (drawerLayoutHelper != null) {
+            drawerLayoutHelper.onConfigurationChanged(newConfig);
+            invalidateOptionsMenu();
+        }
+    }
 
-	}
-	
-	@Override
-	protected void onResume() {
-		super.onResume();
+    @Override
+    protected void onPause() {
+        super.onPause();
 
-		SharedPreferences preferences = getSharedPreferences(Utils.CONFIGURATION, MODE_PRIVATE);
-		String cloudConfigUrl = preferences.getString(Utils.CONFIGURATION_URL, null);
-        String mobileServerConfigUrl = preferences.getString(Utils.MOBILESERVER_CONFIG_URL, null);
+        LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
 
-        // Check for updated configs every [CONFIG_REFRESH_CHECK] millis
-        long configLastChecked = preferences.getLong(Utils.CONFIGURATION_LAST_CHECKED, 0);
-        Log.d(TAG, "config last checked: " + configLastChecked);
+        lbm.unregisterReceiver(mainAuthenticationReceiver);
+        lbm.unregisterReceiver(configReceiver);
+        lbm.unregisterReceiver(resetReceiver);
+        lbm.unregisterReceiver(outdatedReceiver);
+        lbm.unregisterReceiver(unauthenticatedUserReceiver);
+        lbm.unregisterReceiver(notificationUpdateReceiver);
 
-        if ((configLastChecked + REFRESH_INTERVAL) < System.currentTimeMillis()) {
-            Log.d(TAG, "Go see if config has been updated.");
-            updateCloudConfigIfNecessary(cloudConfigUrl, this);
-            if (!TextUtils.isEmpty(mobileServerConfigUrl)) {
-                updateMobileServerConfigIfNecessary(mobileServerConfigUrl, this);
-            }
+        getEllucianApp().startActivityTransitionTimer();
 
-            // update config last checked time to current time.
-            long updateCheckedTime = System.currentTimeMillis();
-            Utils.addLongToPreferences(this, Utils.CONFIGURATION, Utils.CONFIGURATION_LAST_CHECKED,
-                    updateCheckedTime);
-            Log.d(TAG, "Configuration last checked: " + updateCheckedTime);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        SharedPreferences preferences = getSharedPreferences(Utils.CONFIGURATION, MODE_PRIVATE);
+        SharedPreferences userPreferences = getSharedPreferences(UserUtils.USER, MODE_PRIVATE);
+        Boolean timedOut = userPreferences.getBoolean(UserUtils.USER_TIMED_OUT, false);
+
+        if (timedOut) {
+            PreferencesUtils.removeValuesFromPreferences(this, UserUtils.USER, UserUtils.USER_TIMED_OUT);
+            Intent mainIntent = new Intent(this, MainActivity.class);
+            mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(mainIntent);
         }
 
-		//notifications
-		if (getEllucianApp().isUserAuthenticated()) {
-			if (System.currentTimeMillis() > getEllucianApp().getLastNotificationsCheck() + EllucianApplication.DEFAULT_NOTIFICATIONS_REFRESH) {
-				Log.d(TAG, "startingNotifications");
-				getEllucianApp().startNotifications();
-			}
-		}
-		
-		// call registerWithGcmIfNeeded often - it checks criteria to see if it needs to register or re-register
+        refreshConfig(preferences);
+
+        if (getEllucianApp().isUserAuthenticated()) {
+            UserUtils.manageFingerprintTimeout(this);
+
+            //notifications
+            if (System.currentTimeMillis() > getEllucianApp().getLastNotificationsCheck() + EllucianApplication.DEFAULT_NOTIFICATIONS_REFRESH) {
+                Log.d(TAG, "startingNotifications");
+                getEllucianApp().startNotifications();
+            }
+        }
+
+        getEllucianApp().stopActivityTransitionTimer();
+
 		getEllucianApp().registerWithGcmIfNeeded();
 
 		LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
@@ -438,10 +464,21 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
 		
 		mainAuthenticationReceiver = new MainAuthenticationReceiver(this);
 		lbm.registerReceiver(mainAuthenticationReceiver, new IntentFilter(AuthenticateUserIntentService.ACTION_UPDATE_MAIN));
-		
+
+        notificationUpdateReceiver = new NotificationUpdateReceiver(this);
+        lbm.registerReceiver(notificationUpdateReceiver, new IntentFilter(NotificationsIntentService.ACTION_FINISHED));
+
 		unauthenticatedUserReceiver = new UnauthenticatedUserReceiver(this, moduleId);
 		lbm.registerReceiver(unauthenticatedUserReceiver, new IntentFilter(MobileClient.ACTION_UNAUTHENTICATED_USER));
-	}
+
+        if (getEllucianApp().configUsesBeacons()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { permissionsCheck(); }
+            verifyBluetooth();
+            EllucianBeaconManager.getInstance().startBeaconManager();
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            EllucianBeaconManager.getInstance().stopBeaconManager();
+        }
+    }
 
 	/**
 	 * Called to process touch screen events. At the very least your
@@ -483,6 +520,29 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
 		return ret;
 	}
 
+    private void refreshConfig(SharedPreferences preferences) {
+        String cloudConfigUrl = preferences.getString(Utils.CONFIGURATION_URL, null);
+        String mobileServerConfigUrl = preferences.getString(Utils.MOBILESERVER_CONFIG_URL, null);
+
+        // Check for updated configs every [CONFIG_REFRESH_CHECK] millis
+        long configLastChecked = preferences.getLong(Utils.CONFIGURATION_LAST_CHECKED, 0);
+        Log.d(TAG, "config last checked: " + configLastChecked);
+
+        if ((configLastChecked + REFRESH_INTERVAL) < System.currentTimeMillis()) {
+            Log.d(TAG, "Go see if config has been updated.");
+            updateCloudConfigIfNecessary(cloudConfigUrl, this);
+            if (!TextUtils.isEmpty(mobileServerConfigUrl)) {
+                updateMobileServerConfigIfNecessary(mobileServerConfigUrl, this);
+            }
+
+            // update config last checked time to current time.
+            long updateCheckedTime = System.currentTimeMillis();
+            PreferencesUtils.addLongToPreferences(this, Utils.CONFIGURATION, Utils.CONFIGURATION_LAST_CHECKED,
+                    updateCheckedTime);
+            Log.d(TAG, "Configuration last checked: " + updateCheckedTime);
+        }
+    }
+
     private void updateCloudConfigIfNecessary(final String cloudConfigUrl, final Activity activity) {
         Observable<String> fetchLastUpdated = Observable.create(new Observable.OnSubscribe<String>() {
             @Override
@@ -512,12 +572,17 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
                                 .getString(Utils.CONFIGURATION_LAST_UPDATED, null);
 
                         Log.d(TAG, "Cached Cloud Config lastUpdated: " + savedLastUpdated);
-                        if (!TextUtils.equals(currentLastUpdated,savedLastUpdated)) {
-                            Log.d(TAG, "Cloud Config out of date. Begin update.");
-                            Intent intent = new Intent(activity, ConfigurationUpdateService.class);
-                            intent.putExtra(Extra.CONFIG_URL, cloudConfigUrl);
-                            intent.putExtra(ConfigurationUpdateService.REFRESH, true);
-                            startService(intent);
+                        if (!TextUtils.equals(currentLastUpdated, savedLastUpdated)) {
+                            EllucianApplication ea = (EllucianApplication) getApplication();
+                            if (!ea.isServiceRunning(ConfigurationUpdateService.class)) {
+                                Log.d(TAG, "Cloud Config out of date. Begin update.");
+                                Intent intent = new Intent(activity, ConfigurationUpdateService.class);
+                                intent.putExtra(Utils.CONFIGURATION_URL, cloudConfigUrl);
+                                intent.putExtra(ConfigurationUpdateService.REFRESH, true);
+                                startService(intent);
+                            } else {
+                                Log.v(TAG, "Can't start ConfigurationUpdateService because it is already running");
+                            }
                         }
                     }
                 });
@@ -537,7 +602,7 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
                         }
                     }
                     subscriber.onCompleted(); // Nothing more to emit
-                }catch(Exception e){
+                } catch (Exception e) {
                     subscriber.onError(e); // In case there are network errors
                 }
             }
@@ -553,15 +618,72 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
                                 .getString(Utils.MOBILESERVER_CONFIG_LAST_UPDATE, null);
 
                         Log.d(TAG, "Cached MobileServer Config lastUpdated: " + savedLastUpdated);
-                        if (!TextUtils.equals(currentLastUpdated,savedLastUpdated)) {
-                            Log.d(TAG, "MobileServer Config out of date. Begin update.");
-                            Intent intent = new Intent(activity, ConfigurationUpdateService.class);
-                            intent.putExtra(ConfigurationUpdateService.REFRESH_MOBILESERVER_ONLY, true);
-                            startService(intent);
+                        if (!TextUtils.equals(currentLastUpdated, savedLastUpdated)) {
+                            EllucianApplication ea = (EllucianApplication) getApplication();
+                            if (!ea.isServiceRunning(ConfigurationUpdateService.class)) {
+                                Log.d(TAG, "MobileServer Config out of date. Begin update.");
+                                Intent intent = new Intent(activity, ConfigurationUpdateService.class);
+                                intent.putExtra(ConfigurationUpdateService.REFRESH_MOBILESERVER_ONLY, true);
+                                startService(intent);
+                            } else {
+                                Log.v(TAG, "Can't start ConfigurationUpdateService because it is already running");
+                            }
                         }
                     }
                 });
+    }
 
+    private void permissionsCheck() {
+        // Make sure user is reminded to allow locations once a day at most
+        long timeOfLastNotification = PreferenceManager.getDefaultSharedPreferences(this).getLong(Utils.LOCATIONS_NOTIF_TIMESTAMP, 0);
+        String locationsNotifRemind = PreferenceManager.getDefaultSharedPreferences(this).getString(Utils.LOCATIONS_NOTIF_REMIND, "0");
+        boolean locationsPermissionAsked = SettingsUtils.hasUserBeenAskedForPermission(this, Utils.PERMISSIONS_ASKED_FOR_LOCATION);
+        boolean shouldShow = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
+
+        if (shouldShow || !locationsPermissionAsked) {
+            if (((System.currentTimeMillis() - timeOfLastNotification >= DAY_IN_MILLISECS)) && !locationsNotifRemind.equals("false")) {
+                if (System.currentTimeMillis() - Long.valueOf(locationsNotifRemind) >= DAY_IN_MILLISECS) {
+                    if ((ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)) {
+                        SharedPreferences defaultSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+                        SharedPreferences.Editor editor = defaultSharedPrefs.edit();
+                        editor.putLong(Utils.LOCATIONS_NOTIF_TIMESTAMP, System.currentTimeMillis());
+                        editor.apply();
+
+                        DialogFragment newFragment = PermissionsDialogFragment.newInstance(LOCATION_ALERT_DIALOG);
+                        newFragment.show(getSupportFragmentManager(), TAG);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        if (!(requestCode == LOCATION_REQUEST_ID)) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    private void verifyBluetooth() {
+        // Make sure user is reminded to turn on bluetooth once a day at most
+        long timeOfLastNotification = PreferenceManager.getDefaultSharedPreferences(this).getLong(Utils.BLUETOOTH_NOTIF_TIMESTAMP, 0);
+        String bluetoothNotifRemind = PreferenceManager.getDefaultSharedPreferences(this).getString(Utils.BLUETOOTH_NOTIF_REMIND, "0");
+
+        if ((System.currentTimeMillis() - timeOfLastNotification >= DAY_IN_MILLISECS) && !bluetoothNotifRemind.equals("false")) {
+            if (System.currentTimeMillis() - Long.valueOf(bluetoothNotifRemind) >= DAY_IN_MILLISECS) {
+                BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+                if ((mBluetoothAdapter != null) && (!mBluetoothAdapter.isEnabled())) {
+                    SharedPreferences defaultSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+                    SharedPreferences.Editor editor = defaultSharedPrefs.edit();
+                    editor.putLong(Utils.BLUETOOTH_NOTIF_TIMESTAMP, System.currentTimeMillis());
+                    editor.apply();
+
+                    DialogFragment newFragment = PermissionsDialogFragment.newInstance(BLUETOOTH_ALERT_DIALOG);
+                    newFragment.show(getSupportFragmentManager(), TAG);
+                }
+            }
+        }
     }
 
 }

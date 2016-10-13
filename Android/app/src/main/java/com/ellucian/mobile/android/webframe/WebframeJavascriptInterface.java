@@ -27,6 +27,7 @@ import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService
 import com.ellucian.mobile.android.login.LoginDialogFragment;
 import com.ellucian.mobile.android.provider.EllucianContract.Modules;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.List;
@@ -52,7 +53,7 @@ class WebframeJavascriptInterface {
 	}
 
 	@JavascriptInterface
-	public boolean refreshRoles() {
+	public void refreshRoles() {
 
 		webActivity.sendEvent("JS Library", "function called", "refreshRoles", null, webActivity.moduleName);
 		int RETRY_LIMIT = 50;
@@ -90,7 +91,6 @@ class WebframeJavascriptInterface {
 				ellucianApplication.resetModuleMenuAdapter();
 			}
 		});
-		return authenticationReceiver.success;
 
 	}
 
@@ -193,7 +193,7 @@ class WebframeJavascriptInterface {
 							} else if (type.equals(ModuleType.WEB)) {
 									// do if basic authentication only; web login will be
 									// handled by cookies
-									String loginType = Utils.getStringFromPreferences(
+									String loginType = PreferencesUtils.getStringFromPreferences(
 											webActivity, Utils.SECURITY, Utils.LOGIN_TYPE,
 											Utils.NATIVE_LOGIN_TYPE);
 									if (loginType.equals(Utils.NATIVE_LOGIN_TYPE)

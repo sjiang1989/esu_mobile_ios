@@ -21,9 +21,8 @@
         android:id="@id/android:empty"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:paddingLeft="6dp"
         android:paddingStart="6dp"
         android:text="@string/courses_no_courses_message"
-        tools:ignore="NewApi,RtlSymmetry" />
+        tools:ignore="RtlSymmetry" />
 
 </LinearLayout>

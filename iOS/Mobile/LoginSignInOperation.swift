@@ -8,7 +8,7 @@
 
 import UIKit
 
-class LoginSignInOperation: NSOperation {
+class LoginSignInOperation: Operation {
     
     let controller: UIViewController
     var successCompletionHandler :  (() -> Void)?
@@ -18,13 +18,6 @@ class LoginSignInOperation: NSOperation {
     }
     
     override func main() {
-        let loginController = LoginExecutor.loginController()
-        let loginProtocol = loginController.childViewControllers[0] as! LoginProtocol
-        if let successCompletionHandler = successCompletionHandler {
-            loginProtocol.completionBlock = successCompletionHandler
-        }
-        loginController.modalPresentationStyle = UIModalPresentationStyle.FormSheet
-        controller.presentViewController(loginController, animated: true, completion: nil)
-        
+        LoginExecutor.doLogin(controller, successCompletionHandler: successCompletionHandler)
     }
 }

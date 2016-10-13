@@ -15,7 +15,7 @@ import android.view.View;
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
-import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 public class SchoolSelectionActivity extends EllucianActivity implements OnQueryTextListener {
 	private SchoolSelectionFragment fragment = null;
@@ -28,8 +28,8 @@ public class SchoolSelectionActivity extends EllucianActivity implements OnQuery
 		fragment = (SchoolSelectionFragment) getSupportFragmentManager().findFragmentById(R.id.school_list_fragment);
 
 		// set the colors directly, not going through preferences
-        int primaryColor = Utils.getColorHelper(this, R.color.ellucian_primary_color);
-        int headerTextColor = Utils.getColorHelper(this, R.color.ellucian_header_text_color);
+        int primaryColor = VersionSupportUtils.getColorHelper(this, R.color.ellucian_primary_color);
+        int headerTextColor = VersionSupportUtils.getColorHelper(this, R.color.ellucian_header_text_color);
 		configureActionBarDirect(primaryColor, headerTextColor);
         ActionBar bar = getSupportActionBar();
         bar.setDisplayHomeAsUpEnabled(false);

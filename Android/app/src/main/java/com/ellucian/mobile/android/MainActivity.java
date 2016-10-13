@@ -25,17 +25,20 @@ import android.widget.ImageView;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
+import com.ellucian.mobile.android.app.DrawerLayoutHelper;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.HomescreenBackground;
 import com.ellucian.mobile.android.app.ShortcutListFragment;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
 import com.ellucian.mobile.android.client.services.ConfigurationUpdateService;
+import com.ellucian.mobile.android.login.Fingerprint.FingerprintDialogFragment;
 import com.ellucian.mobile.android.login.LoginDialogFragment;
 import com.ellucian.mobile.android.login.QueuedIntentHolder;
 import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.schoolselector.ConfigurationLoadingActivity;
 import com.ellucian.mobile.android.schoolselector.SchoolSelectionActivity;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -45,6 +48,7 @@ public class MainActivity extends EllucianActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     public static final String SHOW_LOGIN = "showLogin";
+    public static final String REQUEST_FINGERPRINT = "requestFingerprint";
     private static final String SHORTCUT_LIST_FRAGMENT = "shortcutListFragment";
 
     ShortcutListFragment homeScreenFragment;
@@ -100,23 +104,13 @@ public class MainActivity extends EllucianActivity {
 
         if (getIntent().getBooleanExtra(SHOW_LOGIN, false)) {
             getIntent().removeExtra(SHOW_LOGIN);
-
-            if (getIntent().getParcelableExtra(QueuedIntentHolder.QUEUED_INTENT_HOLDER) != null) {
-                QueuedIntentHolder qih = getIntent().getExtras().getParcelable(QueuedIntentHolder.QUEUED_INTENT_HOLDER);
-                String moduleId = qih.moduleId;
-                List<String> roles = null;
-                if(moduleId != null) {
-                    roles = ModuleMenuAdapter.getModuleRoles(getContentResolver(), moduleId);
-                }
-
-                LoginDialogFragment loginFragment = new LoginDialogFragment();
-                loginFragment.queueIntent(qih.queuedIntent, roles);
-                loginFragment.show(getSupportFragmentManager(), LoginDialogFragment.LOGIN_DIALOG);
-            } else {
-                showLoginDialog();
-            }
+            login(false);
         }
 
+        if (getIntent().getBooleanExtra(REQUEST_FINGERPRINT, false)) {
+            getIntent().removeExtra(REQUEST_FINGERPRINT);
+            login(true);
+        }
 		LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
 
 		mainAuthenticationReceiver = new MainAuthenticationReceiver();
@@ -127,6 +121,71 @@ public class MainActivity extends EllucianActivity {
 
         configurationUpdateReceiver = new ConfigurationUpdateReceiver();
         lbm.registerReceiver(configurationUpdateReceiver, new IntentFilter(ConfigurationUpdateService.ACTION_SUCCESS));
+
+        if (getIntent().hasExtra(Extra.MODULE_ID)) {
+            handleBeaconIntent(getIntent().getStringExtra(Extra.MODULE_ID));
+        }
+    }
+
+    private void handleBeaconIntent(String moduleId) {
+        Log.v(TAG, "moduleId: " + moduleId);
+
+        ContentResolver contentResolver = getContentResolver();
+        String selection = EllucianContract.Modules.MODULES_ID + " = ?";
+
+        Cursor modulesCursor = contentResolver.query(EllucianContract.Modules.CONTENT_URI,
+                new String[]{BaseColumns._ID, EllucianContract.Modules.MODULE_TYPE, EllucianContract.Modules.MODULE_SUB_TYPE,
+                        EllucianContract.Modules.MODULE_NAME, EllucianContract.Modules.MODULES_ID, EllucianContract.Modules.MODULE_SECURE},
+                selection, new String[] {moduleId}, null );
+
+        String type = "";
+        String subType = "";
+        String name = "";
+        String secureString = "";
+
+        if (modulesCursor != null && modulesCursor.moveToFirst()) {
+            // no need to loop. will only find 1 module.
+            int typeIndex = modulesCursor.getColumnIndex(EllucianContract.Modules.MODULE_TYPE);
+            int subTypeIndex = modulesCursor.getColumnIndex(EllucianContract.Modules.MODULE_SUB_TYPE);
+            int nameIndex = modulesCursor.getColumnIndex(EllucianContract.Modules.MODULE_NAME);
+            int secureIndex = modulesCursor.getColumnIndex(EllucianContract.Modules.MODULE_SECURE);
+
+            type = modulesCursor.getString(typeIndex);
+            subType = modulesCursor.getString(subTypeIndex);
+            name = modulesCursor.getString(nameIndex);
+            secureString = modulesCursor.getString(secureIndex);
+        }
+        if (modulesCursor != null) {
+            modulesCursor.close();
+        }
+
+        if (!TextUtils.isEmpty(moduleId)) {
+            DrawerLayoutHelper.menuItemClickListener(this, moduleId, type, secureString, subType, name);
+        }
+    }
+
+
+    private void login(boolean fingerprintLogin) {
+        // standard
+        if (getIntent().getParcelableExtra(QueuedIntentHolder.QUEUED_INTENT_HOLDER) != null) {
+            QueuedIntentHolder qih = getIntent().getExtras().getParcelable(QueuedIntentHolder.QUEUED_INTENT_HOLDER);
+            String moduleId = qih.moduleId;
+            List<String> roles = null;
+            if(moduleId != null) {
+                roles = ModuleMenuAdapter.getModuleRoles(getContentResolver(), moduleId);
+            }
+
+            if (!getEllucianApp().isUserAuthenticated()) {
+                Utils.showLoginDialog(this, qih.queuedIntent, roles);
+            } else if (UserUtils.getUseFingerprintEnabled(this) && getEllucianApp().isFingerprintUpdateNeeded()) {
+                Utils.showFingerprintDialog(this, qih.queuedIntent, roles);
+            }
+        } else {
+            if (fingerprintLogin) {
+                showFingerprintDialog();
+            } else
+                showLoginDialog();
+        }
     }
 	
 	@Override
@@ -162,8 +221,13 @@ public class MainActivity extends EllucianActivity {
 		loginFragment.show(getSupportFragmentManager(), LoginDialogFragment.LOGIN_DIALOG);
 	    
 	}
-	
-	public class MainAuthenticationReceiver extends BroadcastReceiver {
+
+    private void showFingerprintDialog() {
+        FingerprintDialogFragment fingerprintDialogFragment = new FingerprintDialogFragment();
+        fingerprintDialogFragment.show(getSupportFragmentManager(), FingerprintDialogFragment.FINGERPRINT_DIALOG);
+    }
+
+    public class MainAuthenticationReceiver extends BroadcastReceiver {
 
 		@Override
 		public void onReceive(Context context, Intent incomingIntent) {	
@@ -272,11 +336,12 @@ public class MainActivity extends EllucianActivity {
         Cursor shortcutsCursor = contentResolver.query(EllucianContract.Modules.CONTENT_URI,
                 new String[]{BaseColumns._ID, EllucianContract.Modules.MODULE_TYPE, EllucianContract.Modules.MODULE_SUB_TYPE,
                         EllucianContract.Modules.MODULE_NAME, EllucianContract.Modules.MODULES_ICON_URL,
-                        EllucianContract.Modules.MODULES_ID, EllucianContract.Modules.MODULE_SECURE, EllucianContract.Modules.MODULE_SHOW_FOR_GUEST, EllucianContract.Modules.MODULE_HOME_SCREEN_ORDER}, shortcutsSelection,
+                        EllucianContract.Modules.MODULES_ID, EllucianContract.Modules.MODULE_SECURE, EllucianContract.Modules.MODULE_SHOW_FOR_GUEST,
+                        EllucianContract.Modules.MODULE_HOME_SCREEN_ORDER, EllucianContract.Modules.MODULE_DISPLAY_IN_MENU}, shortcutsSelection,
                 shortcutsSelectionArgs.toArray(new String[shortcutsSelectionArgs.size()]),
                 EllucianContract.Modules.DEFAULT_SORT);
 
-        if (shortcutsCursor.moveToFirst()) {
+        if (shortcutsCursor != null && shortcutsCursor.moveToFirst()) {
             do {
                 int typeIndex = shortcutsCursor.getColumnIndex(EllucianContract.Modules.MODULE_TYPE);
                 int subTypeIndex = shortcutsCursor.getColumnIndex(EllucianContract.Modules.MODULE_SUB_TYPE);
@@ -286,6 +351,7 @@ public class MainActivity extends EllucianActivity {
                 int secureIndex = shortcutsCursor.getColumnIndex(EllucianContract.Modules.MODULE_SECURE);
                 int showGuestIndex = shortcutsCursor.getColumnIndex(EllucianContract.Modules.MODULE_SHOW_FOR_GUEST);
                 int homeScreenOrderIndex = shortcutsCursor.getColumnIndex(EllucianContract.Modules.MODULE_HOME_SCREEN_ORDER);
+                int displayIndex = shortcutsCursor.getColumnIndex(EllucianContract.Modules.MODULE_DISPLAY_IN_MENU);
 
 
                 String type = shortcutsCursor.getString(typeIndex);
@@ -294,6 +360,8 @@ public class MainActivity extends EllucianActivity {
                 String iconUrl = shortcutsCursor.getString(iconUrlIndex);
                 String moduleId = shortcutsCursor.getString(moduleIdIndex);
                 String secure = shortcutsCursor.getString(secureIndex);
+                String display = shortcutsCursor.getString(displayIndex);
+                if (display == null) { display = "true"; }
                 int showGuestInt = shortcutsCursor.getInt(showGuestIndex);
                 int homeScreenOrder = shortcutsCursor.getInt(homeScreenOrderIndex);
                 boolean showGuest = showGuestInt == 1 ? true : false;
@@ -301,14 +369,14 @@ public class MainActivity extends EllucianActivity {
                 List<String> moduleRoles = ModuleMenuAdapter.getModuleRoles(ellucianApplication.getContentResolver(), moduleId);
                 boolean lock = ellucianApplication.isUserAuthenticated() ? false : ModuleMenuAdapter.showLock(this, type, subType, secure, moduleRoles, moduleId);
 
-                if (ModuleMenuAdapter.doesModuleShowForUser(ellucianApplication, moduleId, showGuest)) {
+                if (ModuleMenuAdapter.doesModuleShowForUser(ellucianApplication, moduleId, showGuest) && display.equals("true")) {
                     ShortcutListFragment.ShortcutItem shortcut = new ShortcutListFragment.ShortcutItem(
                             name, moduleId, type, subType, secure, iconUrl, lock, homeScreenOrder);
                     shortcutItems.add(shortcut);
                 }
             } while (shortcutsCursor.moveToNext());
         }
-        shortcutsCursor.close();
+        if (shortcutsCursor != null) { shortcutsCursor.close(); }
         return shortcutItems;
     }
     

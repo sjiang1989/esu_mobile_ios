@@ -33,7 +33,6 @@
 	            android:layout_width="wrap_content"
 	            android:layout_height="wrap_content"
 	            android:gravity="center_vertical"
-	            android:paddingRight="2sp"
 	            android:paddingEnd="2sp"
 	            android:text="@string/grades_last_updated" >
 	        </TextView>

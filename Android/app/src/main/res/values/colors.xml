@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <resources>
@@ -13,6 +13,7 @@
     <color name="status_error_text_color">#ED1C24</color>
     <color name="status_success_text_color">#39B54A</color>
     <color name="status_important_text_color">#FBAE17</color>
+    <color name="status_important_text_light_color">#33fbae17</color>
     <color name="details_header_bg">#E8D6A2</color>
     <color name="details_header_border">#D1AD45</color>
     <color name="details_sub_header_border">#D9C696</color>
@@ -40,5 +41,9 @@
 
     <color name="home_light_overlay_color">#4dffffff</color>
     <color name="home_dark_overlay_color">#4d000000</color>
+
+    <color name="warning_color">#f4511e</color>
+    <color name="hint_color">#42000000</color>
+    <color name="success_color">#009688</color>
 
 </resources>

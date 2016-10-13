@@ -6,22 +6,21 @@ package com.ellucian.mobile.android.notifications;
 
 
 import android.app.Activity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.app.LoaderManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.support.v4.content.CursorLoader;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.support.v4.content.Loader;
 import android.database.Cursor;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
-import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -32,25 +31,25 @@ import android.widget.TextView;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
-import com.ellucian.mobile.android.MainActivity;
 import com.ellucian.mobile.android.ModuleType;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.EllucianDefaultListFragment;
-import com.ellucian.mobile.android.login.QueuedIntentHolder;
 import com.ellucian.mobile.android.client.notifications.Notification;
 import com.ellucian.mobile.android.client.services.NotificationsUpdateDatabaseService;
 import com.ellucian.mobile.android.client.services.NotificationsUpdateServerService;
-import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.provider.EllucianContract.Notifications;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
+import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 public class NotificationsActivity extends EllucianActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
 	private static final String TAG = NotificationsActivity.class.getSimpleName();
     private final Activity activity = this;
-	public static final int NOTIFICATIONS_DETAIL_REQUEST_CODE = 8888;
-	public static final int RESULT_DELETE = 9999;
+	static final int NOTIFICATIONS_DETAIL_REQUEST_CODE = 8888;
+	static final int RESULT_DELETE = 9999;
 	private EllucianDefaultListFragment mainFragment;
 	private SimpleCursorAdapter adapter;
 	private NotificationsDatabaseUpdatedReceiver databaseUpdatedReceiver;
@@ -65,42 +64,23 @@ public class NotificationsActivity extends EllucianActivity implements LoaderMan
 
         if (TextUtils.isEmpty(moduleName)) {
             // When tapping on a device Notification, moduleName is not known.
-            String title = Utils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.NOTIFICATION_MODULE_NAME, null);
+            String title = PreferencesUtils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.NOTIFICATION_MODULE_NAME, null);
             setTitle(title);
         } else {
             setTitle(moduleName);
         }
 
-		EllucianApplication app = getEllucianApp();
+        UserUtils.manageFingerprintTimeout(this);
+
+        EllucianApplication app = getEllucianApp();
 		if(!app.isUserAuthenticated()) {
-			Log.e(TAG, "User not authenticated, sending to home.");
-            // Pass the incoming Intent as an extra, so after
-            // login user is directed back here.
-            Intent queuedIntent = getIntent();
-            if (moduleId == null) {
-                Cursor cursor = getContentResolver().query(EllucianContract.Modules.CONTENT_URI,
-                        new String[] {EllucianContract.Modules.MODULES_ID},
-                        EllucianContract.Modules.MODULE_TYPE + " = ?",
-                        new String[] {ModuleType.NOTIFICATIONS},
-                        null);
-                if (cursor.moveToFirst()) {
-                    moduleId = cursor.getString(cursor.getColumnIndex(EllucianContract.Modules.MODULES_ID));
-                }
-                cursor.close();
-            }
+			Log.d(TAG, "User not authenticated. Request authentication.");
+            Utils.showLoginForQueuedIntent(this, moduleId, ModuleType.NOTIFICATIONS);
+		} else if (UserUtils.getUseFingerprintEnabled(activity) && app.isFingerprintUpdateNeeded()) {
+            Log.d(TAG, "Updated Fingerprint needed.");
+            Utils.showLoginForQueuedIntent(this, moduleId, ModuleType.NOTIFICATIONS);
+        }
 
-            QueuedIntentHolder queuedIntentHolder = new QueuedIntentHolder(moduleId, queuedIntent);
-
-        	Intent mainIntent = new Intent(this, MainActivity.class);
-            mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mainIntent.putExtra(MainActivity.SHOW_LOGIN, true);
-            mainIntent.putExtra(QueuedIntentHolder.QUEUED_INTENT_HOLDER, queuedIntentHolder);
-            startActivity(mainIntent);
-            finish();
-            return;
-		}
-		
 		FragmentManager manager = getSupportFragmentManager();
 		FragmentTransaction transaction = manager.beginTransaction();
 		mainFragment =  (EllucianDefaultListFragment) manager.findFragmentByTag("notificationsListFragment");
@@ -125,29 +105,20 @@ public class NotificationsActivity extends EllucianActivity implements LoaderMan
 		}
 		
 		ViewBinder viewBinder = new NotificationsViewBinder();
-		if (viewBinder != null) {
-			mainFragment.setViewBinder(viewBinder);
-		}
+        mainFragment.setViewBinder(viewBinder);
 
 		transaction.commit();
 		
 		getSupportLoaderManager().restartLoader(0, null, this);
 
-        // See if user got here by selecting a specific notification alert.
-        // If so, do not rebroadcast a local notification if that's the
-        // only new notification in the database.
-        Intent incomingIntent = getIntent();
-        String requestedNotificationId = incomingIntent.getStringExtra(Extra.NOTIFICATIONS_NOTIFICATION_ID);
-        Log.d(TAG, "requestedNotificationId: " + requestedNotificationId);
-
         // Only want to query server on first load, it might conflict with current database state
 		if (savedInstanceState == null  || !savedInstanceState.containsKey("loaded")) {
 			Log.d(TAG, "startingNotifications");
-			getEllucianApp().startNotifications(requestedNotificationId);
+			getEllucianApp().startNotifications();
 		} 
 		
 	}
-	
+
 	@Override
 	public void onStart() {
 		super.onStart();
@@ -330,7 +301,7 @@ public class NotificationsActivity extends EllucianActivity implements LoaderMan
 					titleView.setTypeface(Typeface.DEFAULT, Typeface.NORMAL);
 				}
                 if (!TextUtils.isEmpty(description)) {
-                    descriptionView.setText(Html.fromHtml(description).toString());
+                    descriptionView.setText(VersionSupportUtils.fromHtml(description).toString());
                 }
 				
 				return true;

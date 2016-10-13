@@ -7,8 +7,6 @@
 //
 
 #import "NotificationManager.h"
-#import "CurrentUser.h"
-#import "NSMutableURLRequest+BasicAuthentication.h"
 #import "Ellucian_GO-Swift.h"
 
 @implementation NotificationManager
@@ -23,8 +21,18 @@
     // if notification url is defined and user is logged in
     if (user && [user isLoggedIn] && notificationRegistrationUrl) {
         
-        UIUserNotificationSettings* notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil];
-        [[UIApplication sharedApplication] registerUserNotificationSettings:notificationSettings];
+        UIUserNotificationSettings* notificationSettings = [[UIApplication sharedApplication] currentUserNotificationSettings];
+        if (notificationSettings != nil) {
+            // make sure it has the types we want for remote notifications
+            if (!([notificationSettings types] & (UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound))) {
+                NSSet<UIUserNotificationCategory *>* categories = [notificationSettings categories];
+                notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:categories];
+                [[UIApplication sharedApplication] registerUserNotificationSettings:notificationSettings];
+            }
+        } else {
+            notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil];
+            [[UIApplication sharedApplication] registerUserNotificationSettings:notificationSettings];
+        }
         [[UIApplication sharedApplication] registerForRemoteNotifications];
     }
 }
@@ -71,28 +79,37 @@
         NSData* jsonData = [NSJSONSerialization dataWithJSONObject:registerDictionary options:(NSJSONWritingOptions)NULL error:&jsonError];
         [urlRequest setHTTPBody:jsonData];
 
-        NSError *error;
-        NSURLResponse *response;
-        NSData *responseData = [NSURLConnection sendSynchronousRequest:urlRequest returningResponse:&response error:&error];
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         
-        NSHTTPURLResponse* httpResponse = (NSHTTPURLResponse*)response;
-        NSInteger statusCode = [httpResponse statusCode];
+        NSURLSession *session = [NSURLSession sharedSession]; // or create your own session with your own NSURLSessionConfiguration
+        NSURLSessionTask *task = [session dataTaskWithRequest:urlRequest completionHandler:^(NSData *responseData, NSURLResponse *response, NSError *error) {
 
-        NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:&error];
-        // check if the status is "success" if not we should not continue to attempt to interact with the Notifications API
-        if (statusCode != 200 && statusCode != 201) {
-            NSLog(@"Device token registration failed status: %li - %@", (long) (long)statusCode, [error localizedDescription]);
-        } else {
-            NSString* status = [jsonResponse objectForKey:@"status"] ? : @"disabled";
-            BOOL enabled = [status isEqualToString:@"success"];
-            NSString* notificationEnabled = enabled ? @"YES" : @"NO";
-            [defaults setObject:notificationEnabled forKey:@"notification-enabled"];
+            NSHTTPURLResponse* httpResponse = (NSHTTPURLResponse*)response;
+            NSInteger statusCode = [httpResponse statusCode];
             
-            if (enabled) {
-                // remember the registered user, so we re-register if user id changes
-                [defaults setObject:[user userid] forKey:@"registered-user-id"];
+            NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:&error];
+            // check if the status is "success" if not we should not continue to attempt to interact with the Notifications API
+            if (statusCode != 200 && statusCode != 201) {
+                NSLog(@"Device token registration failed status: %li - %@", (long) (long)statusCode, [error localizedDescription]);
+            } else {
+                NSString* status = [jsonResponse objectForKey:@"status"] ? : @"disabled";
+                BOOL enabled = [status isEqualToString:@"success"];
+                NSString* notificationEnabled = enabled ? @"YES" : @"NO";
+                [defaults setObject:notificationEnabled forKey:@"notification-enabled"];
+                
+                if (enabled) {
+                    // remember the registered user, so we re-register if user id changes
+                    [defaults setObject:[user userid] forKey:@"registered-user-id"];
+                }
             }
-        }
+            
+            dispatch_semaphore_signal(semaphore);
+
+        }];
+        [task resume];
+        
+        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+
     }
 }
 

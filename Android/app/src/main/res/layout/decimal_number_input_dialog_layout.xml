@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -10,23 +10,29 @@
     
     <TextView 
         android:id="@+id/title"
+        tools:text="Title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="@dimen/list_title_text_size"
-        android:paddingLeft="4dp"
         android:paddingStart="4dp"
-        tools:ignore="NewApi,RtlSymmetry" />
-    
-    <EditText 
-        android:id="@+id/input"
+        android:paddingEnd="4dp" />
+
+    <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:paddingLeft="4dp"
-        android:paddingStart="4dp"
-        android:paddingTop="2dp"
-        tools:ignore="NewApi,RtlSymmetry" />
-    
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:id="@+id/input"
+            tools:hint="Hint Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="2dp"/>
+
+    </android.support.design.widget.TextInputLayout>
+
     <LinearLayout 
         android:layout_width="match_parent"
     	android:layout_height="wrap_content"

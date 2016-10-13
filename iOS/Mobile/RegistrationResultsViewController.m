@@ -8,9 +8,8 @@
 
 #import "RegistrationResultsViewController.h"
 #import "RegistrationTabBarController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
 #import "Module.h"
-#import "AppearanceChanger.h"
+#import "Ellucian_GO-Swift.h"
 
 @interface RegistrationResultsViewController ()
 
@@ -21,7 +20,7 @@
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Registration Results" forModuleNamed:self.module.name];
+    [self sendView:@"Registration Results" moduleName:self.module.name];
 }
 
 - (IBAction)dismiss:(id)sender {
@@ -62,9 +61,6 @@
         {
             cell = [tableView dequeueReusableCellWithIdentifier:@"Registration Message Cell"];
             UILabel *label = (UILabel *)[cell viewWithTag:1];
-            if([AppearanceChanger isIOS8AndRTL]) {
-                label.textAlignment = NSTextAlignmentRight;
-            }
             NSDictionary *selected = [self.importantMessages objectAtIndex:[indexPath row]];
             label.text = [selected objectForKey:@"message"];
             break;
@@ -90,12 +86,7 @@
             UILabel *termLabel = (UILabel *)[cell viewWithTag:4];
             NSString* termId = [selected objectForKey:@"termId"];
             termLabel.text = [self.delegate termName:termId];
-            if([AppearanceChanger isIOS8AndRTL]) {
-                label.textAlignment = NSTextAlignmentRight;
-                courseNameLabel.textAlignment = NSTextAlignmentRight;
-                titleLabel.textAlignment = NSTextAlignmentRight;
-                termLabel.textAlignment = NSTextAlignmentRight;
-            }
+
             break;
         }
         case 2:
@@ -119,12 +110,7 @@
             UILabel *termLabel = (UILabel *)[cell viewWithTag:4];
             NSString* termId = [selected objectForKey:@"termId"];
             termLabel.text = [self.delegate termName:termId];
-            if([AppearanceChanger isIOS8AndRTL]) {
-                label.textAlignment = NSTextAlignmentRight;
-                courseNameLabel.textAlignment = NSTextAlignmentRight;
-                titleLabel.textAlignment = NSTextAlignmentRight;
-                termLabel.textAlignment = NSTextAlignmentRight;
-            }
+
             break;
         }
     }
@@ -270,9 +256,6 @@
     UILabel *label = [[UILabel alloc] init];
     label.translatesAutoresizingMaskIntoConstraints = NO;
     [h addSubview:label];
-    if([AppearanceChanger isIOS8AndRTL]) {
-        label.textAlignment = NSTextAlignmentRight;
-    }
     
     UIEdgeInsets separatorInset = [tableView separatorInset];
     UIView *bottom = [[UIView alloc]initWithFrame:CGRectMake(separatorInset.left, 42, 9999, 1)];
@@ -346,12 +329,7 @@
     label2.translatesAutoresizingMaskIntoConstraints = NO;
     label2.adjustsFontSizeToFitWidth = YES;
     [h addSubview:label2];
-    
-    if([AppearanceChanger isIOS8AndRTL]) {
-        label.textAlignment = NSTextAlignmentRight;
-        label2.textAlignment = NSTextAlignmentRight;
-    }
-    
+ 
     UIEdgeInsets separatorInset = [tableView separatorInset];
     UIView *bottom = [[UIView alloc]initWithFrame:CGRectMake(separatorInset.left, 60, 9999, 1)];
     UIColor *separatorColor = [tableView separatorColor];

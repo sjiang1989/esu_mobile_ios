@@ -21,11 +21,10 @@
             style="@style/newsEventsListTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingLeft="6sp"
             android:paddingStart="6sp"
             android:textIsSelectable="false"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            tools:ignore="NewApi,RtlSymmetry" />
+            tools:ignore="RtlSymmetry" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -49,11 +48,10 @@
         style="@style/listDescription"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingLeft="6sp"
         android:paddingStart="6sp"
         android:textIsSelectable="false"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@color/list_title_text_color"
-        tools:ignore="NewApi,RtlSymmetry" />
+        tools:ignore="RtlSymmetry" />
 
 </LinearLayout>

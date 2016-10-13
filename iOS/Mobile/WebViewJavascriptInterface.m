@@ -7,9 +7,8 @@
 //
 
 #import "WebViewJavascriptInterface.h"
-#import "LoginExecutor.h"
 #import "Module.h"
-#import "WebViewController.h"
+
 #import "Ellucian_GO-Swift.h"
 
 @implementation WebViewJavascriptInterface
@@ -41,7 +40,7 @@
 + (void) reloadWebModule
 {
     UIWebView *webView = self.webViewController.webView;
-    [webView loadRequest:[NSURLRequest requestWithURL:self.webViewController.originalUrl]];
+    [webView loadRequest:[NSURLRequest requestWithURL:self.webViewController.originalUrlCopy]];
 }
 
 + (ECSlidingViewController *) slidingViewController
@@ -76,22 +75,22 @@
 //Ellucian Mobile 4.5
 + (NSString *) primaryColor
 {
-    return [[UIColor primaryColor] toHexString];
+    return [[UIColor primary] toHexString];
 }
 
 + (NSString *) headerTextColor
 {
-    return [[UIColor headerTextColor] toHexString];
+    return [[UIColor headerText] toHexString];
 }
 
 + (NSString *) accentColor
 {
-    return [[UIColor accentColor] toHexString];
+    return [[UIColor accent] toHexString];
 }
 
 + (NSString *) subheaderTextColor
 {
-    return [[UIColor subheaderTextColor] toHexString];
+    return [[UIColor subheaderText] toHexString];
 }
 
 

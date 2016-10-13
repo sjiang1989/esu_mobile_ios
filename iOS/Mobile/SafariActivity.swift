@@ -10,32 +10,33 @@ import Foundation
 
 class SafariActivity : UIActivity {
     
-    var targetURL : NSURL?
+    var targetURL : URL?
     
-    override func activityType() -> String? {
-        return "SafariActivity"
+    //TODO Xcode 8 beta 6 hack http://stackoverflow.com/questions/39075442/uiactivitytype-property-cannot-be-an-objc-override-because-its-type-cannot-be
+//    https://bugs.swift.org/browse/SR-2344
+    override open var activityType: UIActivityType {
+        get {
+            return UIActivityType(rawValue: "SafariActivity")
+        }
     }
-    
-    override func activityTitle() -> String? {
+    override public var activityTitle: String? {
         return NSLocalizedString("Open in Safari", comment: "label to open link in Safari")
     }
     
-    override func activityImage() -> UIImage? {
+    override public var activityImage: UIImage? {
         return UIImage(named:"icon_website")
     }
     
-    override class func activityCategory() -> UIActivityCategory {
-        return .Action
-    }
+    override public class var activityCategory: UIActivityCategory { return .action }
     
-    override func canPerformWithActivityItems(activityItems: [AnyObject]) -> Bool {
+    override func canPerform(withActivityItems activityItems: [Any]) -> Bool {
         for item in activityItems {
-            if let _ = item as? NSURL {
+            if let _ = item as? URL {
                 return true
             }
             if let urlString = item as? String {
-                if let url = NSURL(string: urlString) {
-                    if UIApplication.sharedApplication().canOpenURL(url) {
+                if let url = URL(string: urlString) {
+                    if UIApplication.shared.canOpenURL(url) {
                         return true
                     }
                 }
@@ -44,19 +45,19 @@ class SafariActivity : UIActivity {
         return false
     }
     
-    override func prepareWithActivityItems(activityItems: [AnyObject]) {
+    override func prepare(withActivityItems activityItems: [Any]) {
         for item in activityItems {
-            if let url = item as? NSURL {
+            if let url = item as? URL {
                 targetURL = url
-            } else if let urlString = item as? String, url = NSURL(string:urlString) {
+            } else if let urlString = item as? String, let url = URL(string:urlString) {
                 targetURL = url
             }
         }
     }
     
-    override func performActivity() {
+    override func perform() {
         if let targetURL = targetURL {
-            let completed = UIApplication.sharedApplication().openURL(targetURL)
+            let completed = UIApplication.shared.openURL(targetURL)
             activityDidFinish(completed)
         } else {
             activityDidFinish(false)

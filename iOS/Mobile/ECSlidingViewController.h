@@ -304,4 +304,14 @@
  */
 @property (nonatomic, assign) NSTimeInterval defaultTransitionDuration;
 
+/**
+ Ellucian change for Xcode 8
+ */
+#if UIKIT_DEFINE_AS_PROPERTIES
+@property(nonatomic, readonly) BOOL initiallyInteractive;
+#else
+- (BOOL)initiallyInteractive;
+#endif
+@property(nonatomic,readonly) BOOL isInterruptible NS_AVAILABLE_IOS(10_0);
+
 @end

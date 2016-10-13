@@ -14,6 +14,7 @@ import android.util.Log;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.schoolselector.SchoolSelectionActivity;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 public class SendToSelectionReceiverActivity extends Activity {
@@ -42,7 +43,7 @@ public class SendToSelectionReceiverActivity extends Activity {
 						Intent selectionIntent = new Intent(context, SchoolSelectionActivity.class);
 						selectionIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 				        selectionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				        Utils.removeValuesFromPreferences(context, Utils.CONFIGURATION, Utils.CONFIGURATION_URL);
+				        PreferencesUtils.removeValuesFromPreferences(context, Utils.CONFIGURATION, Utils.CONFIGURATION_URL);
 				        
 				        context.startActivity(selectionIntent);
 					}

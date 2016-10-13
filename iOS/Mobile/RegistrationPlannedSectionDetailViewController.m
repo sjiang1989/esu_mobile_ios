@@ -9,8 +9,6 @@
 
 #import "RegistrationPlannedSectionDetailViewController.h"
 #import "Module.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
-#import "AppearanceChanger.h"
 #import "CourseDetailInstructor.h"
 #import "RegistrationPlannedSectionMeetingPattern.h"
 #import "CourseDetail.h"
@@ -26,6 +24,7 @@
 @property (nonatomic, strong) NSDateFormatter *displayDateFormatter;
 @property (nonatomic, strong) NSDateFormatter *displayTimeFormatter;
 @property (nonatomic, strong) NSNumberFormatter *creditsFormatter;
+@property (nonatomic, strong) NSDateFormatter *shortDisplayDateFormatter;
 
 @end
 
@@ -42,7 +41,7 @@
 {
     [super viewWillAppear:animated];
     [self adjustContraintsAccordingToContent];
-    [self sendView:@"Registration Section Detail" forModuleNamed:self.module.name];
+    [self sendView:@"Registration Section Detail" moduleName:self.module.name];
 }
 
 - (void)viewDidLoad
@@ -70,13 +69,7 @@
     self.navigationController.navigationBar.translucent = NO;
     
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
-        
-        if([AppearanceChanger isIOS8AndRTL]) {
-            self.courseSectionNumberLabel.textAlignment = NSTextAlignmentRight;
-            self.courseNameLabel.textAlignment = NSTextAlignmentRight;
-            self.descriptionContent.textAlignment = NSTextAlignmentRight;
-            self.meetingDateLabel.textAlignment = NSTextAlignmentRight;
-        }
+
         self.courseSectionNumberLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"course name-section number", @"Localizable", [NSBundle mainBundle], @"%@-%@", @"course name-section number"), self.registrationPlannedSection.courseName, self.registrationPlannedSection.courseSectionNumber];
         self.courseNameLabel.text = self.registrationPlannedSection.sectionTitle;
         
@@ -126,7 +119,7 @@
         
         
         if (self.availableSeatsView && self.registrationPlannedSection.available && self.registrationPlannedSection.capacity && self.registrationPlannedSection.capacity > 0) {
-            self.availableSeatsView.layer.cornerRadius = 3.0f;
+            self.availableSeatsView.layer.cornerRadius = 6.0f;
             self.availableSeatsView.layer.borderColor = [UIColor colorWithRed:0.80 green:0.80 blue:0.80 alpha:1.0].CGColor;
             self.availableSeatsView.layer.borderWidth = 1.0f;
             
@@ -182,7 +175,7 @@
         self.descriptionLabel.hidden = self.registrationPlannedSection.courseDescription == nil;
         [self adjustContraintsAccordingToContent];
         
-        self.titleBackgroundView.backgroundColor = [UIColor accentColor];
+        self.titleBackgroundView.backgroundColor = [UIColor accent];
     }
 }
 
@@ -230,7 +223,6 @@
         facultyLabel.translatesAutoresizingMaskIntoConstraints = NO;
         facultyLabel.text = instructor.formattedName;
         facultyLabel.font = [UIFont systemFontOfSize:fontSize];
-        facultyLabel.textAlignment = [AppearanceChanger isIOS8AndRTL] ? NSTextAlignmentRight : NSTextAlignmentLeft;
         [facultyLabel sizeToFit];
         [self.facultyContent addSubview:facultyLabel];
         
@@ -309,7 +301,6 @@
         facultyLabel.translatesAutoresizingMaskIntoConstraints = NO;
         facultyLabel.text = instructor.formattedName;
         facultyLabel.font = [UIFont systemFontOfSize:fontSize];
-        facultyLabel.textAlignment = [AppearanceChanger isIOS8AndRTL] ? NSTextAlignmentRight : NSTextAlignmentLeft;
         [facultyLabel sizeToFit];
         [self.facultyContent addSubview:facultyLabel];
         
@@ -451,11 +442,28 @@
         //mp:time
         NSString *days = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days:", @"Localizable", [NSBundle mainBundle], @"%@: ", @"days:"), [daysOfClass componentsJoinedByString:@", "]];
         NSString *line1;
+        BOOL sectionDatesMatchesMeetingPatternDates = (mp.startDate == self.registrationPlannedSection.firstMeetingDate) && (mp.endDate == self.registrationPlannedSection.lastMeetingDate);
         if(mp.instructionalMethodCode) {
-            line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days start - end method", @"Localizable", [NSBundle mainBundle], @"%@ %@ - %@ %@", @"days start - end method"), days, [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime], mp.instructionalMethodCode];
+            if (sectionDatesMatchesMeetingPatternDates) {
+                line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days start - end method", @"Localizable", [NSBundle mainBundle], @"%@ %@ - %@ %@", @"days start - end method"), days, [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime], mp.instructionalMethodCode];
+            } else {
+                if (mp.startDate == mp.endDate) {
+                    line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days startdate starttime - endtime method", @"Localizable", [NSBundle mainBundle], @"%@ %@ %@ - %@ %@", @"days startdate starttime - endtime method"), days, [self.shortDisplayDateFormatter stringFromDate: mp.startDate], [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime], mp.instructionalMethodCode];
+                } else {
+                    line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days startdate - enddate starttime - endtime method", @"Localizable", [NSBundle mainBundle], @"%@ %@ - %@ %@ - %@ %@", @"days startdate - enddate starttime - endtime method"), days, [self.shortDisplayDateFormatter stringFromDate: mp.startDate], [self.shortDisplayDateFormatter stringFromDate: mp.endDate], [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime], mp.instructionalMethodCode];
+                }
+            }
 
         } else {
-            line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days start - end", @"Localizable", [NSBundle mainBundle], @"%@ %@ - %@", @"days start - end"), days, [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime]];
+            if (sectionDatesMatchesMeetingPatternDates) {
+                line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days start - end", @"Localizable", [NSBundle mainBundle], @"%@ %@ - %@", @"days start - end"), days, [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime]];
+            } else {
+                if (mp.startDate == mp.endDate) {
+                    line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days startdate starttime - endtime", @"Localizable", [NSBundle mainBundle], @"%@ %@ %@ - %@", @"days startdate starttime - endtime"), days, [self.shortDisplayDateFormatter stringFromDate: mp.startDate], [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime]];
+                } else {
+                    line1 = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"days startdate - enddate starttime - endtime", @"Localizable", [NSBundle mainBundle], @"%@ %@ - %@ %@ - %@", @"days startdate - enddate starttime - endtime"), days, [self.shortDisplayDateFormatter stringFromDate: mp.startDate], [self.shortDisplayDateFormatter stringFromDate: mp.endDate], [self.displayTimeFormatter stringFromDate: mp.startTime], [self.displayTimeFormatter stringFromDate:mp.endTime]];
+                }
+            }
         }
 
         NSMutableAttributedString *attributedLine1 =[[NSMutableAttributedString alloc]initWithString:line1];
@@ -498,19 +506,22 @@
         UILabel *meetingLabel = [UILabel new];
         meetingLabel.backgroundColor = [UIColor clearColor];
         meetingLabel.translatesAutoresizingMaskIntoConstraints = NO;
+        meetingLabel.lineBreakMode = NSLineBreakByWordWrapping;
         meetingLabel.text = meetingContent;
         meetingLabel.font = [UIFont systemFontOfSize:fontSize];
-        meetingLabel.textAlignment = [AppearanceChanger isIOS8AndRTL] ? NSTextAlignmentRight : NSTextAlignmentLeft;
         meetingLabel.numberOfLines = 0;
         [meetingLabel sizeToFit];
         [self.meetingContent addSubview:meetingLabel];
         
-        NSInteger labelHeight = meetingLabel.frame.size.height;
+        CGFloat minLabelWidth = MIN(self.view.bounds.size.width, self.view.bounds.size.height) - 20;
+        CGSize neededSize = [meetingLabel sizeThatFits:CGSizeMake(minLabelWidth, CGFLOAT_MAX)]; 
+        
+        NSInteger labelHeight = neededSize.height;
         
         meetingContentHeight += labelHeight;
         
         [self.meetingContent addConstraints:
-         [NSLayoutConstraint constraintsWithVisualFormat:@"|-(0)-[meetingLabel]-(10)-|"
+         [NSLayoutConstraint constraintsWithVisualFormat:@"|-(0)-[meetingLabel]-(0)-|"
                                                  options:0 metrics:nil
                                                    views:@{@"meetingLabel":meetingLabel}]];
         
@@ -621,7 +632,7 @@
             self.creditLabelConstraint.constant = 40;
         }
     } else {
-        self.widthConstraint.constant = [AppearanceChanger currentScreenBoundsDependOnOrientation].width;
+        self.widthConstraint.constant = [UIScreen mainScreen].bounds.size.width;
         CGSize trialSize = CGSizeMake(self.widthConstraint.constant-20.0f, 1.0f);
         newSize = [self.descriptionContent sizeThatFits:trialSize];
     }
@@ -649,6 +660,17 @@
     }
     return _timeFormatter;
 }
+
+-(NSDateFormatter *)shortDisplayDateFormatter
+{
+    if(_shortDisplayDateFormatter == nil) {
+        _shortDisplayDateFormatter = [[NSDateFormatter alloc] init];
+        [_shortDisplayDateFormatter setLocalizedDateFormatFromTemplate:@"Md"];
+        [_shortDisplayDateFormatter setTimeZone:[NSTimeZone timeZoneWithName:@"UTC"]];
+    }
+    return _shortDisplayDateFormatter;
+}
+
 
 -(NSDateFormatter *)displayDateFormatter
 {
@@ -681,23 +703,12 @@
     return _creditsFormatter;
 }
 
-- (void)dismissMasterPopover
-{
-    if (_masterPopover != nil) {
-        [_masterPopover dismissPopoverAnimated:YES];
-    }
-}
-
 -(void)selectedDetail:(id)newSection withIndex:(NSIndexPath*)myIndex withModule:(Module*)myModule withController:(id)myController
 {
     if ( [newSection isKindOfClass:[RegistrationPlannedSection class]] )
     {
         [self setSection:(RegistrationPlannedSection *)newSection];
         [self setModule:myModule];
-        
-        if (_masterPopover != nil) {
-            [_masterPopover dismissPopoverAnimated:YES];
-        }
     }
 }
 
@@ -721,13 +732,6 @@
     [self.scrollView invalidateIntrinsicContentSize];
     
     self.navigationController.navigationBar.translucent = NO;
-    
-    if([AppearanceChanger isIOS8AndRTL]) {
-        self.courseSectionNumberLabel.textAlignment = NSTextAlignmentRight;
-        self.courseNameLabel.textAlignment = NSTextAlignmentRight;
-        self.descriptionContent.textAlignment = NSTextAlignmentRight;
-        self.meetingDateLabel.textAlignment = NSTextAlignmentRight;
-    }
     
     self.courseSectionNumberLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"course name-section number", @"Localizable", [NSBundle mainBundle], @"%@-%@", @"course name-section number"), self.registrationPlannedSection.courseName, self.registrationPlannedSection.courseSectionNumber];
     self.courseNameLabel.text = self.registrationPlannedSection.sectionTitle;
@@ -776,7 +780,7 @@
     }
     
     if (self.availableSeatsView && self.registrationPlannedSection.available && self.registrationPlannedSection.capacity && self.registrationPlannedSection.capacity > 0) {
-        self.availableSeatsView.layer.cornerRadius = 3.0f;
+        self.availableSeatsView.layer.cornerRadius = 6.0f;
         self.availableSeatsView.layer.borderColor = [UIColor colorWithRed:0.80 green:0.80 blue:0.80 alpha:1.0].CGColor;
         self.availableSeatsView.layer.borderWidth = 1.0f;
         
@@ -823,7 +827,7 @@
     self.descriptionContent.text = self.registrationPlannedSection.courseDescription;
     self.descriptionLabel.hidden = self.registrationPlannedSection.courseDescription == nil;
     
-    self.titleBackgroundView.backgroundColor = [UIColor accentColor];
+    self.titleBackgroundView.backgroundColor = [UIColor accent];
     [self adjustContraintsAccordingToContent];
     
     [self.view setNeedsDisplay];
@@ -831,52 +835,55 @@
 }
 
 #pragma mark - UISplitViewDelegate methods
--(void)splitViewController:(UISplitViewController *)svc
-    willHideViewController:(UIViewController *)aViewController
-         withBarButtonItem:(UIBarButtonItem *)barButtonItem
-      forPopoverController:(UIPopoverController *)pc
-{
-    //Grab a reference to the popover
-    self.masterPopover = pc;
-    
-    //Set the title of the bar button item
-    barButtonItem.title = self.module.name;
-}
-
--(void)splitViewController:(UISplitViewController *)svc
-    willShowViewController:(UIViewController *)aViewController
- invalidatingBarButtonItem:(UIBarButtonItem *)barButtonItem
-{
-    //Nil out the pointer to the popover.
-    _masterPopover = nil;
-}
+//-(void)splitViewController:(UISplitViewController *)svc
+//    willHideViewController:(UIViewController *)aViewController
+//         withBarButtonItem:(UIBarButtonItem *)barButtonItem
+//      forPopoverController:(UIPopoverController *)pc
+//{
+//    //Grab a reference to the popover
+//    self.masterPopover = pc;
+//    
+//    //Set the title of the bar button item
+//    barButtonItem.title = self.module.name;
+//}
+//
+//-(void)splitViewController:(UISplitViewController *)svc
+//    willShowViewController:(UIViewController *)aViewController
+// invalidatingBarButtonItem:(UIBarButtonItem *)barButtonItem
+//{
+//    //Nil out the pointer to the popover.
+//    _masterPopover = nil;
+//}
 
 - (IBAction) deleteFromCart:(id)sender {
-    UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:nil
-                                                             delegate:self
-                                                    cancelButtonTitle:NSLocalizedString(@"Cancel", @"Cancel")
-                                               destructiveButtonTitle:NSLocalizedString(@"Remove", @"Remove button")
-                                                    otherButtonTitles:nil];
     
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
-    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-        [actionSheet showFromBarButtonItem:self.deleteButtonItem animated:YES];
-    } else {
-        [actionSheet showFromTabBar:self.tabBarController.tabBar];
-    }
-}
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    if (buttonIndex == actionSheet.destructiveButtonIndex) {
-        
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Cancel", comment: @"Cancel") style:UIAlertActionStyleCancel handler:nil];
+    [alertController addAction:cancelAction];
+    
+    UIAlertAction *removeAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Remove", comment: @"Remove button") style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
         [self.registrationTabController removeFromCart:self.registrationPlannedSection];
-
+        
         if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
             [self.navigationController popViewControllerAnimated:YES];
         } else {
             [self clearView];
         }
+
+    }];
+    [alertController addAction:removeAction];
+    
+    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+        alertController.popoverPresentationController.barButtonItem = self.deleteButtonItem;
+    } else {
+        alertController.popoverPresentationController.sourceView = self.navigationController.toolbar;
+        alertController.popoverPresentationController.sourceRect = self.navigationController.toolbar.bounds;
     }
+    
+    [self presentViewController:alertController animated:YES completion:nil];
+    
+
 }
 
 -(RegistrationTabBarController *) registrationTabController

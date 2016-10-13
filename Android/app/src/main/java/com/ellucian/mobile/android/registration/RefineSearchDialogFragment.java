@@ -1,11 +1,9 @@
-// Copyright 2014 Ellucian Company L.P and its affiliates.
+// Copyright 2014-2016 Ellucian Company L.P and its affiliates.
 
 package com.ellucian.mobile.android.registration;
 
-import java.util.ArrayList;
-
-import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +20,8 @@ import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.app.EllucianDialogFragment;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.util.Utils;
+
+import java.util.ArrayList;
 
 public class RefineSearchDialogFragment extends EllucianDialogFragment {
 	public static final String TAG = RefineSearchDialogFragment.class.getSimpleName();
@@ -45,15 +45,15 @@ public class RefineSearchDialogFragment extends EllucianDialogFragment {
 	}
 	
 	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
-		this.activity = (RegistrationActivity) activity;
+	public void onAttach(Context context) {
+		super.onAttach(context);
+		this.activity = (RegistrationActivity) context;
 		// This makes sure that the container activity has implemented
         // the callback interface. If not, it throws an exception
         try {
-        	listener = (OnDoneFilteringListener) activity;
+        	listener = (OnDoneFilteringListener) context;
         } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString()
+            throw new ClassCastException(context.toString()
                     + " must implement OnHeadlineSelectedListener");
         }
 	}

@@ -38,6 +38,7 @@ import com.ellucian.mobile.android.client.directory.Entry;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
 import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ public class DirectoryActivity extends EllucianActivity implements SearchView.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_directory);
         SIGN_IN_MESSAGE = getString(R.string.directory_auth_required_tail, getString(R.string.main_sign_in));
-        String codeBaseVersion = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CODEBASE_VERSION, null);
+        String codeBaseVersion = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CODEBASE_VERSION, null);
         if (!TextUtils.isEmpty(codeBaseVersion)) {
             directory45response = true;
             Log.d(TAG, String.format("A %s Mobile Server Directory was found. Use baseUrl.", codeBaseVersion));
@@ -164,12 +165,12 @@ public class DirectoryActivity extends EllucianActivity implements SearchView.On
     private void setupSearchAndFilter() {
         if (isLegacy) {
             // This is a pre-4.5 mobile server. Must fall-back to use older style URLs for Fac and Stu directories.
-            facultyUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_FACULTY_SEARCH_URL, null);
-            studentUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_STUDENT_SEARCH_URL, null);
-            allUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_ALL_SEARCH_URL, null);
+            facultyUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_FACULTY_SEARCH_URL, null);
+            studentUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_STUDENT_SEARCH_URL, null);
+            allUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_ALL_SEARCH_URL, null);
             Log.d(TAG, "This is a pre-4.5 directory module. Use legacy URLs.");
         } else {
-            baseUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_BASE_SEARCH_URL, null);
+            baseUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_BASE_SEARCH_URL, null);
             Log.d(TAG, "This is a 4.5+ directory module. Use baseUrl.");
         }
         parseCategories();
@@ -336,9 +337,9 @@ public class DirectoryActivity extends EllucianActivity implements SearchView.On
                 }
                 categoriesString.append(filteredCategories[i]);
             }
-            Utils.addStringToPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, categoriesString.toString());
+            PreferencesUtils.addStringToPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, categoriesString.toString());
         } else {
-            Utils.removeValuesFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES);
+            PreferencesUtils.removeValuesFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES);
         }
 
         if (dialogFragment != null) {

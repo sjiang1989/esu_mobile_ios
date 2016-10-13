@@ -9,15 +9,15 @@
 import Foundation
 
 
-class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITableViewDataSource, UITableViewDelegate, NSFetchedResultsControllerDelegate, UISplitViewControllerDelegate
+class AllEventsViewController : UIViewController, UITableViewDataSource, UITableViewDelegate, NSFetchedResultsControllerDelegate, UISplitViewControllerDelegate, EllucianMobileLaunchableControllerProtocol
 {
     
     @IBOutlet var allEventsTableView: UITableView!
     @IBOutlet weak var myTabBarItem: UITabBarItem!
     
     var detailSelectionDelegate: DetailSelectionDelegate!
-    var allEventController: NSFetchedResultsController!
-    var myDatetimeOutputFormatter: NSDateFormatter?
+    var allEventController: NSFetchedResultsController<CourseEvent>!
+    var myDatetimeOutputFormatter: DateFormatter?
     var myManagedObjectContext: NSManagedObjectContext!
     var myTabBarController: UITabBarController!
     var showHeaders: Bool = true
@@ -26,14 +26,14 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
     var selectedEvent:CourseEvent?
     
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.extendedLayoutIncludesOpaqueBars = true
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if UIDevice.currentDevice().userInterfaceIdiom == .Pad {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             findSelectedItem()
         }
     }
@@ -45,41 +45,41 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
         do {
             try allEventController.performFetch()
         } catch let eventError as NSError {
-             NSLog("Unresolved error: fetch error: \(eventError.localizedDescription)")
+             print("Unresolved error: fetch error: \(eventError.localizedDescription)")
         }
     
-    allEventsTableView.registerClass(NSClassFromString("UITableViewHeaderFooterView"), forHeaderFooterViewReuseIdentifier: "Header")
-        self.view.backgroundColor = UIColor.primaryColor()
+    allEventsTableView.register(NSClassFromString("UITableViewHeaderFooterView"), forHeaderFooterViewReuseIdentifier: "Header")
+        self.view.backgroundColor = UIColor.primary
         
         let tabBarItem1 = myTabBarController?.tabBar.items?[1]
         if let tabBarItem1 = tabBarItem1 {
             tabBarItem1.selectedImage = UIImage(named: "ilp-events-selected")
         }
         
-        if UIDevice.currentDevice().userInterfaceIdiom == .Pad {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             if selectedEvent == nil {
                 if allEventController.fetchedObjects!.count > 0 {
-                    let indexPath = NSIndexPath(forRow: 0, inSection: 0)
-                    allEventsTableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition:UITableViewScrollPosition.Top)
-                    tableView(allEventsTableView, didSelectRowAtIndexPath: indexPath);
+                    let indexPath = IndexPath(row: 0, section: 0)
+                    allEventsTableView.selectRow(at: indexPath, animated: true, scrollPosition:UITableViewScrollPosition.top)
+                    tableView(allEventsTableView, didSelectRowAt: indexPath);
                 }
             }
         }
         
-        self.sendEventToTracker1WithCategory(kAnalyticsCategoryUI_Action, withAction:kAnalyticsActionSearch, withLabel:"ILP Events List", withValue:nil, forModuleNamed:"ILP");
+        self.sendEventToTracker1(category: .ui_Action, action: .search, label:"ILP Events List", moduleName: "ILP");
     }
     
     /* called first
     begins update to `UITableView`
     ensures all updates are animated simultaneously */
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         allEventsTableView.beginUpdates()
     }
     
     /* helper method to configure a `UITableViewCell`
     ask `NSFetchedResultsController` for the model */
-    func configureCell(cell: UITableViewCell, atIndexPath indexPath: NSIndexPath) {
-        let event = allEventController.objectAtIndexPath(indexPath) as! CourseEvent
+    func configureCell(_ cell: UITableViewCell, atIndexPath indexPath: IndexPath) {
+        let event = allEventController.object(at: indexPath)
         
         let nameLabel = cell.viewWithTag(100) as! UILabel
         nameLabel.text = event.title
@@ -90,7 +90,7 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
         let startDateLabel = cell.viewWithTag(102) as! UILabel
         
         if let date = event.startDate {
-            startDateLabel.text = self.datetimeOutputFormatter()!.stringFromDate(date)
+            startDateLabel.text = self.datetimeOutputFormatter()!.string(from: date)
         } else {
             startDateLabel.text = ""
         }
@@ -100,39 +100,35 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
     - when a new model is created
     - when an existing model is updated
     - when an existing model is deleted */
-    func controller(controller: NSFetchedResultsController,
-        didChangeObject object: AnyObject,
-        atIndexPath indexPath: NSIndexPath?,
-        forChangeType type: NSFetchedResultsChangeType,
-        newIndexPath: NSIndexPath?)  {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
             
             switch type {
-            case .Insert:
-                allEventsTableView.insertRowsAtIndexPaths([newIndexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Update:
-                let cell = self.allEventsTableView.cellForRowAtIndexPath(indexPath as NSIndexPath!)
-                configureCell(cell!, atIndexPath: indexPath as NSIndexPath!)
-                allEventsTableView.reloadRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Delete:
-                allEventsTableView.deleteRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
+            case .insert:
+                allEventsTableView.insertRows(at: [newIndexPath as IndexPath!], with: .fade)
+            case .update:
+                let cell = self.allEventsTableView.cellForRow(at: indexPath as IndexPath!)
+                configureCell(cell!, atIndexPath: indexPath as IndexPath!)
+                allEventsTableView.reloadRows(at: [indexPath as IndexPath!], with: .fade)
+            case .delete:
+                allEventsTableView.deleteRows(at: [indexPath as IndexPath!], with: .fade)
             default:
                 break
             }
     }
     
-    func controller(controller: NSFetchedResultsController,
-        didChangeSection sectionInfo: NSFetchedResultsSectionInfo,
-        atIndex sectionIndex: Int,
-        forChangeType type: NSFetchedResultsChangeType)
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>,
+        didChange sectionInfo: NSFetchedResultsSectionInfo,
+        atSectionIndex sectionIndex: Int,
+        for type: NSFetchedResultsChangeType)
     {
         switch(type) {
             
-        case .Insert:
-            allEventsTableView.insertSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
-        case .Delete:
-            allEventsTableView.deleteSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
+        case .insert:
+            allEventsTableView.insertSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
+        case .delete:
+            allEventsTableView.deleteSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
             
         default:
             break
@@ -141,16 +137,16 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
     
     /* called last
     tells `UITableView` updates are complete */
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         allEventsTableView.endUpdates()
     }
     
-    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        let event = allEventController.objectAtIndexPath(indexPath) as! CourseEvent
+        let event = allEventController.object(at: indexPath)
         selectedEvent = event
         
-        if UIDevice.currentDevice().userInterfaceIdiom == .Pad {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             
             detailViewController.courseName = event.courseName
             detailViewController.courseSectionNumber = event.courseSectionNumber
@@ -170,27 +166,27 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
                 detailViewController.endDate = nil
             }
             self.detailSelectionDelegate = detailViewController
-            self.detailSelectionDelegate.selectedDetail(event, withIndex: indexPath, withModule: self.module!, withController: self)
+            self.detailSelectionDelegate.selectedDetail(event, withIndex: indexPath, with: self.module!, withController: self)
             
-        } else if UIDevice.currentDevice().userInterfaceIdiom == .Phone {
-            self.performSegueWithIdentifier("Show ILP Event Detail", sender:tableView)
+        } else if UIDevice.current.userInterfaceIdiom == .phone {
+            self.performSegue(withIdentifier: "Show ILP Event Detail", sender:tableView)
         }
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCellWithIdentifier("Daily Event Cell", forIndexPath: indexPath) as UITableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Event Cell", for: indexPath) as UITableViewCell
         configureCell(cell, atIndexPath:indexPath)
         return cell
 
     }
     
-    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
     {
         return 60.0
     }
     
-    func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat
     {
         let count = allEventController.sections?.count
         
@@ -201,20 +197,20 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
         }
     }
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         let numberOfSections = allEventController.sections?.count
         return numberOfSections!
     }
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         let numberOfRowsInSection = allEventController.sections?[section].numberOfObjects
         return numberOfRowsInSection!
     }
     
-    func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
         if self.showHeaders {
-            let h = allEventsTableView.dequeueReusableHeaderFooterViewWithIdentifier("Header")
+            let h = allEventsTableView.dequeueReusableHeaderFooterView(withIdentifier: "Header")
             if let h = h {
                 for subView in h.contentView.subviews
                 {
@@ -228,19 +224,19 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
                 
                 let dateLabel:String? = sections?[section].name
                 
-                if h.backgroundColor != UIColor.accentColor() {
-                    h.contentView.backgroundColor = UIColor.accentColor()
+                if h.backgroundColor != UIColor.accent {
+                    h.contentView.backgroundColor = UIColor.accent
                     let headerLabel = UILabel()
                     headerLabel.tag = 1
                     headerLabel.text = dateLabel
-                    headerLabel.backgroundColor = UIColor.clearColor()
-                    headerLabel.textColor = UIColor.subheaderTextColor()
-                    headerLabel.font = UIFont.boldSystemFontOfSize(16)
+                    headerLabel.backgroundColor = UIColor.clear
+                    headerLabel.textColor = UIColor.subheaderText
+                    headerLabel.font = UIFont.boldSystemFont(ofSize: 16)
                     headerLabel.minimumScaleFactor = 0.5
                     h.contentView.addSubview(headerLabel)
                     headerLabel.translatesAutoresizingMaskIntoConstraints = false
-                    h.contentView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|-10-[headerLabel]", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["headerLabel":headerLabel]))
-                    h.contentView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[headerLabel]|", options: NSLayoutFormatOptions(rawValue: 0), metrics:nil, views: ["headerLabel":headerLabel]))
+                    h.contentView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-10-[headerLabel]", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["headerLabel":headerLabel]))
+                    h.contentView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[headerLabel]|", options: NSLayoutFormatOptions(rawValue: 0), metrics:nil, views: ["headerLabel":headerLabel]))
                     
                 }
             }
@@ -251,11 +247,11 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
         }
     }
 
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?)
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?)
     {
-        let indexPath: NSIndexPath! = allEventsTableView.indexPathForSelectedRow
-        let event = allEventController.objectAtIndexPath(indexPath) as! CourseEvent
-        let detailController = segue.destinationViewController as! CourseEventsDetailViewController
+        let indexPath: IndexPath! = allEventsTableView.indexPathForSelectedRow
+        let event = allEventController.object(at: indexPath)
+        let detailController = segue.destination as! CourseEventsDetailViewController
         detailController.eventTitle = event.title
         detailController.eventDescription = event.eventDescription
         detailController.location = event.location
@@ -274,23 +270,23 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
             detailController.endDate = nil
         }
         
-        allEventsTableView.deselectRowAtIndexPath(indexPath, animated: true)
+        allEventsTableView.deselectRow(at: indexPath, animated: true)
     }
     
-    func eventFetchRequest() -> NSFetchRequest {
+    func eventFetchRequest() -> NSFetchRequest<CourseEvent> {
         
-        let cal = NSCalendar.currentCalendar()
-        let timezone = NSTimeZone.systemTimeZone()
+        var cal = Calendar.current
+        let timezone = TimeZone.current
         cal.timeZone = timezone
-        let beginComps = cal.components([.Year, .Month, .Day, .Hour, .Minute, .Second], fromDate: NSDate())
+        var beginComps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: Date())
         beginComps.hour = 0
         beginComps.minute = 0
         beginComps.second = 0
-        let beginOfToday = cal.dateFromComponents(beginComps)!
+        let beginOfToday = cal.date(from: beginComps)!
         
-        let fetchRequest = NSFetchRequest(entityName:"CourseEvent")
+        let fetchRequest = NSFetchRequest<CourseEvent>(entityName: "CourseEvent")
         
-        let predicate = NSPredicate(format: "(endDate >= %@)", beginOfToday)
+        let predicate = NSPredicate(format: "(endDate >= %@)", argumentArray: [beginOfToday])
         
         let sortDescriptor = NSSortDescriptor(key:"startDate", ascending:true)
         fetchRequest.sortDescriptors = [sortDescriptor]
@@ -298,18 +294,18 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
         return fetchRequest
     }
     
-    func getEventsFetchedResultsController(showOnlyItemsWithDates:Bool) -> NSFetchedResultsController {
+    func getEventsFetchedResultsController(_ showOnlyItemsWithDates:Bool) -> NSFetchedResultsController<CourseEvent> {
         
         showHeaders = showOnlyItemsWithDates
-        let importContext = NSManagedObjectContext(concurrencyType: .MainQueueConcurrencyType)
+        let importContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         
-        importContext.parentContext = self.myManagedObjectContext
+        importContext.parent = self.myManagedObjectContext
         
         let fetchRequest = eventFetchRequest()
-        let entity:NSEntityDescription? = NSEntityDescription.entityForName("CourseEvent", inManagedObjectContext:importContext)
+        let entity:NSEntityDescription? = NSEntityDescription.entity(forEntityName: "CourseEvent", in:importContext)
         fetchRequest.entity = entity;
         
-        var theFetchedResultsController:NSFetchedResultsController!
+        var theFetchedResultsController:NSFetchedResultsController<CourseEvent>!
         
         if showOnlyItemsWithDates {
             theFetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext:importContext, sectionNameKeyPath:"displayDateSectionHeader", cacheName:nil)
@@ -321,23 +317,23 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
     }
 
     
-    func datetimeOutputFormatter() ->NSDateFormatter? {
+    func datetimeOutputFormatter() ->DateFormatter? {
         
         if (myDatetimeOutputFormatter == nil) {
-            myDatetimeOutputFormatter = NSDateFormatter()
-            myDatetimeOutputFormatter!.timeStyle = .ShortStyle
-            myDatetimeOutputFormatter!.dateStyle = .ShortStyle
+            myDatetimeOutputFormatter = DateFormatter()
+            myDatetimeOutputFormatter!.timeStyle = .short
+            myDatetimeOutputFormatter!.dateStyle = .short
         }
         return myDatetimeOutputFormatter
     }
     
-    func splitViewController(svc: UISplitViewController,
-        shouldHideViewController vc: UIViewController,
-        inOrientation orientation: UIInterfaceOrientation) -> Bool {
+    func splitViewController(_ svc: UISplitViewController,
+        shouldHide vc: UIViewController,
+        in orientation: UIInterfaceOrientation) -> Bool {
             return false;
     }
     
-    func setSelectedItem(item:CourseEvent?)
+    func setSelectedItem(_ item:CourseEvent?)
     {
         selectedEvent = item
     }
@@ -345,19 +341,19 @@ class AllEventsViewController : UIViewController, UIActionSheetDelegate, UITable
     func findSelectedItem() {
         
         if selectedEvent != nil {
-            var indexPath = NSIndexPath(forRow: 0, inSection: 0)
+            var indexPath = IndexPath(row: 0, section: 0)
             let myTargetItem = selectedEvent!
             if ( myTargetItem.managedObjectContext != nil)
             {
                 for iter in allEventController.fetchedObjects!
                 {
-                    let tempEvent: CourseEvent = iter as! CourseEvent
+                    let tempEvent: CourseEvent = iter
                     if tempEvent.title == myTargetItem.title && tempEvent.startDate == myTargetItem.startDate && tempEvent.endDate==myTargetItem.endDate && tempEvent.eventDescription == myTargetItem.eventDescription {
-                        indexPath = allEventController.indexPathForObject(tempEvent)!
+                        indexPath = allEventController.indexPath(forObject: tempEvent)!
                     }
                 }
-                allEventsTableView.selectRowAtIndexPath(indexPath, animated: true, scrollPosition:UITableViewScrollPosition.Top)
-                tableView(self.allEventsTableView, didSelectRowAtIndexPath: indexPath);
+                allEventsTableView.selectRow(at: indexPath, animated: true, scrollPosition:UITableViewScrollPosition.top)
+                tableView(self.allEventsTableView, didSelectRowAt: indexPath);
             }
         }
     }

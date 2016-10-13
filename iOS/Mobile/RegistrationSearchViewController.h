@@ -14,10 +14,11 @@ In the iPad Storyboard, the first label has its width set, due to bug that it co
 
 #import <UIKit/UIKit.h>
 #import "RegistrationRefineSearchViewController.h"
+#import "Ellucian_GO-Swift.h"
 
 @class Module;
 
-@interface RegistrationSearchViewController : UIViewController<UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate, UISplitViewControllerDelegate, RegistrationRefineSearchDelegate>
+@interface RegistrationSearchViewController : UIViewController<UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate, UISplitViewControllerDelegate, RegistrationRefineSearchDelegate, EllucianMobileLaunchableControllerProtocol>
 
 @property (strong, nonatomic) Module *module;
 

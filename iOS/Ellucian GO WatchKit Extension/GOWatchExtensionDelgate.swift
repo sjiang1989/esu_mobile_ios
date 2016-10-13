@@ -15,7 +15,9 @@ class GOWatchExtensionDelegate: NSObject, WKExtensionDelegate {
     var watchConnectivityManager: WatchConnectivityManager? = nil
 
     func applicationDidBecomeActive() {
-        NSLog("applicationDidBecomeActive")
-        watchConnectivityManager = WatchConnectivityManager.instance.ensureWatchConnectivityInitialized().refreshUser()
+        print("applicationDidBecomeActive")
+        WatchConnectivityManager.sharedInstance.ensureWatchConnectivityInitialized()
+        WatchConnectivityManager.sharedInstance.refreshUser()
+        watchConnectivityManager = WatchConnectivityManager.sharedInstance // keep a strong reference
     }
 }

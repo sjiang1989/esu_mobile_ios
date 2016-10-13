@@ -3,14 +3,13 @@
 #import "CalendarViewDayEventView.h"
 #import "CalendarViewDayViewDataSource.h"
 #import "CalendarViewDayViewDelegate.h"
-#import "CalendarActionSheetDatePicker.h"
 
 @class CalendarViewAllDayGridView;
 @class CalendarViewDayGridView;
 
 @protocol CalendarViewDayViewDataSource, CalendarViewDayViewDelegate;
 
-@interface CalendarViewDayView : UIView <UIActionSheetDelegate, UIGestureRecognizerDelegate, UIPopoverControllerDelegate>{
+@interface CalendarViewDayView : UIView <UIGestureRecognizerDelegate, UIPopoverControllerDelegate>{
     id<CalendarViewDayViewDataSource> dataSource;
 }
 
@@ -27,7 +26,7 @@
 @property (weak, nonatomic) IBOutlet UIView *backgroundView;
 @property (nonatomic, retain) UIColor *dateLabelBackgroundColor UI_APPEARANCE_SELECTOR;
 @property (nonatomic, retain) UIColor *dateLabelTextColor UI_APPEARANCE_SELECTOR;
-@property (nonatomic, strong) CalendarActionSheetDatePicker *datePicker;
+//@property (nonatomic, strong) CalendarActionSheetDatePicker *datePicker;
 
 @property (nonatomic, strong) CalendarViewDayGridView *gridView;
 @property (nonatomic, strong) CalendarViewAllDayGridView *allDayGridView;

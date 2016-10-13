@@ -24,5 +24,6 @@
 @dynamic startDate;
 @dynamic startTime;
 @dynamic course;
+@dynamic campus;
 
 @end

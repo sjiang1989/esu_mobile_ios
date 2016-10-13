@@ -7,7 +7,6 @@
 //
 
 #import "EllucianUITableViewController.h"
-#import "Module+Attributes.h"
 #import <UIKit/UIKit.h>
 #import <EventKit/EventKit.h>
 #import <EventKitUI/EventKitUI.h>
@@ -15,6 +14,10 @@
 #import <Twitter/Twitter.h>
 #import <Accounts/Accounts.h>
 #import "Event.h"
+#import "Module.h"
+#import "Ellucian_GO-Swift.h"
+
+@protocol CourseDetailViewControllerProtocol;
 
 @interface CourseEventsViewController : EllucianUITableViewController<NSFetchedResultsControllerDelegate>
 
@@ -23,6 +26,8 @@
 @property (strong, nonatomic) NSString *courseNameAndSectionNumber;
 @property (strong, nonatomic) Module *module;
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
+@property (strong, nonatomic) NSString *courseName;
+@property (strong, nonatomic) NSString *courseSectionNumber;
 - (IBAction)dismiss:(id)sender;
 
 @end

@@ -21,7 +21,9 @@ import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.MainActivity;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.EllucianDefaultDetailFragment;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 public class IlpListActivity extends EllucianActivity implements TabHost.OnTabChangeListener {
     private static final String TAG = IlpListActivity.class.getSimpleName();
@@ -45,7 +47,7 @@ public class IlpListActivity extends EllucianActivity implements TabHost.OnTabCh
 
         if (TextUtils.isEmpty(moduleName)) {
             // When coming from Widget, moduleName is not known.
-            String title = Utils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.ILP_NAME, null);
+            String title = PreferencesUtils.getStringFromPreferences(getApplicationContext(), Utils.CONFIGURATION, Utils.ILP_NAME, null);
             setTitle(title);
         } else {
             setTitle(moduleName);
@@ -105,7 +107,7 @@ public class IlpListActivity extends EllucianActivity implements TabHost.OnTabCh
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-        tabLayout.setSelectedTabIndicatorColor(Utils.getColorHelper(this, R.color.tab_indicator_color));
+        tabLayout.setSelectedTabIndicatorColor(VersionSupportUtils.getColorHelper(this, R.color.tab_indicator_color));
 
         TabLayout.Tab assignmentsTab = tabLayout.newTab().setText(R.string.ilp_assignments);
         TabLayout.Tab eventsTab = tabLayout.newTab().setText(R.string.ilp_events);
@@ -113,7 +115,7 @@ public class IlpListActivity extends EllucianActivity implements TabHost.OnTabCh
         tabLayout.addTab(assignmentsTab, TAB_ASSIGNMENTS);
         tabLayout.addTab(eventsTab, TAB_EVENTS);
         tabLayout.addTab(announcementsTab, TAB_ANNOUNCEMENTS);
-        tabLayout.setOnTabSelectedListener(new MyTabListener(this, R.id.frame_main));
+        tabLayout.addOnTabSelectedListener(new MyTabListener(this, R.id.frame_main));
 
         // clear requested indexes after use
         args.remove(IlpListActivity.SHOW_DETAIL);

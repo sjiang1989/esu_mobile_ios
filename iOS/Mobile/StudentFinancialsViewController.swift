@@ -8,7 +8,7 @@
 
 import Foundation
 
-class StudentFinancialsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class StudentFinancialsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, EllucianMobileLaunchableControllerProtocol {
     
     var module: Module!
     
@@ -19,36 +19,36 @@ class StudentFinancialsViewController: UIViewController, UITableViewDataSource, 
     
     var transactions: [StudentFinancialsTransaction] = []
     
-    let parsingDateFormatter: NSDateFormatter = {
-        var formatter = NSDateFormatter()
+    let parsingDateFormatter: DateFormatter = {
+        var formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'";
-        formatter.timeZone = NSTimeZone(name:"UTC")
+        formatter.timeZone = TimeZone(abbreviation:"UTC")
         return formatter
         
         }()
-    let displayDateFormatter: NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .MediumStyle
+    let displayDateFormatter: DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .medium
         return formatter
         
         }()
     
-    let currencyFormatter: NSNumberFormatter = {
-        var formatter = NSNumberFormatter()
-        formatter.numberStyle = .CurrencyStyle
+    let currencyFormatter: NumberFormatter = {
+        var formatter = NumberFormatter()
+        formatter.numberStyle = .currency
         return formatter
         }()
     
     override func viewDidLoad() {
-        self.title = self.module.name
-        let linkLabel = self.module.propertyForKey("externalLinkLabel")
-        let linkUrl = self.module.propertyForKey("externalLinkUrl")
+        self.title = self.module?.name
+        let linkLabel = self.module?.property(forKey: "externalLinkLabel")
+        let linkUrl = self.module?.property(forKey: "externalLinkUrl")
         if linkLabel == nil || linkUrl == nil {
-            linkButton.hidden = true
+            linkButton.isHidden = true
             bottomViewHeightConstraint.constant = 0;
         } else {
-            linkButton.setTitle(linkLabel, forState: .Normal)
-            linkButton.setTitle(linkLabel, forState: .Selected)
+            linkButton.setTitle(linkLabel, for: UIControlState())
+            linkButton.setTitle(linkLabel, for: .selected)
             linkButton.addBorderAndColor()
         }
         
@@ -57,103 +57,102 @@ class StudentFinancialsViewController: UIViewController, UITableViewDataSource, 
         self.fetchData()
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        self.sendView("View Account Balance", forModuleNamed:self.module.name)
+        self.sendView( "View Account Balance", moduleName:self.module?.name)
     }
     
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return transactions.count > 0 ? transactions.count : 1
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if transactions.count > 0 {
-            let cell = tableView.dequeueReusableCellWithIdentifier("Recent Payment Cell", forIndexPath: indexPath) as UITableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "Recent Payment Cell", for: indexPath) as UITableViewCell
             
-            let transaction = transactions[indexPath.row]
+            let transaction = transactions[(indexPath as NSIndexPath).row]
             let descriptionLabel = cell.viewWithTag(1) as! UILabel
             descriptionLabel.text = transaction.description
             let dateLabel = cell.viewWithTag(2) as! UILabel
-            dateLabel.text = displayDateFormatter.stringFromDate(transaction.entryDate)
+            dateLabel.text = displayDateFormatter.string(from: transaction.entryDate as Date)
             let amountLabel = cell.viewWithTag(3) as! UILabel
-            amountLabel.text = currencyFormatter.stringFromNumber(transaction.amount)
+            amountLabel.text = currencyFormatter.string(from: NSNumber(value: transaction.amount))
             
             
             return cell
         } else {
-            return tableView.dequeueReusableCellWithIdentifier("No Transactions Cell", forIndexPath: indexPath) as UITableViewCell
+            return tableView.dequeueReusableCell(withIdentifier: "No Transactions Cell", for: indexPath) as UITableViewCell
         }
     }
     
-    func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         
-        let view = UIView(frame: CGRectMake(0, 0, CGRectGetWidth(tableView.frame), 30))
-        let label = UILabel(frame: CGRectMake(8,0,CGRectGetWidth(tableView.frame), 30))
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 30))
+        let label = UILabel(frame: CGRect(x: 8,y: 0,width: tableView.frame.width, height: 30))
         label.translatesAutoresizingMaskIntoConstraints = false
         
         label.text =  NSLocalizedString("RECENT PAYMENTS", comment: "Table section header RECENT PAYMENTS")
         
         label.textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)
         view.backgroundColor = UIColor(rgba: "#e6e6e6")
-        label.font = UIFont.preferredFontForTextStyle(UIFontTextStyleHeadline)
+        label.font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.headline)
         
         view.addSubview(label)
         
         let viewsDictionary = ["label": label, "view": view]
         
         // Create and add the vertical constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|-1-[label]-1-|",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-1-[label]-1-|",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         
         // Create and add the horizontal constraints
-        view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-20-[label]",
-            options: NSLayoutFormatOptions.AlignAllBaseline,
+        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-20-[label]",
+            options: .alignAllLastBaseline,
             metrics: nil,
             views: viewsDictionary))
         return view;
         
     }
     
-    func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 30
     }
 
     func fetchData() {
-        let loadingNotification = MBProgressHUD.showHUDAddedTo(self.view, animated: true)
-        loadingNotification.labelText = NSLocalizedString("Loading", comment: "loading message while fetching recent transactions");
+        let loadingNotification = MBProgressHUD.showAdded(to: self.view, animated: true)
+        loadingNotification.label.text = NSLocalizedString("Loading", comment: "loading message while fetching recent transactions");
         
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0)) {
-            
+        DispatchQueue.global(qos: .userInteractive).async {
             self.fetchTransactions()
             self.fetchBalance()
             
-            dispatch_async(dispatch_get_main_queue()) {
+            DispatchQueue.main.async {
                 self.tableView.reloadData()
-                MBProgressHUD.hideAllHUDsForView(self.view, animated: true)
+                MBProgressHUD.hide(for: self.view, animated: true)
             }
         }
     }
     
     func fetchTransactions() {
         
-        let urlBase = self.module.propertyForKey("financials")!
-        let userid =  CurrentUser.sharedInstance().userid.stringByAddingPercentEncodingWithAllowedCharacters(NSCharacterSet.URLQueryAllowedCharacterSet())
-        let urlString = "\(urlBase)/\(userid!)/transactions"
-        let url: NSURL? = NSURL(string: urlString as String)
+        let urlBase = self.module?.property(forKey: "financials")!
+        let userid =  CurrentUser.sharedInstance.userid?.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
+        let urlString = "\(urlBase!)/\(userid!)/transactions"
+        let url: URL? = URL(string: urlString as String)
         
-        UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         
         let authenticatedRequest = AuthenticatedRequest()
-        let responseData:NSData? = authenticatedRequest.requestURL(url, fromView: self)
+        let responseData = authenticatedRequest.requestURL(url, fromView: self)
         
-        UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
         if let response = responseData {
             
             let json = JSON(data: response)
@@ -164,32 +163,32 @@ class StudentFinancialsViewController: UIViewController, UITableViewDataSource, 
                 for transactionDictioanry in termDictioanry["transactions"].arrayValue {
                     let amount = transactionDictioanry["amount"].floatValue
                     let description = transactionDictioanry["description"].stringValue
-                    let date = self.parsingDateFormatter.dateFromString(transactionDictioanry["entryDate"].stringValue)
+                    let date = self.parsingDateFormatter.date(from: transactionDictioanry["entryDate"].stringValue)
                     let type = transactionDictioanry["type"].stringValue
                     let transaction = StudentFinancialsTransaction(amount: amount, description: description, entryDate: date!, type: type)
                     self.transactions.append(transaction)
                 }
             }
-            self.transactions.sortInPlace {
+            self.transactions.sort {
                 item1, item2 in
-                let date1 = item1.entryDate as NSDate
-                let date2 = item2.entryDate as NSDate
-                return date1.compare(date2) == NSComparisonResult.OrderedDescending
+                let date1 = item1.entryDate as Date
+                let date2 = item2.entryDate as Date
+                return date1.compare(date2) == ComparisonResult.orderedDescending
             }
         }
     }
     
     func fetchBalance() {
         
-        let urlString = NSString( format:"%@/%@/balances", self.module.propertyForKey("financials"), CurrentUser.sharedInstance().userid )
-        let url: NSURL? = NSURL(string: urlString as String)
+        let urlString = NSString( format:"%@/%@/balances", self.module!.property(forKey: "financials")!, CurrentUser.sharedInstance.userid! )
+        let url: URL? = URL(string: urlString as String)
 
-        UIApplication.sharedApplication().networkActivityIndicatorVisible = true
-        
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
+    
         let authenticatedRequest = AuthenticatedRequest()
-        let responseData:NSData? = authenticatedRequest.requestURL(url, fromView: self)
+        let responseData = authenticatedRequest.requestURL(url, fromView: self)
         
-        UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
         if let response = responseData {
             
             let json = JSON(data: response)
@@ -197,27 +196,29 @@ class StudentFinancialsViewController: UIViewController, UITableViewDataSource, 
             
             for termDictionary in termsList {
                 let balance = termDictionary["balance"].floatValue
-                balanceLabel.text = currencyFormatter.stringFromNumber(balance);
+                DispatchQueue.main.async {
+                    self.balanceLabel.text = self.currencyFormatter.string(from: NSNumber(value: balance));
+                }
             }
         }
     }
-    @IBAction func gotoLink(sender: UIButton) {
-        self.sendEventWithCategory(kAnalyticsCategoryUI_Action, withAction: kAnalyticsActionButton_Press, withLabel: "Open financial service", withValue: nil, forModuleNamed: self.module.name)
-        let external = self.module.propertyForKey("external")
+    @IBAction func gotoLink(_ sender: UIButton) {
+        self.sendEvent(category: .ui_Action, action: .button_Press, label: "Open financial service", moduleName: self.module?.name)
+        let external = self.module!.property(forKey: "external")
         if external != nil && external == "true" {
-            let url = NSURL(string: self.module.propertyForKey("externalLinkUrl"))
-            UIApplication.sharedApplication().openURL(url!)
+            let url = URL(string: self.module!.property(forKey: "externalLinkUrl")!)
+            UIApplication.shared.openURL(url!)
         } else {
-            self.performSegueWithIdentifier("Take action", sender: nil)
+            self.performSegue(withIdentifier: "Take action", sender: nil)
         }
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject!) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "Take action"{
-            let vc = segue.destinationViewController as! WebViewController
-            vc.loadRequest = NSURLRequest(URL: NSURL(string: self.module.propertyForKey("externalLinkUrl"))!)
-            vc.title = self.module.propertyForKey("externalLinkLabel")
-            vc.analyticsLabel = self.module.propertyForKey("externalLinkLabel")
+            let vc = segue.destination as! WKWebViewController
+            vc.loadRequest = URLRequest(url: URL(string: self.module!.property(forKey: "externalLinkUrl")!)!)
+            vc.title = self.module!.property(forKey: "externalLinkLabel")
+            vc.analyticsLabel = self.module!.property(forKey: "externalLinkLabel")
         }
     }
 }

@@ -17,19 +17,19 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
     var module : Module?
     @IBOutlet var termsButton: UIBarButtonItem! //iPhone Only
     var term : GradeTerm?
-    let dateFormatterLastUpdatedHeader : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.dateStyle = .ShortStyle
-        formatter.timeStyle = .ShortStyle
+    let dateFormatterLastUpdatedHeader : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
         return formatter
         }()
-    var _fetchedResultsController: NSFetchedResultsController?
+    var _fetchedResultsController: NSFetchedResultsController<GradeTerm>?
     
     override func viewDidLoad() {
-        termsButton.enabled = false
+        termsButton.isEnabled = false
         if let splitViewController = splitViewController {
             //iPad
-            self.navigationController!.topViewController!.navigationItem.leftBarButtonItem = splitViewController.displayModeButtonItem()
+            self.navigationController!.topViewController!.navigationItem.leftBarButtonItem = splitViewController.displayModeButtonItem
             self.navigationController!.topViewController!.navigationItem.leftItemsSupplementBackButton = true
             
             var rightButtonItems = self.navigationItem.rightBarButtonItems
@@ -37,7 +37,8 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
             self.navigationItem.rightBarButtonItems = rightButtonItems
         } else {
             //iPhone
-            sendView("Grades List", forModuleNamed: self.module?.name)
+            sendView("Grades List", moduleName: self.module?.name)
+            self.title = self.module?.name
             if let sections = fetchedResultsController.sections {
                 let currentSection = sections[0] as NSFetchedResultsSectionInfo
                 let count = currentSection.numberOfObjects
@@ -53,13 +54,13 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
         tableView.rowHeight = UITableViewAutomaticDimension
     }
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         if let _ = term {
             self.tableView.reloadData()
         }
     }
     
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         if term == nil {
             return 0
         }
@@ -70,10 +71,10 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
         }
     }
     
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0:
-            if term!.courses?.count > 0 {
+            if let count = term?.courses?.count , count > 0 {
                 return 1
             } else {
                 return 2
@@ -90,25 +91,25 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
         }
     }
     
-    override func tableView(tableView: UITableView, willDisplayCell cell: UITableViewCell, forRowAtIndexPath indexPath: NSIndexPath) {
-        tableView.separatorInset = UIEdgeInsetsZero
-        tableView.layoutMargins = UIEdgeInsetsZero
-        cell.layoutMargins = UIEdgeInsetsZero
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        tableView.separatorInset = UIEdgeInsets.zero
+        tableView.layoutMargins = UIEdgeInsets.zero
+        cell.layoutMargins = UIEdgeInsets.zero
     }
     
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        switch (indexPath.section, indexPath.row) {
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        switch ((indexPath as NSIndexPath).section, (indexPath as NSIndexPath).row) {
         case (0, 0):
-            let cell = tableView.dequeueReusableCellWithIdentifier("Term Name Cell", forIndexPath: indexPath) as UITableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "Term Name Cell", for: indexPath) as UITableViewCell
             
             let termLabel = cell.viewWithTag(1) as! UILabel
             
             termLabel.text = term!.name
             return cell
         case (_, 0):
-            let cell = tableView.dequeueReusableCellWithIdentifier("Course Name Cell", forIndexPath: indexPath) as UITableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "Course Name Cell", for: indexPath) as UITableViewCell
             
-            let course = term!.courses[indexPath.section - 1] as! GradeCourse
+            let course = term!.courses[(indexPath as NSIndexPath).section - 1] as! GradeCourse
             let courseLabel = cell.viewWithTag(1) as! UILabel
             let titleLabel = cell.viewWithTag(2) as! UILabel
             courseLabel.text = String(format: NSLocalizedString("%@-%@", comment: "course name - course section number"), course.courseName, course.courseSectionNumber)
@@ -116,11 +117,11 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
             return cell
         
         default :
-            if let courses = term!.courses where courses.count > 0 {
-                let course = term!.courses[indexPath.section - 1] as! GradeCourse
+            if let courses = term!.courses , courses.count > 0 {
+                let course = term!.courses[(indexPath as NSIndexPath).section - 1] as! GradeCourse
                 if course.grades.count > 0 {
-                    let cell = tableView.dequeueReusableCellWithIdentifier("Grade Cell", forIndexPath: indexPath) as UITableViewCell
-                    let grade = course.grades[indexPath.row - 1] as! Grade
+                    let cell = tableView.dequeueReusableCell(withIdentifier: "Grade Cell", for: indexPath) as UITableViewCell
+                    let grade = course.grades[(indexPath as NSIndexPath).row - 1] as! Grade
                     
                     let descriptionLabel = cell.viewWithTag(1) as! UILabel
                     let lastUpdatedLabel = cell.viewWithTag(2) as! UILabel
@@ -129,7 +130,7 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
                     descriptionLabel.text = grade.name
                     
                     if let date = grade.lastUpdated {
-                        let formattedDate = self.dateFormatterLastUpdatedHeader.stringFromDate(date)
+                        let formattedDate = self.dateFormatterLastUpdatedHeader.string(from: date)
                         lastUpdatedLabel.text = String(format: NSLocalizedString("Last Updated %@", comment: "Last Updated date"), formattedDate)
                     } else {
                         lastUpdatedLabel.text = NSLocalizedString("Last Updated Unknown", comment: "Last Updated date unknown")
@@ -138,11 +139,11 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
                     gradeLabel.text = grade.value
                     return cell
                 } else {
-                    return tableView.dequeueReusableCellWithIdentifier("No Grades Cell", forIndexPath: indexPath) as UITableViewCell
+                    return tableView.dequeueReusableCell(withIdentifier: "No Grades Cell", for: indexPath) as UITableViewCell
                 }
 
             } else {
-                 return tableView.dequeueReusableCellWithIdentifier("No Grades Cell", forIndexPath: indexPath) as UITableViewCell
+                 return tableView.dequeueReusableCell(withIdentifier: "No Grades Cell", for: indexPath) as UITableViewCell
             }
             
         }
@@ -151,34 +152,40 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
     
     func fetchGrades() {
         let operation = GradesFetchOperation(module: module, view: self)
-        NSOperationQueue.mainQueue().addOperation(operation)
+        
         
         if self.fetchedResultsController.fetchedObjects!.count <= 0 {
-            let hud = MBProgressHUD.showHUDAddedTo(self.view, animated: true)
-            hud.labelText = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            operation.completionBlock = {
+                DispatchQueue.main.async(execute: {() -> Void in
+                    MBProgressHUD.hide(for: self.view, animated: true)
+                })
+            }
         }
+        
+        OperationQueue.main.addOperation(operation)
         
     }
     
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "Show Filter" {
-            let detailController = (segue.destinationViewController as! UINavigationController).topViewController as! GradesTermFilterViewController
+            let detailController = (segue.destination as! UINavigationController).topViewController as! GradesTermFilterViewController
             detailController.delegate = self
             detailController.module = self.module
         }
     }
     
     // MARK: fetch
-    var fetchedResultsController: NSFetchedResultsController {
+    var fetchedResultsController: NSFetchedResultsController<GradeTerm> {
         // return if already initialized
         if self._fetchedResultsController != nil {
             return self._fetchedResultsController!
         }
-        let managedObjectContext = CoreDataManager.shared.managedObjectContext
+        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
         
-        let request = NSFetchRequest()
-        request.entity = NSEntityDescription.entityForName("GradeTerm", inManagedObjectContext: managedObjectContext)
+        let request = NSFetchRequest<GradeTerm>(entityName: "GradeTerm")
         request.sortDescriptors = [NSSortDescriptor(key: "startDate", ascending: false)]
         
         let aFetchedResultsController = NSFetchedResultsController(fetchRequest: request, managedObjectContext: managedObjectContext, sectionNameKeyPath: nil, cacheName: nil)
@@ -195,21 +202,20 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
         return self._fetchedResultsController!
     }
     
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
-        dispatch_async(dispatch_get_main_queue()) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        DispatchQueue.main.async {
             self.selectFirst()
-            MBProgressHUD.hideHUDForView(self.view, animated: true)
+            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
     
     func selectFirst() {
-        let managedObjectContext = CoreDataManager.shared.managedObjectContext
-        let request = NSFetchRequest()
-        request.entity = NSEntityDescription.entityForName("GradeTerm", inManagedObjectContext: managedObjectContext)
+        let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
+        let request = NSFetchRequest<GradeTerm>( entityName: "GradeTerm")
         request.sortDescriptors = [NSSortDescriptor(key: "startDate", ascending: false)]
-        let terms = try? managedObjectContext.executeFetchRequest(request) as! [GradeTerm]
-        if let terms = terms where terms.count > 0 {
-            termsButton.enabled = true
+        let terms = try? managedObjectContext.fetch(request)
+        if let terms = terms , terms.count > 0 {
+            termsButton.isEnabled = true
 
             self.term = terms[0]
             self.tableView.reloadData()

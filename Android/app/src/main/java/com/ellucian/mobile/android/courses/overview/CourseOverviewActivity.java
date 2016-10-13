@@ -47,7 +47,9 @@ import com.ellucian.mobile.android.maps.MapUtils;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseInstructors;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseRoster;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -85,8 +87,7 @@ public class CourseOverviewActivity extends EllucianActivity  {
         String termId = incomingExtras.getString(Extra.COURSES_TERM_ID);
 	    // Determine if the roster is shown
 	    boolean isInstructor = incomingExtras.getBoolean(Extra.COURSES_IS_INSTRUCTOR);
-		String rosterVisibility = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, 
-				Utils.COURSE_ROSTER_VISIBILITY, "");
+        String rosterVisibility = incomingExtras.getString(Extra.COURSES_ROSTER_VISIBILITY);
 
 		showRoster = false;
 		if (TextUtils.isEmpty(rosterVisibility) || rosterVisibility.equals("none")) {
@@ -107,7 +108,7 @@ public class CourseOverviewActivity extends EllucianActivity  {
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-        tabLayout.setSelectedTabIndicatorColor(Utils.getColorHelper(this, R.color.tab_indicator_color));
+        tabLayout.setSelectedTabIndicatorColor(VersionSupportUtils.getColorHelper(this, R.color.tab_indicator_color));
 
         // Add tabs
         TabLayout.Tab detailsTab = tabLayout.newTab().setText(R.string.course_details);
@@ -122,7 +123,7 @@ public class CourseOverviewActivity extends EllucianActivity  {
             addIlpTabs(tabLayout);
         }
 
-        tabLayout.setOnTabSelectedListener(new MyTabListener(this, R.id.course_overview_frame));
+        tabLayout.addOnTabSelectedListener(new MyTabListener(this, R.id.course_overview_frame));
 
         registerCourseDetailsReceiver();
 
@@ -283,7 +284,7 @@ public class CourseOverviewActivity extends EllucianActivity  {
 	// This method is trigger in the course_roster_row layout
 	public void findRosterStudent(View view) {
 		if (Utils.isDirectoryPresent(this)) {
-            String studentFormattedName = (String) ((TextView) view).getText();
+            String studentFormattedName = ((TextView) view).getText().toString();
 
             Cursor cursor = getContentResolver().query(CourseRoster.CONTENT_URI,
                     new String[] {CourseRoster.ROSTER_FIRST_NAME, CourseRoster.ROSTER_LAST_NAME, CourseRoster.ROSTER_STUDENT_ID},
@@ -322,7 +323,7 @@ public class CourseOverviewActivity extends EllucianActivity  {
 	private void buildDirectoryQuery(String queryType, String query, String personId) {
     	Log.d(TAG, "Build directory query for: " + query);
 
-        String codeBaseVersion = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CODEBASE_VERSION, null);
+        String codeBaseVersion = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.MOBILESERVER_CODEBASE_VERSION, null);
         String directorySearchUrl = "";
 
         if (TextUtils.isEmpty(codeBaseVersion)) {
@@ -330,14 +331,14 @@ public class CourseOverviewActivity extends EllucianActivity  {
             isLegacy = true;
             switch (queryType) {
                 case DirectoryActivity.DIRECTORY_TYPE_STUDENT :
-                    directorySearchUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_STUDENT_SEARCH_URL, null);
+                    directorySearchUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_STUDENT_SEARCH_URL, null);
                     break;
                 case DirectoryActivity.DIRECTORY_TYPE_FACULTY :
-                    directorySearchUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_FACULTY_SEARCH_URL, null);
+                    directorySearchUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_FACULTY_SEARCH_URL, null);
                     break;
             }
     	} else {
-            directorySearchUrl = Utils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_BASE_SEARCH_URL, null);
+            directorySearchUrl = PreferencesUtils.getStringFromPreferences(this, Utils.CONFIGURATION, Utils.DIRECTORY_BASE_SEARCH_URL, null);
         }
 
         if (directoryTask != null) {
@@ -382,11 +383,11 @@ public class CourseOverviewActivity extends EllucianActivity  {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Utils.hideProgressIndicator(activity);
             boolean updated = intent.getBooleanExtra(CourseDetailsIntentService.PARAM_OUT_DATABASE_UPDATED, false);
             Log.d("CourseDetailsReceiver", "onReceive: database updated = " + updated);
             if(updated) {
                 Log.d("CourseDetailsReceiver.onReceive", "Course details retrieved and database updated");
-                Utils.hideProgressIndicator(activity);
             }
         }
 

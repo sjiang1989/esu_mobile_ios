@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -33,6 +33,7 @@
         android:textSize="12sp"
         android:padding="6dp"
         android:onClick="onAddToCartClicked"
+        tools:visibility="visible"
         android:visibility="gone" />
         
         

@@ -23,15 +23,15 @@ class ILPAssignmentsController: WKInterfaceController {
     var urlString : String?
     var cache: DefaultsCache?
     
-    let datetimeOutputFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.timeStyle = .ShortStyle
-        formatter.dateStyle = .ShortStyle
+    let datetimeOutputFormatter : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .short
         return formatter
         
         }()
     
-    override func awakeWithContext(context: AnyObject?) {
+    override func awake(withContext context: Any?) {
         let dictionary = context! as! Dictionary<String, AnyObject>
         self.internalKey = dictionary["internalKey"] as? String
         self.setTitle(dictionary["title"] as? String)
@@ -39,16 +39,16 @@ class ILPAssignmentsController: WKInterfaceController {
         
         cache = DefaultsCache(key: "ilp assignments \((self.internalKey)!)")
         
-        var data: [String: AnyObject] = [:]
+        var data: [String: String] = [:]
         
-        if urlString != nil {
-            data["url"] = self.urlString
+        if let urlString = self.urlString {
+            data["url"] = urlString
         }
-        if internalKey != nil {
-            data["internalKey"] = self.internalKey
+        if let internalKey = self.internalKey {
+            data["internalKey"] = internalKey
         }
         
-        if WatchConnectivityManager.instance.isUserLoggedIn() {
+        if WatchConnectivityManager.sharedInstance.isUserLoggedIn() {
             if let assignments = cache?.fetch() as! [[String: AnyObject]]? {
                 self.assignments = assignments
                 self.populateTable()
@@ -63,7 +63,7 @@ class ILPAssignmentsController: WKInterfaceController {
                 self.spinner.setHidden(false)
             }
             
-            WatchConnectivityManager.instance.sendActionMessage("fetch assignments", data: data, replyHandler: {
+            WatchConnectivityManager.sharedInstance.sendActionMessage("fetch assignments", data: data, replyHandler: {
                     (data) -> Void in
                 
                     self.retrievingDataLabel.setHidden(true)
@@ -72,13 +72,13 @@ class ILPAssignmentsController: WKInterfaceController {
 
                     self.assignments = data["assignments"] as! [[String:AnyObject]]
                     self.cache?.store(self.assignments)
-                    dispatch_async(dispatch_get_main_queue(), {
+                    DispatchQueue.main.async(execute: {
                         self.populateTable()
                     })
                 }, errorHandler: {
                     (error) -> Void in
                     
-                    dispatch_async(dispatch_get_main_queue(), {
+                    DispatchQueue.main.async(execute: {
                         // show error message
                         self.retrievingDataLabel.setHidden(true)
                         self.spinner.stopAnimating()
@@ -91,23 +91,23 @@ class ILPAssignmentsController: WKInterfaceController {
         }
     }
     
-    func createTodayDateRange() -> [NSDate] {
-        let cal = NSCalendar.currentCalendar()
-        let timezone = NSTimeZone.systemTimeZone()
+    func createTodayDateRange() -> [Date] {
+        var cal = Calendar.current
+        let timezone = TimeZone.current
         cal.timeZone = timezone
         
-        let beginComps = cal.components([.Year, .Month, .Day, .Hour, .Minute, .Second], fromDate: NSDate())
+        var beginComps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: Date())
         beginComps.hour = 0
         beginComps.minute = 0
         beginComps.second = 0
         
-        let endComps = cal.components([.Year, .Month, .Day, .Hour, .Minute, .Second], fromDate: NSDate())
+        var endComps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: Date())
         endComps.hour = 23
         endComps.minute = 59
         endComps.second = 59
         
-        let beginOfToday = cal.dateFromComponents(beginComps)!
-        let endOfToday = cal.dateFromComponents(endComps)!
+        let beginOfToday = cal.date(from: beginComps)!
+        let endOfToday = cal.date(from: endComps)!
         
         return [beginOfToday, endOfToday]
     }    
@@ -116,13 +116,13 @@ class ILPAssignmentsController: WKInterfaceController {
         assignmentsTable.setNumberOfRows(assignments.count, withRowType: "ILPAssignmentsTableRowController")
 
         var displayedAssignments = false
-        for (index, assignment) in self.assignments.enumerate() {
+        for (index, assignment) in self.assignments.enumerated() {
             displayedAssignments = true
-            let row = assignmentsTable.rowControllerAtIndex(index) as! ILPAssignmentsTableRowController
+            let row = assignmentsTable.rowController(at: index) as! ILPAssignmentsTableRowController
             row.titleLabel.setText(assignment["name"] as! String!)
 
             if assignment["courseName"] != nil && assignment["courseSectionNumber"] != nil {
-                if let courseNameString = assignment["courseName"] as! String!, courseSectionNumberString = assignment["courseSectionNumber"] as! String! {
+                if let courseNameString = assignment["courseName"] as! String!, let courseSectionNumberString = assignment["courseSectionNumber"] as! String! {
                     row.courseLabel.setText("\(courseNameString)-\(courseSectionNumberString)")
                 }
             } else if assignment["courseName"] != nil {
@@ -132,8 +132,8 @@ class ILPAssignmentsController: WKInterfaceController {
             }
 
             if assignment["dueDate"] != nil {
-                if let assignmentDate = assignment["dueDate"] as! NSDate! {
-                    let time = (self.datetimeOutputFormatter.stringFromDate(assignmentDate))
+                if let assignmentDate = assignment["dueDate"] as! Date! {
+                    let time = (self.datetimeOutputFormatter.string(from: assignmentDate))
                     row.timeLabel.setText(time)
                 }
             } else {
@@ -141,7 +141,7 @@ class ILPAssignmentsController: WKInterfaceController {
             }
         }
         
-        if WatchConnectivityManager.instance.isUserLoggedIn() {
+        if WatchConnectivityManager.sharedInstance.isUserLoggedIn() {
             self.signInLabel.setHidden(true)
             noAssignments.setHidden(displayedAssignments)
         } else {
@@ -153,7 +153,7 @@ class ILPAssignmentsController: WKInterfaceController {
 
     }
     
-    override func contextForSegueWithIdentifier(segueIdentifier: String, inTable table: WKInterfaceTable, rowIndex: Int) -> AnyObject? {
+    override func contextForSegue(withIdentifier segueIdentifier: String, in table: WKInterfaceTable, rowIndex: Int) -> Any? {
         if (segueIdentifier == "ilp-assignment-detail") {
             return self.assignments![rowIndex]
         }

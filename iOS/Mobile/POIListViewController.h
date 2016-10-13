@@ -9,12 +9,10 @@
 #import <UIKit/UIKit.h>
 #import "Module.h"
 
-@interface POIListViewController : UITableViewController<NSFetchedResultsControllerDelegate, UISearchBarDelegate, UISearchDisplayDelegate>
+@interface POIListViewController : UITableViewController<NSFetchedResultsControllerDelegate, UISearchBarDelegate, UISearchResultsUpdating>
 
 @property (retain, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) NSFetchedResultsController *searchFetchedResultsController;
 @property (strong, nonatomic) Module *module;
-
-//@property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
 
 @end

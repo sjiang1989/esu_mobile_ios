@@ -8,7 +8,10 @@
 
 #import "EllucianUITableViewController.h"
 #import "EllucianUITableViewController.h"
-#import "Module+Attributes.h"
+#import "Module.h"
+#import "Ellucian_GO-Swift.h"
+
+@protocol CourseDetailViewControllerProtocol;
 
 @interface CourseAssignmentsViewController : EllucianUITableViewController<NSFetchedResultsControllerDelegate>
 
@@ -17,6 +20,8 @@
 @property (strong, nonatomic) NSString *courseNameAndSectionNumber;
 @property (strong, nonatomic) Module *module;
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
+@property (strong, nonatomic) NSString *courseName;
+@property (strong, nonatomic) NSString *courseSectionNumber;
 - (IBAction)dismiss:(id)sender;
 
 @end

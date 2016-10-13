@@ -45,6 +45,7 @@ import com.ellucian.mobile.android.provider.EllucianContract.News;
 import com.ellucian.mobile.android.provider.EllucianContract.NewsCategories;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -128,7 +129,7 @@ public class NewsActivity extends EllucianActivity implements LoaderManager.Load
     private void handleIntent(Intent intent) {
     	resetListPosition = false;
     	
-        String categoriesString = Utils.getStringFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, "");
+        String categoriesString = PreferencesUtils.getStringFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, "");
         if (!TextUtils.isEmpty(categoriesString)) {
         	filteredCategories = categoriesString.split(",");
         } else {
@@ -172,9 +173,9 @@ public class NewsActivity extends EllucianActivity implements LoaderManager.Load
 	        	}
 	        	categoriesString.append(filteredCategories[i]);
 	        }
-	        Utils.addStringToPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, categoriesString.toString());
+	        PreferencesUtils.addStringToPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES, categoriesString.toString());
     	} else {
-	        Utils.removeValuesFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES);    	
+	        PreferencesUtils.removeValuesFromPreferences(this, CATEGORY_DIALOG, moduleId + "_" + FILTERED_CATEGORIES);
 	    }
     	
     	if (dialogFragment != null) {
@@ -426,11 +427,11 @@ public class NewsActivity extends EllucianActivity implements LoaderManager.Load
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Utils.hideProgressIndicator(activity);
             boolean updated = intent.getBooleanExtra(NewsIntentService.PARAM_OUT_DATABASE_UPDATED, false);
             Log.d("NewsIntentServiceReceiver", "onReceive: database updated = " + updated);
             if (updated) {
                 Log.d("NewsIntentServiceReceiver.onReceive", "All news retrieved and database updated");
-                Utils.hideProgressIndicator(activity);
             }
         }
 

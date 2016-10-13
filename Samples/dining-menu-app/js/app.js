@@ -94,5 +94,15 @@ $(function() {
 					restaurants[i].setAttribute("class", "restaurant-embedded");
 				}
 			}
+			
+			
+			// Internal Pages - set up to allow text to flow into space where footer was
+			if(document.querySelector("footer")) {
+				$("article").addClass("embedded")
+			}
+			else {
+				$("article").removeClass("embedded")
+			}
+			
         }
 });

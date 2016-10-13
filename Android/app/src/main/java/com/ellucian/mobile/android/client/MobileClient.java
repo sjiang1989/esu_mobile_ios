@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client;
@@ -14,6 +14,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.webkit.CookieManager;
 
+import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.client.configuration.LastUpdatedResponse;
 import com.ellucian.mobile.android.client.configurationlist.ConfigurationListResponse;
@@ -38,6 +39,7 @@ import com.ellucian.mobile.android.client.registration.CartResponse;
 import com.ellucian.mobile.android.client.registration.EligibilityResponse;
 import com.ellucian.mobile.android.client.registration.SearchResponse;
 import com.ellucian.mobile.android.client.registration.TermsResponse;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -104,7 +106,7 @@ public class MobileClient {
 		jsonParser = builder.create();
 	}
 	
-	private String makeServerRequest(String requestUrl, boolean returnErrorCodesAsResponse) {
+	public String makeServerRequest(String requestUrl, boolean returnErrorCodesAsResponse) {
 		return makeServerRequest(requestUrl, returnErrorCodesAsResponse, null);
 	}
 	
@@ -114,10 +116,15 @@ public class MobileClient {
 		HttpURLConnection urlConnection = getConnection(requestUrl);
 	
 		if (urlConnection != null) {
-			if(headers != null) {
-				for(Map.Entry<String, String> entry : headers.entrySet()) {
-					urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
-				}
+			if(headers == null) {
+                headers = new HashMap<>();
+            }
+
+            headers.put(application.getString(R.string.ellucian_mobile_version_label),
+                    application.getString(R.string.ellucian_mobile_version));
+
+            for(Map.Entry<String, String> entry : headers.entrySet()) {
+                urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
 			}
 			urlConnection.setConnectTimeout(20000);
 			return handleResponse(urlConnection, returnErrorCodesAsResponse);
@@ -131,7 +138,7 @@ public class MobileClient {
 	}
 	
 	private String makeAuthenticatedServerRequest(String requestUrl, boolean returnErrorCodesAsResponse, Map<String, String> headers) {
-		String loginType = Utils.getStringFromPreferences(application, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
+		String loginType = PreferencesUtils.getStringFromPreferences(application, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
 		if("native".equals(loginType)) {
 			String username = application.getAppUserName();
 			String password = application.getAppUserPassword();
@@ -144,7 +151,7 @@ public class MobileClient {
 	}
 
 	public String makeAuthenticatedServerRequest(String requestUrl, String method, boolean returnErrorCodesAsResponse, String dataToBeWritten) {
-		String loginType = Utils.getStringFromPreferences(application, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
+		String loginType = PreferencesUtils.getStringFromPreferences(application, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
 		if("native".equals(loginType)) {
 			String username = application.getAppUserName();
 			String password = application.getAppUserPassword();
@@ -174,12 +181,17 @@ public class MobileClient {
 				} else {
 					urlConnection.setRequestMethod(REQUEST_GET);
 				}
-				if(headers != null) {
-					for(Map.Entry<String, String> entry : headers.entrySet()) {
-						urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
-					}
-				}
-				
+				if(headers == null) {
+                    headers = new HashMap<>();
+                }
+
+                headers.put(application.getString(R.string.ellucian_mobile_version_label),
+                        application.getString(R.string.ellucian_mobile_version));
+
+                for(Map.Entry<String, String> entry : headers.entrySet()) {
+                    urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+
 				if (!TextUtils.isEmpty(dataToBeWritten)) {
 					urlConnection.setDoOutput(true);
 					urlConnection.setRequestProperty("Content-Type", "application/json");
@@ -591,7 +603,7 @@ public class MobileClient {
 	
 	public CartResponse getCartList(String requestUrl) {
 		Log.d(TAG, "Retrieving Cart List");
-		Map<String, String> headers = new HashMap<String, String>();
+		Map<String, String> headers = new HashMap<>();
 		headers.put("Accept", "application/vnd.hedtech.v1+json");
 		return getResponseObject(CartResponse.class, requestUrl,  true, headers);
 	}
@@ -613,26 +625,24 @@ public class MobileClient {
 	
 	public SearchResponse findSections(String requestUrl) {
 		Log.d(TAG, "Searching for sections");
-		Map<String, String> headers = new HashMap<String, String>();
+		Map<String, String> headers = new HashMap<>();
 		headers.put("Accept", "application/vnd.hedtech.v1+json");
 		return getResponseObject(SearchResponse.class, requestUrl,  true, headers);
 	}
 	
 	public EligibilityResponse getEligibility(String requestUrl) {
 		Log.d(TAG, "Retrieving Eligibility");
-		Map<String, String> headers = new HashMap<String, String>();
+		Map<String, String> headers = new HashMap<>();
 		headers.put("Accept", "application/vnd.hedtech.v1+json");
 		return getResponseObject(EligibilityResponse.class, requestUrl,  true, headers);
 	}
 	
 	/** Url Utility Methods  */
 	public String addTermAndSectionToUrl(String requestUrl, String termId, String courseId) {
-		String modifiedUrl = requestUrl + "?term=" + termId + "&section=" + courseId;
-		return modifiedUrl;
+		return requestUrl + "?term=" + termId + "&section=" + courseId;
 	}
 	
 	public String addUserToUrl(String requestUrl) {
-		String modifiedUrl = requestUrl + "/" + application.getAppUserId();
-		return modifiedUrl;
+		return requestUrl + "/" + application.getAppUserId();
 	}
 }

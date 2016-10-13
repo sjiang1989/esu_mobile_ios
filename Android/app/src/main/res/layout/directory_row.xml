@@ -26,9 +26,7 @@
         android:layout_weight="3"
         android:orientation="vertical"
         android:gravity="center_vertical"
-        android:paddingLeft="8dp"
         android:paddingStart="8dp"
-        android:paddingRight="0dp"
         android:paddingEnd="0dp">
 
         <TextView

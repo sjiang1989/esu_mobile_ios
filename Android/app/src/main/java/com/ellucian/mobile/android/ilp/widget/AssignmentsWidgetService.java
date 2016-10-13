@@ -20,6 +20,7 @@ import com.ellucian.mobile.android.ilp.IlpListActivity;
 import com.ellucian.mobile.android.provider.EllucianContract.CourseAssignments;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Extra;
+import com.ellucian.mobile.android.util.PreferencesUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -98,7 +99,7 @@ public class AssignmentsWidgetService extends RemoteViewsService {
 
                 bundle.putBoolean(IlpListActivity.SHOW_DETAIL, true);
                 bundle.putBoolean(LAUNCHED_FROM_APPWIDGET, true);
-                String ilpUrl = Utils.getStringFromPreferences(context, Utils.CONFIGURATION, Utils.ILP_URL, "");
+                String ilpUrl = PreferencesUtils.getStringFromPreferences(context, Utils.CONFIGURATION, Utils.ILP_URL, "");
                 bundle.putString(Extra.COURSES_ILP_URL, ilpUrl);
                 i.putExtras(bundle);
                 row.setOnClickFillInIntent(R.id.assignment_widget_row, i);

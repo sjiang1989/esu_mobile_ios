@@ -9,12 +9,7 @@
 #import "RegistrationSearchResultsViewController.h"
 #import "RegistrationPlannedSection.h"
 #import "RegistrationTabBarController.h"
-#import "AppearanceChanger.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
 #import "RegistrationPlannedSectionDetailViewController.h"
-#import "Module+Attributes.h"
-#import "CurrentUser.h"
-#import "NSMutableURLRequest+BasicAuthentication.h"
 #import "RegistrationTerm.h"
 #import "Ellucian_GO-Swift.h"
 
@@ -35,12 +30,16 @@
     }
     
     [self updateStatusBar];
-    [self sendView:@"Registration search results list" forModuleNamed:self.registrationTabController.module.name];
+    [self sendView:@"Registration search results list" moduleName:self.registrationTabController.module.name];
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+
+    
+    UINib *cellNib = [UINib nibWithNibName:@"RegistrationSearchResultsHeaderFooterView" bundle:nil];
+    [self.tableView registerNib:cellNib forHeaderFooterViewReuseIdentifier:@"RegistrationSearchResultsHeaderFooterView"];
     
     //setup toolbar
     UIBarButtonItem *flexibleItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
@@ -64,17 +63,18 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    return 1;
+    return 2;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return [self.courses count];
+    NSArray *courses = [self sectionsFilteredByAuthorizationCodeRequired:(section == 0)];
+    return [courses count];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    RegistrationPlannedSection *plannedSection = [self.courses objectAtIndex:indexPath.row];
+    RegistrationPlannedSection *plannedSection = [self sectionForIndex:indexPath.row authorizationCodeRequired:(indexPath.section == 0)];
     
     NSString *CellIdentifier = @"Registration Course Cell";
     if( plannedSection.available && plannedSection.capacity && plannedSection.capacity > 0 ) {
@@ -167,14 +167,6 @@
     } else {
         checkmarkImageView.image = [UIImage imageNamed:@"Registration Circle"];
     }
-    
-    //    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7) {
-
-    //    } else {
-    //        cell.accessoryType = UITableViewCellAccessoryDetailDisclosureButton;
-    //    }
-    //    cell.accessoryView = [[UIImageView alloc ] initWithImage: [UIImage imageNamed:@"Registration Detail"]];
-
 
     UIImage *image = [UIImage imageNamed:@"Registration Detail"];
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -191,7 +183,7 @@
     
     if( plannedSection.available && plannedSection.capacity) {
         UIView *background = (UIView *)[cell viewWithTag:11];
-        background.layer.cornerRadius = 3.0f;
+        background.layer.cornerRadius = 6.0f;
         background.layer.borderColor = [UIColor colorWithRed:0.80 green:0.80 blue:0.80 alpha:1.0].CGColor;
         background.layer.borderWidth = 1.0f;
         
@@ -227,6 +219,13 @@
         UILabel *seatsLabel = (UILabel *)[cell viewWithTag:13];
         seatsLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"available seats/capacity", @"Localizable", [NSBundle mainBundle], @"%@/%@", @"available seats/capacity"), available, capacity];
     }
+    
+    if (indexPath.section % 2 == 0) {
+        cell.backgroundColor = [UIColor colorWithRed:0.98 green:0.68 blue:0.09 alpha:.2];
+    } else {
+        cell.backgroundColor = [UIColor clearColor];
+    }
+    
     return cell;
 
 }
@@ -234,20 +233,55 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if ( _allowAddToCart ) {
-        RegistrationPlannedSection *plannedSection = [self.courses objectAtIndex:indexPath.row];
+        RegistrationPlannedSection *plannedSection = [self sectionForIndex:indexPath.row authorizationCodeRequired:(indexPath.section == 0)];
         if(!plannedSection.selectedInSearchResults && [self shouldCheckForVariableCredits:plannedSection]) {
             NSString *title = [self titleForVariableCredits:plannedSection];
+            
+            UIAlertController *alertController = [UIAlertController
+                                                alertControllerWithTitle:NSLocalizedString(@"Credits", @"Credits label for registration")
+                                                message:title
+                                                preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertAction *cancelAction = [UIAlertAction
+                                           actionWithTitle:NSLocalizedString(@"Cancel", @"Cancel action")
+                                           style:UIAlertActionStyleCancel
+                                           handler:nil];
+            
+            UIAlertAction *okAction = [UIAlertAction
+                                       actionWithTitle:NSLocalizedString(@"OK", @"OK action")
+                                       style:UIAlertActionStyleDefault
+                                       handler:^(UIAlertAction *action)
+                                       {
+                                           NSString *text = [alertController.textFields.firstObject text];
+                                           plannedSection.credits = @([text floatValue]);
+                                           
+                                           plannedSection.selectedInSearchResults = !plannedSection.selectedInSearchResults;
+                                           [tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationNone];
+                                           [self updateStatusBar];
+                                       }];
+            
+            [alertController addAction:cancelAction];
+            [alertController addAction:okAction];
+            [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField)
+             {
+                 textField.placeholder = NSLocalizedString(@"Credits", @"Credits label for registration");
+                 textField.keyboardType = UIKeyboardTypeDecimalPad;
+                 [textField addTarget:self
+                               action:@selector(alertTextFieldDidChange:)
+                     forControlEvents:UIControlEventEditingChanged];
+                 textField.tag = [self.courses indexOfObject:plannedSection];
+                 textField.delegate = self;
+                 
 
-            UIAlertView * alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Credits", @"Credits label for registration") message:title delegate:self cancelButtonTitle:NSLocalizedString(@"Cancel", @"Cancel") otherButtonTitles:NSLocalizedString(@"OK", @"OK"), nil];
-            alert.tag = indexPath.row;
-            alert.delegate = self;
-            alert.alertViewStyle = UIAlertViewStylePlainTextInput;
-            UITextField * alertTextField = [alert textFieldAtIndex:0];
-            alertTextField.keyboardType = UIKeyboardTypeDecimalPad;
-            alertTextField.placeholder = NSLocalizedString(@"Credits", @"Credits label for registration");
-            [alert show];
+             }];
+            
+            okAction.enabled = NO;
+            [self presentViewController:alertController animated:YES completion:nil];
+            
+
         } else {
-            [self tableView:tableView addSectionToCart:indexPath];
+            plannedSection.selectedInSearchResults = !plannedSection.selectedInSearchResults;
+            [tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationNone];
+            [self updateStatusBar];
         }
     }
 }
@@ -263,37 +297,22 @@
     }
 }
 
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+
+- (void)alertTextFieldDidChange:(UITextField *)sender
 {
-    //managing variable credits
-    NSInteger row = alertView.tag;
-    if(buttonIndex == 1) {
-        NSString *text = [[alertView textFieldAtIndex:0] text];
-        RegistrationPlannedSection *plannedSection = [self.courses objectAtIndex:row];
-        plannedSection.credits = @([text floatValue]);
-        [self tableView:self.tableView addSectionToCart:[NSIndexPath indexPathForRow:row inSection:0]];
+    UIAlertController *alertController = (UIAlertController *)self.presentedViewController;
+    if (alertController)
+    {
+        RegistrationPlannedSection *plannedSection = [self.courses objectAtIndex:sender.tag];
+        UITextField *textField = alertController.textFields.firstObject;
+        UIAlertAction *okAction = alertController.actions.lastObject;
+        NSString *text = [textField text];
+        if([text length] > 0) {
+            okAction.enabled = [self validateEnteredVariableCreditValue:text forPlannedSection:plannedSection];
+        } else {
+            okAction.enabled = NO;
+        }
     }
-
-}
-
--(void)tableView:(UITableView *)tableView addSectionToCart:(NSIndexPath *)indexPath
-{
-    RegistrationPlannedSection *plannedSection = [self.courses objectAtIndex:indexPath.row];
-    plannedSection.selectedInSearchResults = !plannedSection.selectedInSearchResults;
-    [tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationNone];
-    [self updateStatusBar];
-    
-}
-
-- (BOOL)alertViewShouldEnableFirstOtherButton:(UIAlertView *)alertView
-{
-    if(alertView.tag == -1) return YES;
-    RegistrationPlannedSection *plannedSection = [self.courses objectAtIndex:alertView.tag];
-    NSString *text = [[alertView textFieldAtIndex:0] text];
-    if([text length] > 0) {
-        return [self validateEnteredVariableCreditValue:text forPlannedSection:plannedSection];
-    }
-    return NO;
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
@@ -322,7 +341,7 @@
 
 - (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath
 {
-    RegistrationPlannedSection *plannedSection = [self.courses objectAtIndex:indexPath.row];
+    RegistrationPlannedSection *plannedSection = [self sectionForIndex:indexPath.row authorizationCodeRequired:(indexPath.section == 0)];
     
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
         
@@ -375,7 +394,7 @@
 
 -(void) addToCart:(id)sender
 {
-    [self sendEventWithCategory:kAnalyticsCategoryUI_Action withAction:kAnalyticsActionButton_Press withLabel:@"Add to cart" withValue:nil forModuleNamed:self.registrationTabController.module.name];
+    [self sendEventWithCategory: Analytics.UI_Action action:Analytics.Button_Press label:@"Add to cart" moduleName:self.registrationTabController.module.name];
     [self updateCartRequestToServer];
     [self updateStatusBar];
     [self.tableView reloadData];
@@ -445,7 +464,7 @@
     NSError *jsonError;
     NSData * jsonData = [NSJSONSerialization dataWithJSONObject:postDictionary options:NSJSONWritingPrettyPrinted error:&jsonError];
     
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/update-cart", [self.registrationTabController.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/update-cart", [self.registrationTabController.module propertyForKey:@"registration"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]];
     NSString* planningTool = [self.module propertyForKey:@"planningTool"];
     if(planningTool) {
         urlString = [NSString stringWithFormat:@"%@?planningTool=%@", urlString, planningTool];
@@ -461,10 +480,11 @@
     
     [urlRequest setHTTPMethod:@"PUT"];
     [urlRequest setHTTPBody:jsonData];
-    [NSURLConnection sendAsynchronousRequest:urlRequest queue:[[NSOperationQueue alloc] init] completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+
+    NSURLSessionDataTask *downloadTask = [[NSURLSession sharedSession] dataTaskWithRequest:urlRequest completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if(data)
         {
-            [[NSNotificationCenter defaultCenter] removeObserver:self name:kLoginExecutorSuccess object:nil];
+            [[NSNotificationCenter defaultCenter] removeObserver:self name:CurrentUser.LoginExecutorSuccessNotification object:nil];
             
             NSDictionary* json = [NSJSONSerialization
                                   JSONObjectWithData:data
@@ -482,15 +502,23 @@
             }
         }
     }];
-    
+    [downloadTask resume];
+
     if(coursesAdded) {
-        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Registration", @"message for add to cart title")
-                                                    message:NSLocalizedString(@"Course(s) added to cart.", @"message for add to cart alert")
-                                                   delegate:self
-                                          cancelButtonTitle:NSLocalizedString(@"OK", @"OK")
-                                          otherButtonTitles:nil];
-        alert.tag = -1;
-        [alert show];
+        UIAlertController *alertController = [UIAlertController
+                                              alertControllerWithTitle:NSLocalizedString(@"Registration", @"message for add to cart title")
+                                              message:NSLocalizedString(@"Course(s) added to cart.", @"message for add to cart alert")
+                                              preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction *okAction = [UIAlertAction
+                                   actionWithTitle:NSLocalizedString(@"OK", @"OK action")
+                                   style:UIAlertActionStyleDefault
+                                   handler:^(UIAlertAction *action)
+                                   {
+                                       NSLog(@"OK action");
+                                   }];
+        
+        [alertController addAction:okAction];
+        [self presentViewController:alertController animated:YES completion:nil];
     }
 }
 
@@ -586,6 +614,45 @@
         } return NO;
     }
     return NO;
+}
+
+-(NSArray *)sectionsFilteredByAuthorizationCodeRequired:(BOOL)authorizationCodeRequired {
+    NSPredicate *predicate;
+    if (authorizationCodeRequired) {
+        predicate = [NSPredicate predicateWithFormat:@"authorizationCodeRequired = YES"];
+    } else {
+        predicate = [NSPredicate predicateWithFormat:@"authorizationCodeRequired = NO"];
+    }
+    NSArray *courses = [self.courses filteredArrayUsingPredicate:predicate];
+    return courses;
+}
+
+-(RegistrationPlannedSection *) sectionForIndex:(NSUInteger) row authorizationCodeRequired:(BOOL) authorizationCodeRequired {
+    
+    NSArray *plannedSections = [self sectionsFilteredByAuthorizationCodeRequired:authorizationCodeRequired];
+    RegistrationPlannedSection *plannedSection = [plannedSections objectAtIndex: row];
+    return plannedSection;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    if (section == 0 && [tableView.dataSource tableView:tableView numberOfRowsInSection:section] > 0) {
+        return 30;
+    } else {
+        return 1;
+    }
+}
+
+-(UIView*) tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    if (section == 0 && [tableView.dataSource tableView:tableView numberOfRowsInSection:section] > 0) {
+        RegistrationSearchResultsHeaderFooterView *header=[tableView dequeueReusableHeaderFooterViewWithIdentifier:@"RegistrationSearchResultsHeaderFooterView"];
+        
+        header.warningImage.image = [header.warningImage.image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        [header.warningImage setTintColor:[UIColor whiteColor]];
+
+        return header;
+    } else {
+        return nil;
+    }
 }
 
 @end

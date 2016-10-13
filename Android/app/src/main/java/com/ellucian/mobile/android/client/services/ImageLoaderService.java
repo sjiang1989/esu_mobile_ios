@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client.services;
@@ -7,7 +7,6 @@ package com.ellucian.mobile.android.client.services;
 import android.app.IntentService;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.ImageView;
@@ -22,16 +21,19 @@ import java.util.List;
 public class ImageLoaderService extends IntentService {
 	private static final String TAG = ImageLoaderService.class.getSimpleName();
 	public static final String ACTION_FINISHED = "com.ellucian.mobile.android.client.services.ImageLoaderService.action.updated";
-	
-	
-	public ImageLoaderService() {
+	private boolean broadcastWhenDone;
+    private List<String> imageUrlList;
+    private int imageCounter = 0;
+    private int imagesToDownload = 0;
+
+    public ImageLoaderService() {
 		super("ImageLoaderService");
 	}
 	@Override
 	protected void onHandleIntent(Intent intent) {
-		List<String> imageUrlList = intent.getStringArrayListExtra(Extra.IMAGE_URL_LIST);
-		boolean broadcastWhenDone = intent.getBooleanExtra(Extra.SEND_BROADCAST, false);
-		new ImageLoaderAsyncTask(imageUrlList, broadcastWhenDone).execute();
+		imageUrlList = intent.getStringArrayListExtra(Extra.IMAGE_URL_LIST);
+		broadcastWhenDone = intent.getBooleanExtra(Extra.SEND_BROADCAST, false);
+        downloadImages();
 	}
 	
 	private void sendBroadcast() {
@@ -42,77 +44,61 @@ public class ImageLoaderService extends IntentService {
 		broadcastManager.sendBroadcast(broadcastIntent);
 	}
 	
-	public class ImageLoaderAsyncTask extends AsyncTask<Void, Void, Void> {
+    private void downloadImages() {
+        AQuery aq = new AQuery(ImageLoaderService.this);
+        Log.v("broadcastWhenDone", ""+broadcastWhenDone);
+        for (String imageUrl : imageUrlList) {
+            Bitmap bit = aq.getCachedImage(imageUrl);
+            if (bit == null) {
+                // If cached imaged does not exist add to number to be downloaded and
+                // start asynchronous download of that image
+                Log.d(TAG, "Image could not be found in cache, starting download of: \n" + imageUrl);
+                imagesToDownload++;
+                ImageView iv = new ImageView(ImageLoaderService.this);
+                // If marked for broadcast each image will add an counter in their callbacks
+                if (broadcastWhenDone) {
+                    try {
+                        aq.id(iv).image(imageUrl, false, true, 0, 0,
+                                new BitmapAjaxCallback() {
 
-		private final boolean broadcastWhenDone;
-		private final List<String> imageUrlList;
-		private int imagesToDownload = 0;
-		private int imageCounter = 0;
-		
-		public ImageLoaderAsyncTask(List<String> imageUrlList, boolean b) {
-			this.imageUrlList = imageUrlList;
-			this.broadcastWhenDone = b;
-		}
-		
-		@Override
-		protected Void doInBackground(Void... params) {
+                                    @Override
+                                    public void callback(String url,
+                                            ImageView view, Bitmap bitmap,
+                                            AjaxStatus status) {
+                                        view.setImageBitmap(bitmap);
+                                        imageCounter++;
+                                        Log.d(TAG, "Image downloaded "
+                                                + imageCounter + " " + url);
+                                    }
+                                });
+                    } catch (Exception e) {
+                        Log.e(TAG, "downloadImages() failed. Exception: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                } else {
+                    aq.id(iv).image(imageUrl, false, true);
+                }
+            }
+        }
 
-			AQuery aq = new AQuery(ImageLoaderService.this);
-			Log.v("broadcastWhenDone", ""+broadcastWhenDone);
-			for (String imageUrl : imageUrlList) {
-				Bitmap bit = aq.getCachedImage(imageUrl);
-				if (bit == null) {
-					// If cached imaged does not exist add to number to be downloaded and
-					// start asynchronous download of that image
-					Log.d(TAG, "Image could not be found in cache, starting download of: \n" + imageUrl);
-					imagesToDownload++;
-					ImageView iv = new ImageView(ImageLoaderService.this);
-					// If marked for broadcast each image will add an counter in their callbacks
-					if (broadcastWhenDone) {
-						try {
-							aq.id(iv).image(imageUrl, false, true, 0, 0,
-									new BitmapAjaxCallback() {
+        Log.d("OnHandleIntent", "Number of images to download: " + imagesToDownload);
 
-										@Override
-										public void callback(String url,
-												ImageView view, Bitmap bitmap,
-												AjaxStatus status) {
-											view.setImageBitmap(bitmap);
-											imageCounter++;
-											Log.d(TAG, "Image downloaded "
-													+ imageCounter + " " + url);
-										}
-									});
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					} else {
-						aq.id(iv).image(imageUrl, false, true);
-					}	
-				} 
-			}
-			
-			
-			Log.d("OnHandleIntent", "Number of images to download: " + imagesToDownload);
-			
-			if (broadcastWhenDone) {
-				int checks = 0;
-				// Keep checking to see if all the image callbacks have been fired
-				while (imageCounter < imagesToDownload) {
-					try {
-						Thread.sleep(1000);
-						if (checks >= 10) {
-							Log.d("TAG", "Waited 10 seconds for images to download... continuing");
-							break;
-						}
-						checks++;
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}			
-				sendBroadcast();
-			}
-			return null;
-		}
+        if (broadcastWhenDone) {
+            int checks = 0;
+            // Keep checking to see if all the image callbacks have been fired
+            while (imageCounter < imagesToDownload) {
+                try {
+                    Thread.sleep(1000);
+                    if (checks >= 30) {
+                        Log.d("TAG", "Waited 30 seconds for images to download... continuing");
+                        break;
+                    }
+                    checks++;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            sendBroadcast();
+        }
 	}
 }

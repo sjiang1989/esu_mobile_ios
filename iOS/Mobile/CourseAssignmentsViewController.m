@@ -7,14 +7,12 @@
 //
 
 #import "CourseAssignmentsViewController.h"
-#import "CurrentUser.h"
-#import "AuthenticatedRequest.h"
-#import "EmptyTableViewCell.h"
 #import "CourseAssignment.h"
 #import "CourseAssignmentDetailViewController.h"
-#import "UIViewController+GoogleAnalyticsTrackerSupport.h"
+#import "Ellucian_GO-Swift.h"
+#import "Module.h"
 
-@interface CourseAssignmentsViewController ()
+@interface CourseAssignmentsViewController () <CourseDetailViewControllerProtocol>
 
 @property (strong, nonatomic) NSDateFormatter *datetimeFormatter;
 @property (strong, nonatomic) NSDateFormatter *datetimeOutputFormatter;
@@ -35,19 +33,19 @@
 	}
     
     self.navigationItem.title = self.courseNameAndSectionNumber;
-    if([CurrentUser sharedInstance].isLoggedIn) {
-        [self fetchAssignments:self];
-    }
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fetchAssignments:) name:kLoginExecutorSuccess object:nil];
-    
-    
+
+    [self fetchAssignments:self];
+}
+
+-(NSString *)courseNameAndSectionNumber
+{
+    return [NSString stringWithFormat:@"%@-%@", self.courseName, self.courseSectionNumber];
 }
 
 -(void) viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    [self sendView:@"Course assignments list" forModuleNamed:self.module.name];
+    [self sendView:@"Course assignments list" moduleName:self.module.name];
 }
 
 - (NSFetchedResultsController *)fetchedResultsController {
@@ -195,7 +193,7 @@
     NSManagedObjectContext *importContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     importContext.parentContext = self.module.managedObjectContext;
 
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/%@/assignments?term=%@", [self.module propertyForKey:@"ilp"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.sectionId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding], [self.termId stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/%@/assignments?term=%@", [self.module propertyForKey:@"ilp"], [[[CurrentUser sharedInstance] userid]  stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.sectionId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]], [self.termId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
 
     [importContext performBlock: ^{
         

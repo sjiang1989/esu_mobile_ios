@@ -12,7 +12,7 @@
 
 @class Module;
 
-@interface RegistrationPlannedSectionDetailViewController : UIViewController <UIPopoverControllerDelegate, DetailSelectionDelegate, UISplitViewControllerDelegate, UIActionSheetDelegate>
+@interface RegistrationPlannedSectionDetailViewController : UIViewController <DetailSelectionDelegate, UISplitViewControllerDelegate>
 
 @property (strong, nonatomic) IBOutlet UIView *maskView;
 
@@ -65,7 +65,6 @@
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *facultyConstraint;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *creditLabelConstraint;
 
-@property (nonatomic, strong) UIPopoverController *masterPopover;
 @property (strong, nonatomic) Module *module;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *deleteButtonItem;
 @property (weak, nonatomic) IBOutlet UIToolbar *deleteFromCartToolbar;

@@ -12,6 +12,10 @@
         app:showAsAction="ifRoom"
         android:title="@string/menu_search" />
     <item
+        android:id="@+id/maps_campus"
+        app:showAsAction="always"
+        android:title="@string/label_campus" />
+    <item
         android:id="@+id/maps_layers"
         app:showAsAction="never"
         android:title="@string/layers" />

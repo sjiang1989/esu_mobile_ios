@@ -1,10 +1,11 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.view;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.widget.LinearLayout;
@@ -35,8 +36,16 @@ public class BlockView extends LinearLayout {
 
         ((TextView) findViewById(R.id.course_label)).setText(courseLabel);
         ((TextView) findViewById(R.id.course_title)).setText(title);
-        ((TextView) findViewById(R.id.course_location)).setText(location);
-        ((TextView) findViewById(R.id.course_time)).setText(time);
+        if (!TextUtils.isEmpty(location)) {
+            ((TextView) findViewById(R.id.course_location)).setText(location);
+        } else {
+            findViewById(R.id.course_location).setVisibility(GONE);
+        }
+        if (!TextUtils.isEmpty(time)) {
+            ((TextView) findViewById(R.id.course_time)).setText(time);
+        } else {
+            findViewById(R.id.course_time).setVisibility(GONE);
+        }
 
         mStartTime = startTime;
         mEndTime = endTime;

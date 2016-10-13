@@ -3,7 +3,7 @@
 #import "CalendarViewAllDayGridView.h"
 #import "CalendarViewDayGridView.h"
 #import <QuartzCore/QuartzCore.h>
-#import "AppearanceChanger.h"
+#import "Ellucian_GO-Swift.h"
 #import "CalendarViewDayGridView.h"
 
 static const unsigned int HOURS_IN_DAY                   = 25; // Beginning and end of day is include twice
@@ -60,12 +60,7 @@ static const unsigned int ALL_DAY_VIEW_EMPTY_SPACE       = 3;
                                      fontHeight * SPACE_BETWEEN_HOUR_LABELS * HOURS_IN_DAY);
     self.scrollView.contentSize = CGSizeMake(CGRectGetWidth(self.bounds),
                                              CGRectGetHeight(self.allDayGridView.bounds) + CGRectGetHeight(self.gridView.bounds));
-    
-    if([AppearanceChanger isIOS8AndRTL]) {
-        [self.leftArrow setImage:[UIImage imageNamed:@"calendarview_rightArrow"] forState:UIControlStateNormal];
-        [self.rightArrow setImage:[UIImage imageNamed:@"calendarview_leftArrow"] forState:UIControlStateNormal];
-    }
-    
+
     self.dateLabel.text = [self titleText];
     [self.gridView setNeedsDisplay];
     
@@ -221,12 +216,6 @@ static const unsigned int ALL_DAY_VIEW_EMPTY_SPACE       = 3;
 
 - (void)dateWasSelected:(NSDate *)selectedDate element:(id)element {
     self.day = selectedDate;
-}
-
-- (IBAction)showDatePicker:(id)sender {
-    
-    self.datePicker = [[CalendarActionSheetDatePicker alloc] initWithDate:self.day target:self action:@selector(dateWasSelected:element:) origin:sender];
-    [self.datePicker showActionSheetPicker];
 }
 
 - (NSDate *)nextDayFromDate:(NSDate *)date {

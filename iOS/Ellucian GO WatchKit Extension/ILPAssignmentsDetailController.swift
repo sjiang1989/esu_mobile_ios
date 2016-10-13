@@ -16,10 +16,10 @@ class ILPAssignmentsDetailController: WKInterfaceController {
     
     var assignment : Dictionary<String, AnyObject>?
     
-    let datetimeOutputFormatter : NSDateFormatter = {
-        var formatter = NSDateFormatter()
-        formatter.timeStyle = .ShortStyle
-        formatter.dateStyle = .ShortStyle
+    let datetimeOutputFormatter : DateFormatter = {
+        var formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .short
         return formatter
         
         }()
@@ -29,14 +29,14 @@ class ILPAssignmentsDetailController: WKInterfaceController {
     @IBOutlet var courseNameLabel: WKInterfaceLabel!
     @IBOutlet var descriptionLabel: WKInterfaceLabel!
 
-    override func awakeWithContext(context: AnyObject?) {
+    override func awake(withContext context: Any?) {
         self.assignment = context as? Dictionary<String, AnyObject>
         
         if let assignment = self.assignment {
             self.titleLabel.setText(assignment["name"] as! String!)
             
             if assignment["courseName"] != nil && assignment["courseSectionNumber"] != nil {
-                if let courseNameString = assignment["courseName"] as! String!, courseSectionNumberString = assignment["courseSectionNumber"] as! String! {
+                if let courseNameString = assignment["courseName"] as! String!, let courseSectionNumberString = assignment["courseSectionNumber"] as! String! {
                     self.courseNameLabel.setText("\(courseNameString)-\(courseSectionNumberString)")
                 }
             } else if assignment["courseName"] != nil {
@@ -44,8 +44,8 @@ class ILPAssignmentsDetailController: WKInterfaceController {
             }
             
             if assignment["dueDate"] != nil {
-                if let assignmentDate = assignment["dueDate"] as! NSDate! {
-                    let time = (self.datetimeOutputFormatter.stringFromDate(assignmentDate))
+                if let assignmentDate = assignment["dueDate"] as! Date! {
+                    let time = (self.datetimeOutputFormatter.string(from: assignmentDate))
                     self.timeLabel.setText(time)
                 }
             } else {
@@ -59,25 +59,26 @@ class ILPAssignmentsDetailController: WKInterfaceController {
     @IBAction func addReminder() {
         let eventStore : EKEventStore = EKEventStore()
         
-        eventStore.requestAccessToEntityType(.Reminder) { (granted, error) -> Void in
+        eventStore.requestAccess(to: .reminder) { (granted, error) -> Void in
             //
             if granted {
                 let reminder:EKReminder = EKReminder(eventStore: eventStore)
                 reminder.title = self.assignment!["name"] as! String!
                 reminder.calendar = eventStore.defaultCalendarForNewReminders()
                 
-                let date = self.assignment!["dueDate"] as! NSDate!
-                let calendar = NSCalendar.currentCalendar()
-                let dueDateComponents = calendar.components([.Year, .Month, .Day, .Hour, .Minute, .Second], fromDate: date)
+                let date = self.assignment!["dueDate"] as! Date!
+                let calendar = Calendar.current
+                let dueDateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date!)
                 reminder.dueDateComponents = dueDateComponents
-                let alarm:EKAlarm = EKAlarm(absoluteDate: date)
+                let alarm = EKAlarm(absoluteDate: date!)
                 reminder.alarms = [alarm]
-                let formattedDate = NSDateFormatter.localizedStringFromDate(date, dateStyle: .ShortStyle, timeStyle: .ShortStyle)
-                let localizedDue = NSString.localizedStringWithFormat(NSLocalizedString("Due: %@", comment: "due date label with date"), formattedDate)
+                let formattedDate = DateFormatter.localizedString(from: date!, dateStyle: .short, timeStyle: .short)
+
+                let localizedDue = String.localizedStringWithFormat(NSLocalizedString("Due: %@", comment: "due date label with date"), formattedDate)
                 
                 var reminderCourseName : String?
                 if self.assignment!["courseName"] != nil && self.assignment!["courseSectionNumber"] != nil {
-                    if let courseNameString = self.assignment!["courseName"] as! String!, courseSectionNumberString = self.assignment!["courseSectionNumber"] as! String! {
+                    if let courseNameString = self.assignment!["courseName"] as! String!, let courseSectionNumberString = self.assignment!["courseSectionNumber"] as! String! {
                         reminderCourseName = ("\(courseNameString)-\(courseSectionNumberString)")
                     }
                 } else if self.assignment!["courseName"] != nil {
@@ -97,24 +98,24 @@ class ILPAssignmentsDetailController: WKInterfaceController {
             //
         }
         
-        eventStore.requestAccessToEntityType(.Reminder) { (granted, error) -> Void in
+        eventStore.requestAccess(to: .reminder) { (granted, error) -> Void in
             if granted {
                 let reminder:EKReminder = EKReminder(eventStore: eventStore)
                 reminder.title = self.assignment!["name"] as! String!
                 reminder.calendar = eventStore.defaultCalendarForNewReminders()
                 
-                let date = self.assignment!["dueDate"] as! NSDate!
-                let calendar = NSCalendar.currentCalendar()
-                let dueDateComponents = calendar.components([.Year, .Month, .Day, .Hour, .Minute, .Second], fromDate: date)
+                let date = self.assignment!["dueDate"] as! Date!
+                let calendar = Calendar.current
+                let dueDateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date!)
                 reminder.dueDateComponents = dueDateComponents
-                let alarm:EKAlarm = EKAlarm(absoluteDate: date)
+                let alarm:EKAlarm = EKAlarm(absoluteDate: date!)
                 reminder.alarms = [alarm]
-                let formattedDate = NSDateFormatter.localizedStringFromDate(date, dateStyle: .ShortStyle, timeStyle: .ShortStyle)
-                let localizedDue = NSString.localizedStringWithFormat(NSLocalizedString("Due: %@", comment: "due date label with date"), formattedDate)
+                let formattedDate = DateFormatter.localizedString(from: date!, dateStyle: .short, timeStyle: .short)
+                let localizedDue = String.localizedStringWithFormat(NSLocalizedString("Due: %@", comment: "due date label with date"), formattedDate)
                 
                 var reminderCourseName : String?
                 if self.assignment!["courseName"] != nil && self.assignment!["courseSectionNumber"] != nil {
-                    if let courseNameString = self.assignment!["courseName"] as! String!, courseSectionNumberString = self.assignment!["courseSectionNumber"] as! String! {
+                    if let courseNameString = self.assignment!["courseName"] as! String!, let courseSectionNumberString = self.assignment!["courseSectionNumber"] as! String! {
                         reminderCourseName = ("\(courseNameString)-\(courseSectionNumberString)")
                     }
                 } else if self.assignment!["courseName"] != nil {
@@ -136,13 +137,13 @@ class ILPAssignmentsDetailController: WKInterfaceController {
     @IBAction func addToCalendar() {
         
         let eventStore : EKEventStore = EKEventStore()
-        eventStore.requestAccessToEntityType(.Event, completion: {
+        eventStore.requestAccess(to: .event, completion: {
             granted, error in
             if (granted) && (error == nil) {
                 
                 let event:EKEvent = EKEvent(eventStore: eventStore)
                 event.title = self.assignment!["name"] as! String!
-                if let dueDate = self.assignment!["dueDate"] as! NSDate! {
+                if let dueDate = self.assignment!["dueDate"] as! Date! {
                     event.startDate = dueDate
                     event.endDate = dueDate
                 }
@@ -151,7 +152,7 @@ class ILPAssignmentsDetailController: WKInterfaceController {
                 
                 var location : String?
                 if self.assignment!["courseName"] != nil && self.assignment!["courseSectionNumber"] != nil {
-                    if let courseNameString = self.assignment!["courseName"] as! String!, courseSectionNumberString = self.assignment!["courseSectionNumber"] as! String! {
+                    if let courseNameString = self.assignment!["courseName"] as! String!, let courseSectionNumberString = self.assignment!["courseSectionNumber"] as! String! {
                         location = ("\(courseNameString)-\(courseSectionNumberString)")
                     }
                 } else if self.assignment!["courseName"] != nil {

@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.ellucian.elluciango">
 
+    <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 	<uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
 	<!-- GCM (Notification) permissions -->
 	<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
@@ -21,7 +21,6 @@
 
 	<uses-feature android:glEsVersion="0x00020000" android:required="true"/>
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-feature android:required="false" android:name="android.hardware.location"/>
     <uses-feature android:required="false" android:name="android.hardware.location.gps"/>
     <uses-feature android:required="false" android:name="android.hardware.location.network"/>
@@ -33,6 +32,7 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.Ellucian"
         android:allowBackup="false"
+        android:resizeableActivity="true"
         android:supportsRtl="true" >
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
@@ -41,7 +41,7 @@
 
         <!-- ACTIVITIES -->
 
-        <!-- Main and Configuration -->
+        <!-- Main, Configuration and Settings -->
         <activity
             android:name="com.ellucian.mobile.android.MainActivity">
             <intent-filter android:label="@string/app_name">
@@ -114,6 +114,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.ellucian.mobile.android.settings.SettingsActivity"
+            android:label="@string/title_activity_settings" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.ellucian.mobile.android.MainActivity"/>
         </activity>
 
         <!-- Default -->
@@ -276,11 +284,18 @@
                 android:value="com.ellucian.mobile.android.MainActivity"/>
         </activity>
         
-        
+        <!-- Location Awareness -->
+        <activity
+            android:name="com.ellucian.mobile.android.notifications.LaunchModuleActivity"
+            android:label="@string/title_activity_launchModule" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.ellucian.mobile.android.MainActivity"/>
+        </activity>
+
         <!-- Maps -->
         <activity
             android:name="com.ellucian.mobile.android.maps.MapsActivity"
-            android:configChanges="orientation|keyboardHidden"
             android:label="@string/title_activity_maps" >
             <meta-data
                 android:name="android.app.default_searchable"
@@ -341,16 +356,18 @@
         <!-- Multimedia -->
         <activity
             android:name="com.ellucian.mobile.android.multimedia.VideoActivity"
-            android:label="@string/title_activity_video">
-            <meta-data
+            android:label="@string/title_activity_video"
+            android:configChanges="orientation|screenSize" >
+        <meta-data
         		android:name="android.support.PARENT_ACTIVITY"
         		android:value="com.ellucian.mobile.android.MainActivity"/>
         </activity>
 
         <activity
             android:name="com.ellucian.mobile.android.multimedia.AudioActivity"
-            android:label="@string/title_activity_audio">
-            <meta-data
+            android:label="@string/title_activity_audio"
+            android:configChanges="orientation|screenSize" >
+        <meta-data
         		android:name="android.support.PARENT_ACTIVITY"
         		android:value="com.ellucian.mobile.android.MainActivity"/>
         </activity>
@@ -447,29 +464,29 @@
 
 
 	<!-- SERVICES -->
-        <service android:name="com.ellucian.mobile.android.client.services.AuthenticateUserIntentService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.ConfigurationUpdateService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.CourseDetailsIntentService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.CourseGradesIntentService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.CourseRosterIntentService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.CourseAssignmentsIntentService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.CourseAnnouncementsIntentService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.CourseEventsIntentService" ></service>
-		<service android:name="com.ellucian.mobile.android.client.services.CoursesFullScheduleIntentService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.EventsIntentService" ></service>
+        <service android:name="com.ellucian.mobile.android.client.services.AuthenticateUserIntentService" />
+		<service android:name="com.ellucian.mobile.android.client.services.ConfigurationUpdateService" />
+		<service android:name="com.ellucian.mobile.android.client.services.CourseDetailsIntentService" />
+		<service android:name="com.ellucian.mobile.android.client.services.CourseGradesIntentService" />
+		<service android:name="com.ellucian.mobile.android.client.services.CourseRosterIntentService" />
+		<service android:name="com.ellucian.mobile.android.client.services.CourseAssignmentsIntentService" />
+		<service android:name="com.ellucian.mobile.android.client.services.CourseAnnouncementsIntentService" />
+		<service android:name="com.ellucian.mobile.android.client.services.CourseEventsIntentService" />
+		<service android:name="com.ellucian.mobile.android.client.services.CoursesFullScheduleIntentService" />
+        <service android:name="com.ellucian.mobile.android.client.services.EventsIntentService" />
         <service android:name="com.ellucian.mobile.android.client.services.FinancesBalanceIntentService" />
         <service android:name="com.ellucian.mobile.android.client.services.FinancesTransactionsIntentService" />
-        <service android:name="com.ellucian.mobile.android.client.services.GradesIntentService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.ImageLoaderService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.MapsIntentService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.NewsIntentService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.NotificationsIntentService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.NotificationsUpdateDatabaseService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.NotificationsUpdateServerService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.NumbersIntentService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.RegisterService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.RegistrationCartUpdateService" ></service>
-        <service android:name="com.ellucian.mobile.android.client.services.UpdateAssignmentIntentService" ></service>
+        <service android:name="com.ellucian.mobile.android.client.services.GradesIntentService" />
+        <service android:name="com.ellucian.mobile.android.client.services.ImageLoaderService" />
+        <service android:name="com.ellucian.mobile.android.client.services.MapsIntentService" />
+        <service android:name="com.ellucian.mobile.android.client.services.NewsIntentService" />
+        <service android:name="com.ellucian.mobile.android.client.services.NotificationsIntentService" />
+        <service android:name="com.ellucian.mobile.android.client.services.NotificationsUpdateDatabaseService" />
+        <service android:name="com.ellucian.mobile.android.client.services.NotificationsUpdateServerService" />
+        <service android:name="com.ellucian.mobile.android.client.services.NumbersIntentService" />
+        <service android:name="com.ellucian.mobile.android.client.services.RegisterService" />
+        <service android:name="com.ellucian.mobile.android.client.services.RegistrationCartUpdateService" />
+        <service android:name="com.ellucian.mobile.android.client.services.UpdateAssignmentIntentService" />
 
         <!-- GCM Listener -->
         <service
@@ -511,6 +528,14 @@
         <service android:name="com.google.android.gms.analytics.AnalyticsService"
                  android:enabled="true"
                  android:exported="false"/>
+
+        <!-- Beacon notification response listener -->
+        <receiver android:name="com.ellucian.mobile.android.client.locations.BeaconMuteBroadcastReceiver">
+            <intent-filter>
+                <action android:name="com.ellucian.mobile.android.client.locations.BeaconNotificationManager.MUTE_BEACON">
+                </action>
+            </intent-filter>
+        </receiver>
 
     </application>
 

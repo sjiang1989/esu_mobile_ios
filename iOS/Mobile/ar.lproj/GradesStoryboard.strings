@@ -16,9 +16,6 @@
 /* Class = "UILabel"; text = "No Grades Recorded"; ObjectID = "KqY-iF-mie"; */
 "KqY-iF-mie.text" = "لا توجد درجات مسجلة";
 
-/* Class = "UILabel"; text = "Loading"; ObjectID = "NNK-D3-ucv"; */
-"NNK-D3-ucv.text" = "جاري التحميل";
-
 /* Class = "UINavigationItem"; title = "Root View Controller"; ObjectID = "Qk7-HK-Uqh"; */
 "Qk7-HK-Uqh.title" = "التحكم في عرض الأصل";
 

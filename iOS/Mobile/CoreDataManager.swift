@@ -12,36 +12,29 @@ import CoreData
 
 class CoreDataManager: NSObject {
     
+    static let sharedInstance = CoreDataManager()
+    
     var _managedObjectContext: NSManagedObjectContext? = nil
     var _managedObjectModel: NSManagedObjectModel? = nil
     var _persistentStoreCoordinator: NSPersistentStoreCoordinator? = nil
-    
-    class var shared:CoreDataManager{
-        get {
-            struct Static {
-                static var instance : CoreDataManager? = nil
-                static var token : dispatch_once_t = 0
-            }
-            dispatch_once(&Static.token) { Static.instance = CoreDataManager() }
-            
-            return Static.instance!
-        }
+
+    private override init() {
+        
     }
     
-    
-    func initialize(){
-        self.managedObjectContext
-    }
+//    func initialize(){
+//        self.managedObjectContext
+//    }
     
     // MARK: Core Data stack
     
     var managedObjectContext: NSManagedObjectContext{
 
-        if NSThread.isMainThread() {
+        if Thread.isMainThread {
             if !(_managedObjectContext != nil) {
                 let coordinator = self.persistentStoreCoordinator
                 
-                _managedObjectContext = NSManagedObjectContext(concurrencyType: .MainQueueConcurrencyType)
+                _managedObjectContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
                 _managedObjectContext!.persistentStoreCoordinator = coordinator
                 
                 
@@ -49,28 +42,28 @@ class CoreDataManager: NSObject {
             }
         } else {
             
-            var threadContext : NSManagedObjectContext? = NSThread.currentThread().threadDictionary["NSManagedObjectContext"] as? NSManagedObjectContext;
+            var threadContext : NSManagedObjectContext? = Thread.current.threadDictionary["NSManagedObjectContext"] as? NSManagedObjectContext;
             
-            print(NSThread.currentThread().threadDictionary)
+            print(Thread.current.threadDictionary)
             
             if threadContext == nil {
                 print("creating new context")
-                threadContext = NSManagedObjectContext(concurrencyType: .PrivateQueueConcurrencyType)
+                threadContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
                 
                 if !(_managedObjectContext != nil) {
                     let coordinator = self.persistentStoreCoordinator
                     
-                    _managedObjectContext = NSManagedObjectContext(concurrencyType: .MainQueueConcurrencyType)
+                    _managedObjectContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
                     _managedObjectContext!.persistentStoreCoordinator = coordinator
 
                 }
 
-                threadContext!.parentContext = _managedObjectContext
-                threadContext!.name = NSThread.currentThread().description
+                threadContext!.parent = _managedObjectContext
+                threadContext!.name = Thread.current.description
                 
-                NSThread.currentThread().threadDictionary["NSManagedObjectContext"] = threadContext
+                Thread.current.threadDictionary["NSManagedObjectContext"] = threadContext
                 
-                NSNotificationCenter.defaultCenter().addObserver(self, selector:"contextWillSave:" , name: NSManagedObjectContextWillSaveNotification, object: threadContext)
+                NotificationCenter.default.addObserver(self, selector:#selector(CoreDataManager.contextWillSave(_:)) , name: NSNotification.Name.NSManagedObjectContextWillSave, object: threadContext)
                 
             }else{
                 print("using old context")
@@ -85,8 +78,8 @@ class CoreDataManager: NSObject {
     // If the model doesn't already exist, it is created from the application's model.
     var managedObjectModel: NSManagedObjectModel {
         if !(_managedObjectModel != nil) {
-            let modelURL = NSBundle.mainBundle().URLForResource("Mobile", withExtension: "momd")
-            _managedObjectModel = NSManagedObjectModel(contentsOfURL: modelURL!)
+            let modelURL = Bundle.main.url(forResource: "Mobile", withExtension: "momd")
+            _managedObjectModel = NSManagedObjectModel(contentsOf: modelURL!)
         }
         return _managedObjectModel!
     }
@@ -100,27 +93,26 @@ class CoreDataManager: NSObject {
         
         _persistentStoreCoordinator = NSPersistentStoreCoordinator(managedObjectModel: self.managedObjectModel)
         
-        let storeURL = AppGroupUtilities.applicationDocumentsDirectory()!.URLByAppendingPathComponent("Mobile.sqlite")
+        let storeURL = AppGroupUtilities.applicationDocumentsDirectory()!.appendingPathComponent("Mobile.sqlite")
         
-        let applicationDocumentsDirectoryOld = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first
+        let applicationDocumentsDirectoryOld = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
         
-        let oldStoreURL : NSURL! = applicationDocumentsDirectoryOld?.URLByAppendingPathComponent("Mobile.sqlite")
-
+        let oldStoreURL = applicationDocumentsDirectoryOld?.appendingPathComponent("Mobile.sqlite")
         
-        if NSFileManager.defaultManager().fileExistsAtPath(oldStoreURL.path!) {
+        if FileManager.default.fileExists(atPath: (oldStoreURL?.path)!) {
             //migrate
             do {
                 
-                try _persistentStoreCoordinator!.addPersistentStoreWithType(NSSQLiteStoreType, configuration: nil, URL: oldStoreURL, options: self.databaseOptions())
-                if let sourceStore = _persistentStoreCoordinator?.persistentStoreForURL(oldStoreURL)
+                try _persistentStoreCoordinator!.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: oldStoreURL, options: self.databaseOptions())
+                if let sourceStore = _persistentStoreCoordinator?.persistentStore(for: oldStoreURL!)
                 {
                     do {
                         
-                        let destinationStore = try _persistentStoreCoordinator?.migratePersistentStore(sourceStore, toURL: storeURL, options: self.databaseOptions(), withType: NSSQLiteStoreType)
+                        let destinationStore = try _persistentStoreCoordinator?.migratePersistentStore(sourceStore, to: storeURL, options: self.databaseOptions(), withType: NSSQLiteStoreType)
                         
                         if let _ = destinationStore {
                             
-                            try NSFileManager.defaultManager().removeItemAtURL(oldStoreURL)
+                            try FileManager.default.removeItem(at: oldStoreURL!)
                         }
                     } catch {
                         
@@ -134,7 +126,7 @@ class CoreDataManager: NSObject {
             // no migrate - store normal
             do {
                 
-                try _persistentStoreCoordinator!.addPersistentStoreWithType(NSSQLiteStoreType, configuration: nil, URL: storeURL, options: self.databaseOptions())
+                try _persistentStoreCoordinator!.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: self.databaseOptions())
             }
             catch {
                 abort()
@@ -149,12 +141,12 @@ class CoreDataManager: NSObject {
     
     // MARK: fetches
     
-    func executeFetchRequest(request:NSFetchRequest)-> Array<AnyObject>?{
+    func executeFetchRequest<T:NSFetchRequestResult>(_ request:NSFetchRequest<T>)-> [T]? {
         
-        var results:Array<AnyObject>?
-        self.managedObjectContext.performBlockAndWait{
+        var results:[T]?
+        self.managedObjectContext.performAndWait{
             do {
-                results = try self.managedObjectContext.executeFetchRequest(request)
+                results = try self.managedObjectContext.fetch(request)
             } catch let error as NSError {
                 print("Warning!! \(error.description)")
             } catch {
@@ -166,18 +158,18 @@ class CoreDataManager: NSObject {
     }
     
     
-    func executeFetchRequest(request:NSFetchRequest, completionHandler:(results: Array<AnyObject>?) -> Void)-> (){
+    func executeFetchRequest<T:NSFetchRequestResult>(_ request:NSFetchRequest<T>, completionHandler:@escaping (_ results: [T]?) -> Void)-> (){
         
-        self.managedObjectContext.performBlock{
-            var results:Array<AnyObject>?
+        self.managedObjectContext.perform{
+            var results:[T]?
             do {
-                results = try self.managedObjectContext.executeFetchRequest(request)
+                results = try self.managedObjectContext.fetch(request)
             } catch let error as NSError {
                 print("Warning!! \(error.description)")
             } catch {
                 fatalError()
             }
-            completionHandler(results: results)
+            completionHandler(results)
         }
         
     }
@@ -191,7 +183,7 @@ class CoreDataManager: NSObject {
         let context:NSManagedObjectContext = self.managedObjectContext;
         if context.hasChanges {
             
-            context.performBlockAndWait{
+            context.performAndWait{
                 
                 do {
                     try context.save()
@@ -201,9 +193,9 @@ class CoreDataManager: NSObject {
                     fatalError()
                 }
                 
-                if let parentContext = context.parentContext {
+                if let parentContext = context.parent {
                     
-                    parentContext.performBlockAndWait {
+                    parentContext.performAndWait {
                         do {
                             
                             try parentContext.save()
@@ -223,7 +215,7 @@ class CoreDataManager: NSObject {
     
     
     
-    func contextWillSave(notification:NSNotification){
+    func contextWillSave(_ notification:Notification){
         
         let context : NSManagedObjectContext! = notification.object as! NSManagedObjectContext
         let insertedObjects : Set<NSManagedObject> = context.insertedObjects
@@ -231,7 +223,7 @@ class CoreDataManager: NSObject {
         if insertedObjects.count != 0 {
             
             do {
-                try context.obtainPermanentIDsForObjects(Array(insertedObjects))
+                try context.obtainPermanentIDs(for: Array(insertedObjects))
             } catch let error as NSError {
                 print("Warning!! obtaining ids error \(error.description)")
             }
@@ -244,16 +236,16 @@ class CoreDataManager: NSObject {
     // MARK: Utilities
     
     
-    func deleteEntity(object:NSManagedObject)-> () {
-        object.managedObjectContext?.deleteObject(object)
+    func deleteEntity(_ object:NSManagedObject)-> () {
+        object.managedObjectContext?.delete(object)
     }
     
     
     
     // MARK: Application's Documents directory
 
-    func databaseOptions() -> Dictionary <String,AnyObject> {
-        var options =  Dictionary<String,AnyObject>()
+    func databaseOptions() -> [String : Any] {
+        var options = [String : Any]()
         options[NSMigratePersistentStoresAutomaticallyOption] = true
         options[NSInferMappingModelAutomaticallyOption] = true
         options[NSSQLitePragmasOption] = ["journal_mode":"MEMORY"]

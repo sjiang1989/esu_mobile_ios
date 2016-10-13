@@ -34,6 +34,7 @@ import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.util.DownloadImageTask;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.util.ArrayList;
 
@@ -231,7 +232,7 @@ public class DirectoryDetailFragment extends EllucianDefaultDetailFragment {
         Drawable addContactIcon = menu.findItem(R.id.directory_detail_add_to_contacts).getIcon();
         if (addContactIcon != null) {
             addContactIcon.mutate();
-            addContactIcon.setColorFilter(Utils.getColorHelper(context, R.color.menu_icon_color), PorterDuff.Mode.SRC_ATOP);
+            addContactIcon.setColorFilter(VersionSupportUtils.getColorHelper(context, R.color.menu_icon_color), PorterDuff.Mode.SRC_ATOP);
         }
 
         MenuItem infoMenuItem = menu.findItem(R.id.directory_detail_info);
@@ -239,7 +240,7 @@ public class DirectoryDetailFragment extends EllucianDefaultDetailFragment {
         if (!application.isUserAuthenticated()) {
             infoMenuItem.setVisible(true);
             infoMenuItem.getIcon().mutate();
-            infoMenuItem.getIcon().setColorFilter(Utils.getColorHelper(context, R.color.menu_icon_color), PorterDuff.Mode.SRC_ATOP);
+            infoMenuItem.getIcon().setColorFilter(VersionSupportUtils.getColorHelper(context, R.color.menu_icon_color), PorterDuff.Mode.SRC_ATOP);
         }
 
     }

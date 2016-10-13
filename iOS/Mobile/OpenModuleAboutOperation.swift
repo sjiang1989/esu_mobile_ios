@@ -12,7 +12,7 @@ class OpenModuleAboutOperation: OpenModuleAbstractOperation {
 
     override func main() {
         let storyboard = UIStoryboard(name: "AboutStoryboard", bundle: nil)
-        let controller = storyboard.instantiateViewControllerWithIdentifier("About") as! AboutViewController
+        let controller = storyboard.instantiateViewController(withIdentifier: "About") as! AboutViewController
         controller.title = NSLocalizedString("About", comment: "About menu item")
         showViewController(controller)
     }

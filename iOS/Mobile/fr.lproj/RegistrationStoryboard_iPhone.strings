@@ -11,10 +11,10 @@
 "3xX-L2-fn3.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "3zm-ep-Nxd"; */
-"3zm-ep-Nxd.text" = "Étiquette";
+"3zm-ep-Nxd.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "4Rh-O0-Xs9"; */
-"4Rh-O0-Xs9.text" = "Étiquette";
+"4Rh-O0-Xs9.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "4TW-bx-cDi"; */
 "4TW-bx-cDi.text" = "Libellé";
@@ -32,7 +32,7 @@
 "9Mc-6a-gDc.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "9QN-MZ-0sg"; */
-"9QN-MZ-0sg.text" = "Étiquette";
+"9QN-MZ-0sg.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "35t-l8-2LF"; */
 "35t-l8-2LF.text" = "Libellé";
@@ -44,7 +44,7 @@
 "58f-3E-CTN.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "696-Bg-Vla"; */
-"696-Bg-Vla.text" = "Étiquette";
+"696-Bg-Vla.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "Cii-0i-y7R"; */
 "Cii-0i-y7R.text" = "Libellé";
@@ -77,10 +77,10 @@
 "Ikn-we-XIr.text" = "Étiquette";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "JAM-Iq-W2d"; */
-"JAM-Iq-W2d.text" = "Étiquette";
+"JAM-Iq-W2d.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "KQd-l2-uy3"; */
-"KQd-l2-uy3.text" = "Étiquette";
+"KQd-l2-uy3.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "LQ3-h3-xmh"; */
 "LQ3-h3-xmh.text" = "Libellé";
@@ -107,10 +107,10 @@
 "T4o-xi-9Lh.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "T7m-XS-EtO"; */
-"T7m-XS-EtO.text" = "Étiquette";
+"T7m-XS-EtO.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "Ubi-kb-vAm"; */
-"Ubi-kb-vAm.text" = "Étiquette";
+"Ubi-kb-vAm.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "VCg-7o-fHG"; */
 "VCg-7o-fHG.text" = "Libellé";
@@ -122,13 +122,13 @@
 "Vee-IV-xWF.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "VlD-Nw-eqe"; */
-"VlD-Nw-eqe.text" = "Étiquette";
+"VlD-Nw-eqe.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "W6e-RY-xNR"; */
-"W6e-RY-xNR.text" = "Étiquette";
+"W6e-RY-xNR.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "WJU-l6-w4o"; */
-"WJU-l6-w4o.text" = "Étiquette";
+"WJU-l6-w4o.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "WTH-lf-Rp1"; */
 "WTH-lf-Rp1.text" = "Libellé";
@@ -188,7 +188,7 @@
 "dYu-hL-EX5.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "e32-y5-dm4"; */
-"e32-y5-dm4.text" = "Étiquette";
+"e32-y5-dm4.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "eE2-jT-lyc"; */
 "eE2-jT-lyc.text" = "Libellé";
@@ -200,10 +200,10 @@
 "f9u-9p-nB4.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "fY9-eT-CmT"; */
-"fY9-eT-CmT.text" = "Étiquette";
+"fY9-eT-CmT.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "fs7-pL-m93"; */
-"fs7-pL-m93.text" = "Étiquette";
+"fs7-pL-m93.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "g1Q-6e-iBu"; */
 "g1Q-6e-iBu.text" = "Libellé";
@@ -230,10 +230,10 @@
 "kIn-T8-Tkv.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "kV4-WC-MF3"; */
-"kV4-WC-MF3.text" = "Étiquette";
+"kV4-WC-MF3.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "mbv-lp-170"; */
-"mbv-lp-170.text" = "Étiquette";
+"mbv-lp-170.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "nTv-Ed-8sB"; */
 "nTv-Ed-8sB.text" = "Libellé";
@@ -266,10 +266,10 @@
 "v5u-C0-Eye.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "vba-cV-Yff"; */
-"vba-cV-Yff.text" = "Étiquette";
+"vba-cV-Yff.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "vqy-w5-kCI"; */
-"vqy-w5-kCI.text" = "Étiquette";
+"vqy-w5-kCI.text" = "Libellé";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "w9i-KX-E7W"; */
 "w9i-KX-E7W.text" = "Libellé";
@@ -287,7 +287,7 @@
 "wv6-JC-xRR.title" = "Élément";
 
 /* Class = "UILabel"; text = "Faculty"; ObjectID = "yPh-fT-0zm"; */
-"yPh-fT-0zm.text" = "Enseignant";
+"yPh-fT-0zm.text" = "Enseignant(s)";
 
 /* Class = "UILabel"; text = "Section Number"; ObjectID = "yTP-rU-pYP"; */
 "yTP-rU-pYP.text" = "Numéro d'UP";

@@ -13,8 +13,8 @@ class OpenModuleConfigurationSelectionOperation: OpenModuleAbstractOperation {
     
     override func main() {
         let storyboard = UIStoryboard(name: "ConfigurationSelectionStoryboard", bundle: nil)
-        let controller = storyboard.instantiateViewControllerWithIdentifier("ConfigurationSelector")
-        controller.modalPresentationStyle = .FullScreen
+        let controller = storyboard.instantiateViewController(withIdentifier: "ConfigurationSelector")
+        controller.modalPresentationStyle = .fullScreen
         showViewController(controller)
     }
 }

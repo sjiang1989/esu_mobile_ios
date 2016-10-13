@@ -137,7 +137,7 @@
 "WtM-Y5-Jw1.title" = "Item";
 
 /* Class = "UILabel"; text = "Search criteria"; ObjectID = "XU3-FU-Pq7"; */
-"XU3-FU-Pq7.text" = "Critérios da busca";
+"XU3-FU-Pq7.text" = "Critérios de busca";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "Xsi-ai-4vO"; */
 "Xsi-ai-4vO.text" = "Rótulo";
@@ -155,7 +155,7 @@
 "Z6O-uU-0fs.text" = "Título";
 
 /* Class = "UILabel"; text = "Select a Term and enter Search criteria"; ObjectID = "Z7a-PW-0lx"; */
-"Z7a-PW-0lx.text" = "Selecione um período e digite os critérios da busca.";
+"Z7a-PW-0lx.text" = "Selecione um período e digite os critérios de busca.";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "ZND-Mu-F1p"; */
 "ZND-Mu-F1p.text" = "Rótulo";

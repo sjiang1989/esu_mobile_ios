@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.adapter;
@@ -16,20 +16,19 @@ import android.widget.SimpleCursorAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
-@SuppressWarnings("unused")
 public class CheckableCursorAdapter extends SimpleCursorAdapter {
-	public List<Boolean> checkedStates = new ArrayList<Boolean>();
-	public final List<CheckBox> checkBoxes = new ArrayList<CheckBox>();
+	public List<Boolean> checkedStates = new ArrayList<>();
+	public final List<CheckBox> checkBoxes = new ArrayList<>();
 	
-	private final List<OnCheckBoxClickedListener> listenerList = new ArrayList<OnCheckBoxClickedListener>();
+	private final List<OnCheckBoxClickedListener> listenerList = new ArrayList<>();
 	
-	private final Context context;
-	private final int layout;
-	private final Cursor cursor;
+	public final Context context;
+    public final int layout;
+	public final Cursor cursor;
 	private final String[] from;
 	private final int[] to;
 	private final int flags;
-	private final int checkBoxResId;
+	protected final int checkBoxResId;
 
 	public CheckableCursorAdapter(Context context, int layout,
 			Cursor c, String[] from, int[] to, int flags, int checkBoxResId) {
@@ -93,9 +92,10 @@ public class CheckableCursorAdapter extends SimpleCursorAdapter {
 		bindView(row, context, cursor);
 		return row;
 	}
-	
+
+    @SuppressWarnings("unused")
 	public List<Integer> getCheckedPositions() {
-		List<Integer> checkedPositions = new ArrayList<Integer>();
+		List<Integer> checkedPositions = new ArrayList<>();
 		for (int i = 0; i < checkedStates.size(); i++) {
 			if (checkedStates.get(i)) {
 				checkedPositions.add(i);
@@ -111,33 +111,36 @@ public class CheckableCursorAdapter extends SimpleCursorAdapter {
 		}
 		return booleanArray;
 	}
-	
+
+    @SuppressWarnings("unused")
 	public void setCheckedStates(List<Boolean> value) {
 		checkedStates = value;
 	}
 	
 	public void setCheckedStates(boolean[] value) {
-		checkedStates = new ArrayList<Boolean>();
+		checkedStates = new ArrayList<>();
 		for (boolean state : value) {
 			checkedStates.add(state);
 		}
 	}
-	
+
+    @SuppressWarnings("unused")
 	public boolean isPositionChecked(int position) {
 		return checkedStates.get(position);
 	}
 
+    @SuppressWarnings("unused")
 	public void setCheckedPositionState(int position, boolean value) {
 		checkedStates.set(position, value);
 	}
 
-	public void resetCheckedStates() {
+	void resetCheckedStates() {
 		for (int i = 0; i < checkedStates.size(); i++) {
 			checkedStates.set(i, false);
 		}
 	}
 
-	public void setCheckBoxAtPosition(int position, CheckBox checkBox) {
+	protected void setCheckBoxAtPosition(int position, CheckBox checkBox) {
 		checkBoxes.set(position, checkBox);
 	}
 	

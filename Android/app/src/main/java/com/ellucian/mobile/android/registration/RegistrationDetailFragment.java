@@ -1,4 +1,4 @@
-// Copyright 2014 Ellucian Company L.P and its affiliates.
+// Copyright 2015-2016 Ellucian Company L.P and its affiliates.
 
 package com.ellucian.mobile.android.registration;
 
@@ -29,6 +29,7 @@ import com.ellucian.mobile.android.provider.EllucianContract.Modules;
 import com.ellucian.mobile.android.provider.EllucianContract.RegistrationLocations;
 import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Utils;
+import com.ellucian.mobile.android.util.VersionSupportUtils;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -39,8 +40,8 @@ import java.util.TimeZone;
 
 public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 	private static final String TAG = RegistrationDetailFragment.class.getSimpleName();
-	public static final String REQUESTING_LIST_FRAGMENT = "requestingListFragment";
-    public static final String REGISTRATION_MODULE_ID = "registrationModuleId";
+    static final String REQUESTING_LIST_FRAGMENT = "requestingListFragment";
+    static final String REGISTRATION_MODULE_ID = "registrationModuleId";
 
     private Activity activity;
 	
@@ -83,8 +84,9 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 		headerLayout.setBackgroundColor(Utils.getAccentColor(activity));
 		
 		int subheaderTextColor = Utils.getSubheaderTextColor(getActivity());
-		
-		TextView courseTitleView = (TextView) rootView.findViewById(R.id.course_title);
+        DateFormat localFormat = android.text.format.DateFormat.getDateFormat(getActivity());
+
+        TextView courseTitleView = (TextView) rootView.findViewById(R.id.course_title);
 		if (section != null) {
 			
 			if (!TextUtils.isEmpty(section.courseName)) {
@@ -105,26 +107,24 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 			}
 			
 			TextView datesView = (TextView) rootView.findViewById(R.id.dates);
-			if (!TextUtils.isEmpty(section.firstMeetingDate) && !TextUtils.isEmpty(section.lastMeetingDate)) {
-				String startDate = "";
-				String endDate = "";
+            String sectionStartDate = "";
+            String sectionEndDate = "";
+            if (!TextUtils.isEmpty(section.firstMeetingDate) && !TextUtils.isEmpty(section.lastMeetingDate)) {
 				DateFormat fromDatabase = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
 		    	try {
 					Date start = fromDatabase.parse(section.firstMeetingDate);
 					Date end = fromDatabase.parse(section.lastMeetingDate);
 
-					
-			    	DateFormat localFormat = android.text.format.DateFormat.getDateFormat(getActivity());
-			    	startDate = localFormat.format(start);
-			    	endDate = localFormat.format(end);
+			    	sectionStartDate = localFormat.format(start);
+			    	sectionEndDate = localFormat.format(end);
 				} catch (ParseException e) {
-					Log.e(TAG, e.getMessage());
-				}
+                    Log.e(TAG, "onCreateView: errorMessage:" + e.getMessage());
+                }
 		    	
 		    	datesView.setTextColor(subheaderTextColor);
 		    	datesView.setText(getString(R.string.date_to_date_format, 
-		    							startDate, 
-		    							endDate));
+		    							sectionStartDate,
+		    							sectionEndDate));
 			} else {
 				datesView.setVisibility(View.GONE);
 			}
@@ -217,14 +217,14 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
                     String capacityText = getString(R.string.remaining_capacity,
                             section.available,
                             section.capacity);
-                    Drawable meterImage = null;
+                    Drawable meterImage;
                     meterImage = getMeterImage(section, getContext());
 
                     seatsDetailsView.setVisibility(View.VISIBLE);
                     View seatsAvailView = rootView.findViewById(R.id.seats_available_box);
                     seatsAvailView.setVisibility(View.VISIBLE);
                     if (meterImage != null) {
-                        Utils.enableMirroredDrawable(meterImage);
+                        VersionSupportUtils.enableMirroredDrawable(meterImage);
                         ((ImageView) seatsAvailView.findViewById(R.id.seats_available_image)).setImageDrawable(meterImage);
                     }
                     ((TextView) seatsAvailView.findViewById(R.id.seats_available_text)).setText(capacityText);
@@ -251,9 +251,46 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 						}
 						meetingsDaysString += ": ";
 					}
-					
-					Date startTimeDate = null;
-					Date endTimeDate = null;
+
+                    DateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                    String meetingStartDate = "";
+                    String meetingEndDate = "";
+                    if (pattern.startDate != null) {
+                        try {
+                            Date start = dateFormat.parse(pattern.startDate);
+                            meetingStartDate = localFormat.format(start);
+                        } catch (ParseException e) {
+                            Log.e(TAG, "onCreateView: errorMessage:" + e.getMessage());
+                        }
+                    }
+                    if (pattern.endDate != null) {
+                        try {
+                            Date end = dateFormat.parse(pattern.endDate);
+                            meetingEndDate = localFormat.format(end);
+                        } catch (ParseException e) {
+                            Log.e(TAG, "onCreateView: errorMessage:" + e.getMessage());
+                        }
+                    }
+
+                    // If this meeting has a different date range than the section,
+                    // we want to display it.
+                    String meetingDatesString;
+                    if (TextUtils.equals(meetingStartDate, sectionStartDate)
+                            && TextUtils.equals(meetingEndDate, sectionEndDate)) {
+                        // The same.
+                        meetingDatesString = "";
+                    } else {
+                        if (TextUtils.equals(meetingStartDate, meetingEndDate)) {
+                            meetingDatesString = meetingStartDate;
+                        } else {
+                            meetingDatesString = getString(R.string.date_to_date_format,
+                                    meetingStartDate,
+                                    meetingEndDate);
+                        }
+                    }
+
+                    Date startTimeDate = null;
+                    Date endTimeDate = null;
 					String displayStartTime = "";
 					String displayEndTime = "";
 					
@@ -305,16 +342,25 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 						View rowLayout = activity.getLayoutInflater().inflate(R.layout.registration_meeting_row, meetingLayout, false);
 						TextView daysView = (TextView) rowLayout.findViewById(R.id.meeting_days);
 						daysView.setText(meetingsDaysString);
-						
-						if (!TextUtils.isEmpty(meetingTimesString)) {
-							TextView timesView = (TextView) rowLayout.findViewById(R.id.meeting_times);
-							timesView.setText(meetingTimesString);
-						}
-						
+
+                        String displayDateTimeType;
+                        // Date, Time & Type
+                        if (!TextUtils.isEmpty(meetingTimesString)) {
+                            displayDateTimeType = getString(R.string.course_details_date_time,
+                                    meetingDatesString,
+                                    meetingTimesString);
+                        } else {
+                            displayDateTimeType = meetingDatesString;
+                        }
+
 						if (!TextUtils.isEmpty(pattern.instructionalMethodCode)) {
-							TextView typeView = (TextView) rowLayout.findViewById(R.id.type);
-							typeView.setText(pattern.instructionalMethodCode);
-						} 
+                            displayDateTimeType = getString(R.string.course_details_date_time_type,
+                                    displayDateTimeType,
+                                    pattern.instructionalMethodCode);
+                        }
+
+                        TextView dateTimeView = (TextView) rowLayout.findViewById(R.id.meeting_date_time_type);
+                        dateTimeView.setText(displayDateTimeType);
 						
 						TextView buildingRoomView = (TextView) rowLayout.findViewById(R.id.building_room);
 						String buildingRoomString = "";
@@ -458,19 +504,19 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
             float available = (float) section.available / (float) section.capacity;
             float delta = 1.0f / 6.0f;
             if (section.available <= 0) {
-                meterImage = Utils.getDrawableHelper(context, R.drawable.seats_full_6);
+                meterImage = VersionSupportUtils.getDrawableHelper(context, R.drawable.seats_full_6);
             } else if (available <= delta) {
-                meterImage = Utils.getDrawableHelper(context, R.drawable.seats_full_5);
+                meterImage = VersionSupportUtils.getDrawableHelper(context, R.drawable.seats_full_5);
             } else if (available <= delta * 2) {
-                meterImage = Utils.getDrawableHelper(context, R.drawable.seats_full_4);
+                meterImage = VersionSupportUtils.getDrawableHelper(context, R.drawable.seats_full_4);
             } else if (available <= delta * 3) {
-                meterImage = Utils.getDrawableHelper(context, R.drawable.seats_full_3);
+                meterImage = VersionSupportUtils.getDrawableHelper(context, R.drawable.seats_full_3);
             } else if (available <= delta * 4) {
-                meterImage = Utils.getDrawableHelper(context, R.drawable.seats_full_2);
+                meterImage = VersionSupportUtils.getDrawableHelper(context, R.drawable.seats_full_2);
             } else if (available <= delta * 5) {
-                meterImage = Utils.getDrawableHelper(context, R.drawable.seats_full_1);
+                meterImage = VersionSupportUtils.getDrawableHelper(context, R.drawable.seats_full_1);
             } else {
-                meterImage = Utils.getDrawableHelper(context, R.drawable.seats_full_0);
+                meterImage = VersionSupportUtils.getDrawableHelper(context, R.drawable.seats_full_0);
             }
         }
         return meterImage;

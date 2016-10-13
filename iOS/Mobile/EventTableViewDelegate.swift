@@ -12,14 +12,14 @@ import Foundation
 class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelegate, NSFetchedResultsControllerDelegate
 {
     var eventTableView: UITableView
-    var eventController: NSFetchedResultsController?
+    var eventController: NSFetchedResultsController<CourseEvent>?
     var eventTableHeightConstraint: NSLayoutConstraint
     var eventTableWidthConstraint: NSLayoutConstraint
-    var myDatetimeOutputFormatter: NSDateFormatter?
+    var myDatetimeOutputFormatter: DateFormatter?
     var module:Module!
     var myNoDataView:UIView?
     
-    init(tableView: UITableView, controller: NSFetchedResultsController, heightConstraint: NSLayoutConstraint, widthConstraint: NSLayoutConstraint, parentModule:Module) {
+    init(tableView: UITableView, controller: NSFetchedResultsController<CourseEvent>, heightConstraint: NSLayoutConstraint, widthConstraint: NSLayoutConstraint, parentModule:Module) {
         
         eventTableView = tableView
         eventController = controller
@@ -38,7 +38,7 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
     /* called first
     begins update to `UITableView`
     ensures all updates are animated simultaneously */
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         eventTableView.beginUpdates()
     }
     
@@ -46,40 +46,40 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
     - when a new model is created
     - when an existing model is updated
     - when an existing model is deleted */
-    func controller(controller: NSFetchedResultsController,
-        didChangeObject object: AnyObject,
-        atIndexPath indexPath: NSIndexPath?,
-        forChangeType type: NSFetchedResultsChangeType,
-        newIndexPath: NSIndexPath?) {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>,
+        didChange object: Any,
+        at indexPath: IndexPath?,
+        for type: NSFetchedResultsChangeType,
+        newIndexPath: IndexPath?) {
             switch type {
-            case .Insert:
-                eventTableView.insertRowsAtIndexPaths([newIndexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Update:
-                let cell = self.eventTableView.cellForRowAtIndexPath(indexPath as NSIndexPath!)
-                configureCell(cell!, atIndexPath: indexPath as NSIndexPath!)
-                eventTableView.reloadRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Move:
-                eventTableView.deleteRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
-                eventTableView.insertRowsAtIndexPaths([newIndexPath as NSIndexPath!], withRowAnimation: .Fade)
-            case .Delete:
-                eventTableView.deleteRowsAtIndexPaths([indexPath as NSIndexPath!], withRowAnimation: .Fade)
+            case .insert:
+                eventTableView.insertRows(at: [newIndexPath as IndexPath!], with: .fade)
+            case .update:
+                let cell = self.eventTableView.cellForRow(at: indexPath as IndexPath!)
+                configureCell(cell!, atIndexPath: indexPath as IndexPath!)
+                eventTableView.reloadRows(at: [indexPath as IndexPath!], with: .fade)
+            case .move:
+                eventTableView.deleteRows(at: [indexPath as IndexPath!], with: .fade)
+                eventTableView.insertRows(at: [newIndexPath as IndexPath!], with: .fade)
+            case .delete:
+                eventTableView.deleteRows(at: [indexPath as IndexPath!], with: .fade)
             }
     }
     
-    func controller(controller: NSFetchedResultsController,
-        didChangeSection sectionInfo: NSFetchedResultsSectionInfo,
-        atIndex sectionIndex: Int,
-        forChangeType type: NSFetchedResultsChangeType)
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>,
+        didChange sectionInfo: NSFetchedResultsSectionInfo,
+        atSectionIndex sectionIndex: Int,
+        for type: NSFetchedResultsChangeType)
     {
         switch(type) {
             
-        case .Insert:
-            eventTableView.insertSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
+        case .insert:
+            eventTableView.insertSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
             
-        case .Delete:
-            eventTableView.deleteSections(NSIndexSet(index: sectionIndex),
-                withRowAnimation: UITableViewRowAnimation.Fade)
+        case .delete:
+            eventTableView.deleteSections(IndexSet(integer: sectionIndex),
+                with: UITableViewRowAnimation.fade)
             
         default:
             break
@@ -88,15 +88,15 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
 
     /* called last
     tells `UITableView` updates are complete */
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         eventTableView.endUpdates()
         eventTableHeightConstraint.constant = (CGFloat(eventController!.fetchedObjects!.count) * 50.0)  + 50.0
     }
     
     /* helper method to configure a `UITableViewCell`
     ask `NSFetchedResultsController` for the model */
-    func configureCell(cell: UITableViewCell, atIndexPath indexPath: NSIndexPath) {
-        let event = eventController!.objectAtIndexPath(indexPath) as! CourseEvent
+    func configureCell(_ cell: UITableViewCell, atIndexPath indexPath: IndexPath) {
+        let event = eventController!.object(at: indexPath)
         
         if event.title != nil {
             let nameLabel = cell.viewWithTag(100) as! UILabel
@@ -112,27 +112,27 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
         
         if event.startDate != nil {
             if let eventStartDate = event.startDate {
-                startDateLabel.text = self.datetimeOutputFormatter()!.stringFromDate(eventStartDate)
+                startDateLabel.text = self.datetimeOutputFormatter()!.string(from: eventStartDate)
             } else {
                 startDateLabel.text = ""
             }
         }
     }
 
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCellWithIdentifier("Daily Event Cell", forIndexPath: indexPath) as UITableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Event Cell", for: indexPath) as UITableViewCell
         configureCell(cell, atIndexPath:indexPath)
         return cell
     }
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         
         let numberOfSections = eventController!.sections?.count
         return numberOfSections!
     }
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         let numberOfRowsInSection = eventController!.sections?[section].numberOfObjects
         
@@ -145,7 +145,7 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
         return numberOfRowsInSection!
     }
         
-    func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         
         if let sections = eventController!.sections {
             return sections[section].name
@@ -154,8 +154,8 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
         }
     }
     
-    func tableView(tableView: UITableView,
-        heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+    func tableView(_ tableView: UITableView,
+        heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 50.0
     }
     
@@ -167,29 +167,29 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
             constrainedView.translatesAutoresizingMaskIntoConstraints = false
             myNoDataView?.addSubview(constrainedView)
             
-            myNoDataView?.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
-            myNoDataView?.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
+            myNoDataView?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
+            myNoDataView?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[constrainedView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: ["constrainedView":constrainedView]))
             
             let noMatchesLabel = UILabel(frame:CGRect(x:0,y:0,width:eventTableWidthConstraint.constant, height:40.0))
-            noMatchesLabel.font = UIFont.systemFontOfSize(14)
+            noMatchesLabel.font = UIFont.systemFont(ofSize: 14)
             noMatchesLabel.numberOfLines = 1;
-            noMatchesLabel.lineBreakMode = NSLineBreakMode.ByTruncatingTail
-            noMatchesLabel.textAlignment = NSTextAlignment.Left
+            noMatchesLabel.lineBreakMode = NSLineBreakMode.byTruncatingTail
+            noMatchesLabel.textAlignment = NSTextAlignment.left
             noMatchesLabel.text = NSLocalizedString("No events scheduled for today", comment:"no events scheduled for today message")
             
             
-            constrainedView.backgroundColor = UIColor.whiteColor()
-            myNoDataView?.hidden = true
+            constrainedView.backgroundColor = UIColor.white
+            myNoDataView?.isHidden = true
             noMatchesLabel.translatesAutoresizingMaskIntoConstraints = false
             constrainedView.addSubview(noMatchesLabel)
             constrainedView.addConstraint(NSLayoutConstraint(item:noMatchesLabel,
-                attribute:NSLayoutAttribute.CenterY,
-                relatedBy:NSLayoutRelation.Equal,
+                attribute:NSLayoutAttribute.centerY,
+                relatedBy:NSLayoutRelation.equal,
                 toItem:constrainedView,
-                attribute:NSLayoutAttribute.CenterY,
+                attribute:NSLayoutAttribute.centerY,
                 multiplier:1.0,
                 constant:0.0))
-            constrainedView.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("|-10-[label]-10-|", options: NSLayoutFormatOptions.AlignAllCenterY, metrics: nil, views: ["label" : noMatchesLabel]))
+            constrainedView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|-10-[label]-10-|", options: NSLayoutFormatOptions.alignAllCenterY, metrics: nil, views: ["label" : noMatchesLabel]))
             
             eventTableView.insertSubview(myNoDataView!, belowSubview:eventTableView)
             eventTableHeightConstraint.constant =  90.0
@@ -201,18 +201,18 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
         if ( myNoDataView == nil ) {
             myNoDataView = noDataView()
         }
-        myNoDataView?.hidden = false
+        myNoDataView?.isHidden = false
     }
     
     func hideNoDataView() {
-        self.myNoDataView?.hidden = true
+        self.myNoDataView?.isHidden = true
     }
     
-    func datetimeOutputFormatter() ->NSDateFormatter? {
+    func datetimeOutputFormatter() ->DateFormatter? {
         
         if (myDatetimeOutputFormatter == nil) {
-            myDatetimeOutputFormatter = NSDateFormatter()
-            myDatetimeOutputFormatter!.timeStyle = .ShortStyle
+            myDatetimeOutputFormatter = DateFormatter()
+            myDatetimeOutputFormatter!.timeStyle = .short
         }
         return myDatetimeOutputFormatter
     }
