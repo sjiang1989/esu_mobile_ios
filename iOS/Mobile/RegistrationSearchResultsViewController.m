@@ -90,20 +90,17 @@
         cell.accessoryType = UITableViewCellAccessoryNone;
     }
     
+    [cell setAccessibilityTraits:UIAccessibilityTraitButton];
+    [cell setAccessibilityHint:NSLocalizedString(@"Selects course to add to cart.", @"VoiceOver hint for button that selects a course to add to the cart")];
+    
     UILabel *line1aLabel = (UILabel *)[cell viewWithTag:1];
     line1aLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"course name-section number", @"Localizable", [NSBundle mainBundle], @"%@-%@", @"course name-section number"), plannedSection.courseName, plannedSection.courseSectionNumber];
-    UILabel *line1bLabel = (UILabel *)[cell viewWithTag:6];
-    if(plannedSection.academicLevels && plannedSection.location) {
-        line1bLabel.text = [NSString stringWithFormat:@"%@ | %@", [plannedSection.academicLevels componentsJoinedByString:@","], plannedSection.location];
-    } else if(plannedSection.academicLevels) {
-            line1bLabel.text = [plannedSection.academicLevels componentsJoinedByString:@","];
-    } else if(plannedSection.location) {
-        line1bLabel.text = plannedSection.location;
-    } else {
-        line1bLabel.text = nil;
-    }
+    NSString *cellLabel = line1aLabel.accessibilityLabel;
+
     UILabel *line2Label = (UILabel *)[cell viewWithTag:2];
     line2Label.text = plannedSection.sectionTitle;
+    cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line2Label.accessibilityLabel];
+    
     UILabel *line3Label = (UILabel *)[cell viewWithTag:3];
     UILabel *line3bLabel = (UILabel *)[cell viewWithTag:5];
     NSString *faculty = [plannedSection facultyNames];
@@ -119,16 +116,20 @@
     
     if(faculty) {
         line3Label.text = [NSString stringWithFormat:@"%@", faculty];
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
         if(plannedSection.maximumCredits) {
             if([plannedSection.variableCreditOperator isEqualToString:@"OR"]) {
                 line3bLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"registration divider min or max Credits", @"Localizable", [NSBundle mainBundle], @" | %@/%@ Credits", @"registration divider min or max Credits"), minCredits, maxCredits];
             } else {
                 line3bLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"registration divider min to max Credits", @"Localizable", [NSBundle mainBundle], @" | %@-%@ Credits", @"registration divider min to max Credits"), minCredits, maxCredits];
             }
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3bLabel.accessibilityLabel];
         } else if (plannedSection.minimumCredits){
             line3bLabel.text = [NSString stringWithFormat:NSLocalizedString(@" | %@ Credits", @"divider Credits label for registration") , minCredits];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3bLabel.accessibilityLabel];
         } else if (plannedSection.ceus ) {
             line3bLabel.text = [NSString stringWithFormat:NSLocalizedString(@" | %@ CEUs", @"divider CEUs label for registration"), ceus ];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3bLabel.accessibilityLabel];
         }
     } else {
         if(plannedSection.maximumCredits) {
@@ -137,10 +138,13 @@
             } else {
                 line3Label.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"registration min to max Credits", @"Localizable", [NSBundle mainBundle], @"%@-%@ Credits", @"registration min to max Credits"), minCredits, maxCredits];
             }
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
         } else if(plannedSection.minimumCredits){
             line3Label.text = [NSString stringWithFormat:NSLocalizedString(@"%@ Credits", @"Credits label for registration") , minCredits];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
         } else if (plannedSection.ceus) {
             line3Label.text = [NSString stringWithFormat:NSLocalizedString(@"%@ CEUs", @"CEUs label for registration"), ceus ];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
         }
         line3bLabel.text = nil;
     }
@@ -148,17 +152,35 @@
     UILabel *line4bLabel = (UILabel *)[cell viewWithTag:7];
     if(plannedSection.meetingPatternDescription && plannedSection.instructionalMethod) {
         line4Label.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"registration search results meeting pattern", @"Localizable", [NSBundle mainBundle], @"%@", @"registration search results meeting pattern"), plannedSection.meetingPatternDescription];
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line4Label.accessibilityLabel];
         line4bLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"registration search results instructional method", @"Localizable", [NSBundle mainBundle], @" | %@", @"registration search results instructional method"), plannedSection.instructionalMethod];
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line4bLabel.accessibilityLabel];
         
     } else if(plannedSection.meetingPatternDescription) {
         line4Label.text = plannedSection.meetingPatternDescription;
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line4Label.accessibilityLabel];
         line4bLabel.text = nil;
     } else if(plannedSection.instructionalMethod) {
         line4Label.text = plannedSection.instructionalMethod;
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line4Label.accessibilityLabel];
         line4bLabel.text = nil;
     } else {
         line4Label.text = nil;
         line4bLabel.text = nil;
+    }
+    
+    UILabel *line1bLabel = (UILabel *)[cell viewWithTag:6];
+    if(plannedSection.academicLevels && plannedSection.location) {
+        line1bLabel.text = [NSString stringWithFormat:@"%@ | %@", [plannedSection.academicLevels componentsJoinedByString:@","], plannedSection.location];
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line1bLabel.accessibilityLabel];
+    } else if(plannedSection.academicLevels) {
+        line1bLabel.text = [plannedSection.academicLevels componentsJoinedByString:@","];
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line1bLabel.accessibilityLabel];
+    } else if(plannedSection.location) {
+        line1bLabel.text = plannedSection.location;
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line1bLabel.accessibilityLabel];
+    } else {
+        line1bLabel.text = nil;
     }
     
     UIImageView *checkmarkImageView = (UIImageView *)[cell viewWithTag:100];
@@ -170,6 +192,7 @@
 
     UIImage *image = [UIImage imageNamed:@"Registration Detail"];
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+    button.accessibilityLabel = NSLocalizedString(@"Course detail", @"VoiceOver label for button that displays course details");
     CGRect frame = CGRectMake(0.0f, 0.0f, 44.0f, 44.0f);
     button.frame = frame;
     [button setImage:image forState:UIControlStateNormal];
@@ -218,6 +241,7 @@
 
         UILabel *seatsLabel = (UILabel *)[cell viewWithTag:13];
         seatsLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"available seats/capacity", @"Localizable", [NSBundle mainBundle], @"%@/%@", @"available seats/capacity"), available, capacity];
+        cellLabel = [NSString stringWithFormat:@"%@, %@", cellLabel, seatsLabel.accessibilityLabel];
     }
     
     if (indexPath.section % 2 == 0) {
@@ -225,6 +249,9 @@
     } else {
         cell.backgroundColor = [UIColor clearColor];
     }
+    
+    cellLabel = [cellLabel stringByReplacingOccurrencesOfString:@"|" withString:@""];
+    [cell setAccessibilityLabel:cellLabel];
     
     return cell;
 

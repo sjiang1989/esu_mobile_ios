@@ -4,9 +4,12 @@
 
 package com.ellucian.mobile.android.util;
 
+import android.app.KeyguardManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.provider.Settings;
 import android.text.Html;
 import android.text.Spanned;
 import android.view.View;
@@ -80,4 +83,21 @@ public class VersionSupportUtils {
             return Html.fromHtml(htmlString);
         }
     }
+
+    @SuppressWarnings("deprecation")
+    public static boolean doesDeviceHaveScreenLockOn(Context context, KeyguardManager keyguardManager) {
+        if (keyguardManager.isKeyguardSecure()) {
+            // password or pin has been enabled
+            return true;
+        } else {
+            ContentResolver cr = context.getContentResolver();
+            try {
+                int lockPatternEnable = Settings.Secure.getInt(cr, Settings.Secure.LOCK_PATTERN_ENABLED);
+                return lockPatternEnable == 1;
+            } catch (Settings.SettingNotFoundException e) {
+                return false;
+            }
+        }
+    }
+
 }

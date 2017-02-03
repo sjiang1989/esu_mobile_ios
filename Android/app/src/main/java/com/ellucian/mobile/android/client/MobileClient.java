@@ -7,7 +7,10 @@ package com.ellucian.mobile.android.client;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -72,6 +75,7 @@ public class MobileClient {
 	public static final String REQUEST_POST = "POST";
 	
 	public static final String ACTION_UNAUTHENTICATED_USER = "com.ellucian.mobile.android.client.MobileClient.action.unauthenticatedUser";
+    public static final String ACTION_NO_CONNECTIVITY = "com.ellucian.mobile.android.client.MobileClient.action.noConnectivity";
 
 	private Gson jsonParser;
 	private EllucianApplication application;
@@ -218,15 +222,32 @@ public class MobileClient {
 	private HttpURLConnection getConnection(String requestUrl) {
 		HttpURLConnection urlConnection = null;
 		URL url;
-		try {
-			url = new URL(requestUrl);
-			urlConnection = (HttpURLConnection) url.openConnection();
-			urlConnection.setInstanceFollowRedirects(false);
-		} catch (MalformedURLException e) {
-			Log.e(TAG, "MalformedURLException", e);
-		} catch (IOException e) {
-			Log.e(TAG, "IOException", e);
-		}
+
+        ConnectivityManager cm =
+                (ConnectivityManager) application.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null &&
+                                activeNetwork.isConnectedOrConnecting();
+
+        if (isConnected) {
+            try {
+                url = new URL(requestUrl);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setInstanceFollowRedirects(false);
+            } catch (MalformedURLException e) {
+                Log.e(TAG, "MalformedURLException", e);
+            } catch (IOException e) {
+                Log.e(TAG, "IOException", e);
+            }
+        } else {
+            Log.e(TAG, "No network connectivity");
+
+            LocalBroadcastManager bm = LocalBroadcastManager.getInstance(application.getApplicationContext());
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(ACTION_NO_CONNECTIVITY);
+            bm.sendBroadcast(broadcastIntent);
+        }
 		
 		return urlConnection;
 	}

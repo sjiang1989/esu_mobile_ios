@@ -325,6 +325,26 @@ class ConfigurationManager: NSObject {
                         }
                     }
                     
+                    if let login = json["login"].dictionary {
+                        if let usernameHint = login["usernameHint"]?.string, usernameHint != "" {
+                            defaults.set(usernameHint, forKey: "login-username-hint")
+                        }
+                        if let passwordHint = login["passwordHint"]?.string, passwordHint != "" {
+                            defaults.set(passwordHint, forKey: "login-password-hint")
+                        }
+                        if let loginInstructions = login["instructions"]?.string, loginInstructions != "" {
+                            defaults.set(loginInstructions, forKey: "login-instructions")
+                        }
+                        if let loginHelp = login["help"]?.dictionary {
+                            if let loginHelpUrl = loginHelp["url"]?.string, loginHelpUrl != "" {
+                                defaults.set(loginHelpUrl, forKey: "login-help-url")
+                            }
+                            if let loginHelpDisplay = loginHelp["display"]?.string, loginHelpDisplay != "" {
+                                defaults.set(loginHelpDisplay, forKey: "login-help-display")
+                            }
+                        }
+                    }
+                    
                     if let layout = json["layout"].dictionary {
                         if let primaryColor = layout["primaryColor"]?.string {
                             defaults.set(primaryColor, forKey: "primaryColor")

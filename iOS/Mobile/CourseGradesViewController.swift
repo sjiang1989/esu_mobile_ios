@@ -141,7 +141,9 @@ class CourseGradesViewController : UITableViewController, NSFetchedResultsContro
             
             if self.fetchedResultsController.fetchedObjects!.count <= 0 {
                 let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
-                hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+                let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+                hud.label.text = loadingString
+                UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
             }
             
             let privateContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
@@ -243,6 +245,13 @@ class CourseGradesViewController : UITableViewController, NSFetchedResultsContro
                             self._fetchedResultsController = nil;
                             try! self.fetchedResultsController.performFetch()
                             self.tableView.reloadData()
+                        })
+                    } else {
+                        DispatchQueue.main.async(execute: {
+                            let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                            let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                            alertController.addAction(alertAction)
+                            self.present(alertController, animated: true)
                         })
                     }
                 } catch let error {

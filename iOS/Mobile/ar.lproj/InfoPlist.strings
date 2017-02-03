@@ -14,5 +14,5 @@ NSLocationAlwaysUsageDescription = "حتى عند عدم استخدام التط
 NSLocationWhenInUseUsageDescription = "عند عدم استخدام التطبيق، تُستخدم معلومات موقعك على خرائط الحرم الجامعي لتنبيهك عن معلومات أو خدمات عند اقترابك من مزوديها في الحرم الجامعي. ";
 
 /* (No Commment) */
-NSRemindersUsageDescription = "تٌستخدم التذكيرات عند إضافة تذكير لواجب.";
+NSRemindersUsageDescription = "تٌستخدم رسائل التذكير عند إضافة تذكير لواجب.";
 

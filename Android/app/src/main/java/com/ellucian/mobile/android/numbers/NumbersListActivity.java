@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.numbers;
@@ -29,6 +29,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
 import com.ellucian.elluciango.R;
@@ -247,10 +248,11 @@ public class NumbersListActivity extends EllucianActivity implements OnQueryText
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.important_numbers, menu);
+        getMenuInflater().inflate(R.menu.search, menu);
 
-        final MenuItem item = menu.findItem(R.id.numbers_action_search);
+        final MenuItem item = menu.findItem(R.id.action_search);
         SearchView searchView = (SearchView) MenuItemCompat.getActionView(item);
+        searchView.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN);
         searchView.setQueryHint(getString(R.string.searchable_numbers_hint));
         searchView.setOnQueryTextListener(this);
         searchView.setSubmitButtonEnabled(false);

@@ -224,8 +224,10 @@ public class NumbersDetailFragment extends EllucianDefaultDetailFragment {
 			ImageView mapButton = (ImageView) rootView.findViewById(R.id.numbers_location_image);
 			mapButton.setOnClickListener(new View.OnClickListener() {
 				public void onClick(View arg0) {
-					startActivity(MapUtils.buildMapPinIntent(getActivity(),
-							name, latitude, longitude));
+                    if (Utils.hasPlayServicesAvailable(getActivity())) {
+                        startActivity(MapUtils.buildMapPinIntent(getActivity(),
+                                name, latitude, longitude));
+                    }
 				}
 			});
 

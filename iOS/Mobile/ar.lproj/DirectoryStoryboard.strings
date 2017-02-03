@@ -82,6 +82,9 @@
 /* Class = "UILabel"; text = "To use directory, search above"; ObjectID = "jMG-wT-17h"; */
 "jMG-wT-17h.text" = "لاستخدام الدليل، ابحث أعلاه.";
 
+/* Class = "UIButton"; accessibilityLabel = "Message"; ObjectID = "nmM-3Q-NFi"; */
+"nmM-3Q-NFi.accessibilityLabel" = "رسالة";
+
 /* Class = "UILabel"; text = "Label"; ObjectID = "oeC-Q5-nbg"; */
 "oeC-Q5-nbg.text" = "المسمى";
 

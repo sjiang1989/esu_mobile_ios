@@ -1,6 +1,9 @@
 /* Class = "UILabel"; text = "Label"; ObjectID = "4Av-6h-Rtv"; */
 "4Av-6h-Rtv.text" = "المسمى";
 
+/* Class = "UILabel"; text = "No Grades Recorded"; ObjectID = "4UF-PC-Ico"; */
+"4UF-PC-Ico.text" = "لا توجد درجات مسجلة";
+
 /* Class = "UILabel"; text = "Label"; ObjectID = "6ad-JB-HWi"; */
 "6ad-JB-HWi.text" = "المسمى";
 

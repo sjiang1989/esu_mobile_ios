@@ -13,18 +13,15 @@ class LaunchBeaconManager: NSObject {
     
     static let sourceName = "LaunchBeaconManager"
     private static let notificationCategory = "LaunchBeaconCategory"
-    fileprivate static let notificationMuteForeverActionId = "LaunchBeaconMuteAction"
-    //private static let notificationMuteForeverActionLabel = NSLocalizedString("Mute Forever", comment: "Mute Forever label")
-    fileprivate static let notificationMuteForTodayActionId = "LaunchBeaconMuteForTodayAction"
-   // private static let notificationMuteForTodayActionLabel = NSLocalizedString("Mute For Today", comment: "Mute For Today label")
-    fileprivate static let notificationViewActionId = "LaunchBeaconViewAction"
-    //private static let notificationViewActionLabel = NSLocalizedString("View", comment: "View label")
+    static let notificationMuteForeverActionId = "LaunchBeaconMuteAction"
+    static let notificationMuteForTodayActionId = "LaunchBeaconMuteForTodayAction"
+    static let notificationViewActionId = "LaunchBeaconViewAction"
     private static let notificationDefaultActionId = "LaunchBeaconDefaultAction"
     
     static let closeToTimeInterval:TimeInterval = 20
     static let fiveMinuteInterval:TimeInterval = 60*5 // five minutes
     static let dayInterval:TimeInterval = 60*60*24 // one day
-
+    
     private var monitoredLaunchBeacons = [String:LaunchBeacon]()
     private var processedModuleKeys = [String]()
     
@@ -48,10 +45,10 @@ class LaunchBeaconManager: NSObject {
             // register for application notifications
             NotificationCenter.default.removeObserver(self)
             NotificationCenter.default.addObserver(self, selector: #selector(didReceiveLocalNotification(_:)), name: AppDelegate.localNotification, object: nil)
-
+            
             // register for user defaults notifications
             NotificationCenter.default.addObserver(self, selector: #selector(userDefaultsChanged(_:)), name: UserDefaults.didChangeNotification, object: nil)
-
+            
             // register for configuration notifications
             NotificationCenter.default.addObserver(self, selector: #selector(configurationProcessingModulesStarted(_:)), name: ConfigurationManager.ConfigurationProcessingModulesStartedNotification, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(configurationProcessingModule(_:)), name: ConfigurationManager.ConfigurationProcessingModuleNotification, object: nil)
@@ -86,7 +83,7 @@ class LaunchBeaconManager: NSObject {
                 let viewAction = UNNotificationAction(identifier: LaunchBeaconManager.notificationViewActionId, title: NSLocalizedString("View", comment: "View label"), options: [.foreground])
                 
                 let launchBeaconCategory = UNNotificationCategory(identifier: LaunchBeaconManager.notificationCategory, actions: [viewAction, muteForeverAction, muteForTodayAction], intentIdentifiers: [], options: [])
-
+                
                 let center = UNUserNotificationCenter.current()
                 
                 center.getNotificationCategories() {(categoriesIn) in
@@ -101,7 +98,7 @@ class LaunchBeaconManager: NSObject {
                     center.setNotificationCategories(Set(filteredCategories))
                 }
                 
-                center.delegate = self
+                center.delegate = NotificationManager.shared
                 center.requestAuthorization(options: [.alert, .sound]) {_,_ in}
             } else {
                 let muteForeverAction = UIMutableUserNotificationAction()
@@ -220,7 +217,7 @@ class LaunchBeaconManager: NSObject {
         }
     }
     
-    fileprivate func openModule(_ moduleKey: String) {
+    func openModule(_ moduleKey: String) {
         if UIApplication.shared.applicationState == .active {
             let operation: OpenModuleOperation = OpenModuleOperation(id: moduleKey)
             OperationQueue.main.addOperation(operation)
@@ -235,7 +232,7 @@ class LaunchBeaconManager: NSObject {
         }
     }
     
-    fileprivate func markModuleMuteForever(_ moduleKey: String) {
+    func markModuleMuteForever(_ moduleKey: String) {
         do {
             let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
             let fetchRequest: NSFetchRequest<LaunchModule> = LaunchModule.fetchRequest()
@@ -266,8 +263,8 @@ class LaunchBeaconManager: NSObject {
         }
         
     }
-
-    fileprivate func markBeaconMuteForToday(_ beaconId: String) {
+    
+    func markBeaconMuteForToday(_ beaconId: String) {
         // mute this beacon for the day
         let defaults = UserDefaults.standard
         let key = "beacon-mute-for-today-\(beaconId)"
@@ -280,7 +277,7 @@ class LaunchBeaconManager: NSObject {
         }
         
     }
-
+    
     private func resetAllModulesMuted() {
         do {
             let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
@@ -327,13 +324,13 @@ class LaunchBeaconManager: NSObject {
             let defaults = UserDefaults.standard
             let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
             let fetchRequest: NSFetchRequest<LaunchBeaconEntity> = LaunchBeaconEntity.fetchRequest()
-        
+            
             let launchBeaconEntities = try managedObjectContext.fetch(fetchRequest)
             
             // filter any muted modules
             let beaconsToMonitorEntities = try launchBeaconEntities.filter { (launchBeacon) -> Bool in
                 var include = false
-
+                
                 let fetchRequest: NSFetchRequest<LaunchModule> = LaunchModule.fetchRequest()
                 fetchRequest.predicate = NSPredicate(format: "moduleKey == %@", launchBeacon.moduleKey)
                 let launchModules = try managedObjectContext.fetch(fetchRequest)
@@ -347,7 +344,7 @@ class LaunchBeaconManager: NSObject {
                         include = include ? true : !launchModule.muteNotification
                     }
                 }
-
+                
                 return include
             }
             
@@ -362,7 +359,7 @@ class LaunchBeaconManager: NSObject {
             for launchBeaconEntity in beaconsToMonitorEntities {
                 // create a LaunchBeacon for each LaunchBeaconEntity
                 let launchBeacon = LaunchBeacon(launchBeaconEntity: launchBeaconEntity)
-
+                
                 monitoredLaunchBeacons[launchBeacon.moduleKey] = launchBeacon
             }
             
@@ -374,7 +371,7 @@ class LaunchBeaconManager: NSObject {
             let now = Date()
             print("Asked BeaconManager to monitor beacons at: \(now)")
             defaults.set(now, forKey: "beacon-start-monitoring")
-
+            
         } catch {
             print("Unable monitor launch beacons")
         }
@@ -383,7 +380,7 @@ class LaunchBeaconManager: NSObject {
     private func queueShowAlertNotification(moduleKey: String, beaconId: String) {
         // show them an alert
         print("application active - show local notification message alert")
-    
+        
         if let launchBeacon = monitoredLaunchBeacons[moduleKey] {
             let title = Bundle.main.infoDictionary![kCFBundleNameKey as String] as! String
             let alert: UIAlertController = UIAlertController(title: title, message: launchBeacon.message, preferredStyle: .alert)
@@ -401,7 +398,7 @@ class LaunchBeaconManager: NSObject {
                 self.markModuleMuteForever(moduleKey)
                 self.showNextQueuedAlertNotification()
             })
-        
+            
             // add an Mute For Today action
             let muteForToday: UIAlertAction = UIAlertAction(title: NSLocalizedString("Mute For Today", comment: "Mute For Today label"), style: .default, handler: {(action: UIAlertAction) -> Void in
                 self.markBeaconMuteForToday(beaconId)
@@ -412,7 +409,7 @@ class LaunchBeaconManager: NSObject {
             alert.addAction(muteForever)
             alert.addAction(muteForToday)
             alert.addAction(dismiss)
-
+            
             DispatchQueue.main.async {
                 self.ios9AlertQueue.append(alert)
                 
@@ -433,7 +430,7 @@ class LaunchBeaconManager: NSObject {
             }
         }
     }
-
+    
     // AppDelegate Notifications - iOS < 10
     @objc private func didReceiveLocalNotification(_ notification: Notification) {
         // called by AppDelegate. If called with an identifier the trigger was a Local Notification Action
@@ -459,7 +456,7 @@ class LaunchBeaconManager: NSObject {
                                 if UIApplication.shared.applicationState == .active {
                                     // handled in the app UI, so cancel it so it doesn't show in iOS Notifications
                                     UIApplication.shared.cancelLocalNotification(localNotification)
-
+                                    
                                     // This will only happen if the user happens to put the app into the foreground right as the Local Notification was fired
                                     if let beaconId = localNotification.userInfo?["beaconId"] as! String? {
                                         queueShowAlertNotification(moduleKey: moduleKey, beaconId: beaconId)
@@ -492,7 +489,7 @@ class LaunchBeaconManager: NSObject {
             }
         }
     }
-
+    
     // Configuration Manager Notifications
     @objc private func configurationProcessingModulesStarted(_ notification: Notification) {
         // get ready to process launch beacons
@@ -503,7 +500,7 @@ class LaunchBeaconManager: NSObject {
         if let data = notification.object as? LaunchBeaconDefinition {
             let moduleKey = data.moduleKey
             let moduleDictionary = data.moduleDictionary
-            let managedObjectContext = data.managedObjectContext 
+            let managedObjectContext = data.managedObjectContext
             if let useBeaconToLaunch = moduleDictionary["useBeaconToLaunch"].string {
                 if useBeaconToLaunch == "true" {
                     if let launchBeaconsJson = moduleDictionary["launchBeacons"].array {
@@ -575,7 +572,7 @@ class LaunchBeaconManager: NSObject {
             let managedObjectContext = CoreDataManager.sharedInstance.managedObjectContext
             let fetchRequest: NSFetchRequest<LaunchBeaconEntity> = LaunchBeaconEntity.fetchRequest()
             let launchBeaconEntities = try managedObjectContext.fetch(fetchRequest)
-
+            
             launchBeaconEntities.forEach {
                 if !processedModuleKeys.contains($0.moduleKey) {
                     managedObjectContext.delete($0)
@@ -586,7 +583,7 @@ class LaunchBeaconManager: NSObject {
         } catch {
             print("Failed to delete unused launch beacon(s)")
         }
-
+        
         DispatchQueue.global(qos: .background).async {
             self.processedModuleKeys.removeAll()
             
@@ -611,7 +608,7 @@ class LaunchBeaconManager: NSObject {
                 if checkModules.count == 1 {
                     notifyUserFlag = true
                 }
-
+                
                 let defaults = UserDefaults.standard
                 
                 // if muted for a day, make sure the time had expired
@@ -681,9 +678,9 @@ class LaunchBeaconManager: NSObject {
     }
     
     @objc private func didEnterRange(_ notification: Notification) {
-          print("LaunchBeaconManager got a didEnterRange")
+        print("LaunchBeaconManager got a didEnterRange")
     }
-
+    
     @objc private func watchMessage(_ notification: Notification) {
         print("LaunchBeaconManager got watch message")
         if let action = (notification.object as! [String: Any])["action"] as! String? {
@@ -691,35 +688,5 @@ class LaunchBeaconManager: NSObject {
                 
             }
         }
-    }
-}
-
-@available(iOS 10.0, *)
-extension LaunchBeaconManager:UNUserNotificationCenterDelegate{
-    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        print("Notification Response action identifier: \(response.actionIdentifier)")
-        let userInfo = response.notification.request.content.userInfo
-        if let moduleKey = userInfo["moduleKey"] as! String? {
-            switch(response.actionIdentifier) {
-            case UNNotificationDismissActionIdentifier: break
-            case LaunchBeaconManager.notificationMuteForeverActionId:
-                markModuleMuteForever(moduleKey)
-            case LaunchBeaconManager.notificationMuteForTodayActionId:
-                if let beaconId = userInfo["beaconId"] as! String? {
-                    markBeaconMuteForToday(beaconId)
-                }
-            case LaunchBeaconManager.notificationViewActionId:
-                fallthrough
-            default:
-                openModule(moduleKey)
-            }
-        }
-        
-        completionHandler()
-    }
-    
-    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping(UNNotificationPresentationOptions) -> Void) {
-        print("notification will present")
-        completionHandler([.alert, .sound])
     }
 }

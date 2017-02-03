@@ -152,6 +152,7 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
         let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Assignment Cell", for: indexPath) as UITableViewCell
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         configureCell(cell, atIndexPath:indexPath)
         return cell
     }
@@ -251,7 +252,7 @@ class AssignmentTableViewDelegate: NSObject, UITableViewDataSource, UITableViewD
             myDatetimeOutputFormatter = DateFormatter()
             myDatetimeOutputFormatter!.timeStyle = .short
             myDatetimeOutputFormatter!.dateStyle = .short
-        }        
+        }
         return myDatetimeOutputFormatter
     }
     

@@ -36,6 +36,10 @@
 {
     [super viewDidLoad];
     
+    if ([self traitCollection].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        self.splitViewController.preferredDisplayMode = UISplitViewControllerDisplayModeAllVisible;
+    }
+    
     UINib *cellNib = [UINib nibWithNibName:@"RegistrationCartTermHeaderView" bundle:nil];
     [self.tableView registerNib:cellNib forHeaderFooterViewReuseIdentifier:@"RegistrationCartTermHeaderView"];
     
@@ -97,15 +101,21 @@
     }
     
     UILabel *line1aLabel = (UILabel *)[cell viewWithTag:1];
-    line1aLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"course name-section number", @"Localizable", [NSBundle mainBundle], @"%@-%@", @"course name-section number"), plannedSection.courseName, plannedSection.courseSectionNumber];    UILabel *line1bLabel = (UILabel *)[cell viewWithTag:6];
+    line1aLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"course name-section number", @"Localizable", [NSBundle mainBundle], @"%@-%@", @"course name-section number"), plannedSection.courseName, plannedSection.courseSectionNumber];
+    NSString *cellLabel = line1aLabel.accessibilityLabel;
+    
+    UILabel *line1bLabel = (UILabel *)[cell viewWithTag:6];
     if(plannedSection.instructionalMethod) {
         line1bLabel.text = [NSString stringWithFormat:@"(%@)", plannedSection.instructionalMethod];
-    } else
-    {
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line1bLabel.accessibilityLabel];
+    } else {
         line1bLabel.text = nil;
     }
+    
     UILabel *line2Label = (UILabel *)[cell viewWithTag:2];
     line2Label.text = plannedSection.sectionTitle;
+    cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line2Label.accessibilityLabel];
+    
     UILabel *line3Label = (UILabel *)[cell viewWithTag:3];
     UILabel *line3bLabel = (UILabel *)[cell viewWithTag:5];
     NSString *faculty = [plannedSection facultyNames];
@@ -122,18 +132,21 @@
     
     if(faculty) {
         line3Label.text = [NSString stringWithFormat:@"%@", faculty];
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
         if (credits){
             line3bLabel.text = [NSString stringWithFormat:NSLocalizedString(@" | %@ Credits %@", @"| credits and Credits label and grading type for registration"), credits, gradingType ];
-        }
-        else if (ceus) {
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3bLabel.accessibilityLabel];
+        } else if (ceus) {
             line3bLabel.text = [NSString stringWithFormat:NSLocalizedString(@" | %@ CEUs %@", @"| ceus and CEUs label and grading type for registration"), ceus, gradingType ];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3bLabel.accessibilityLabel];
         }
     } else {
         if (credits) {
             line3Label.text = [NSString stringWithFormat:NSLocalizedString(@"%@ Credits %@", @"credits and Credits label and grading type for registration"), credits, gradingType];
-        }
-        else if (ceus) {
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
+        } else if (ceus) {
             line3Label.text = [NSString stringWithFormat:NSLocalizedString(@"%@ CEUs %@", @"ceus and CEUs label and grading type for registration"), ceus, gradingType];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
         }
         line3bLabel.text = nil;
         
@@ -143,6 +156,7 @@
     UILabel *line4Label = (UILabel *)[cell viewWithTag:4];
     if(plannedSection.meetingPatternDescription) {
         line4Label.text = [NSString stringWithFormat:@"%@", plannedSection.meetingPatternDescription];
+        cellLabel = [NSString stringWithFormat:@"%@, %@", cellLabel, line4Label.accessibilityLabel];
     } else {
         line4Label.text = nil;
     }
@@ -156,6 +170,7 @@
     
     UIImage *image = [UIImage imageNamed:@"Registration Detail"];
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+    button.accessibilityLabel = NSLocalizedString(@"Course detail", @"VoiceOver label for button that displays course details");
     CGRect frame = CGRectMake(0.0, 0.0, 44.0f, 44.0f);
     button.frame = frame;
     [button setImage:image forState:UIControlStateNormal];
@@ -167,12 +182,17 @@
     
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     
+    cellLabel = [cellLabel stringByReplacingOccurrencesOfString:@"|" withString:@""];
+    [cell setAccessibilityLabel:cellLabel];
+    
     return cell;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     UITableViewCell *cell = [self tableView:tableView configureCell:indexPath];
+    [cell setAccessibilityTraits:UIAccessibilityTraitButton];
+    [cell setAccessibilityHint:NSLocalizedString(@"Selects course to drop.", @"VoiceOver hint for button that selects a course to drop")];
     return cell;
 }
 
@@ -385,7 +405,9 @@
 {
     [self.navigationController setToolbarHidden:YES animated:YES];
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo: [UIApplication sharedApplication].keyWindow animated:YES];
-    hud.label.text = NSLocalizedString(@"Dropping", @"loading message while waiting for dropping");
+    NSString *loadingString = NSLocalizedString(@"Dropping", @"loading message while waiting for dropping");
+    hud.label.text = loadingString;
+    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString);
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.01 * NSEC_PER_SEC);
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void) {
         

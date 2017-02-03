@@ -58,6 +58,9 @@ class CoursesPageSelectionViewController : UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Courses Term Selection Cell", for: indexPath) as UITableViewCell
         
+        cell.accessibilityTraits = UIAccessibilityTraitButton
+        cell.accessibilityHint = NSLocalizedString("Selects a term.", comment: "VoiceOver hint for button that selects a term")
+        
         let term = terms![(indexPath as NSIndexPath).row]
         
         let titleLabel = cell.viewWithTag(1) as? UILabel

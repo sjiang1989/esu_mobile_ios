@@ -56,12 +56,9 @@ class GradesTableViewController : UITableViewController , NSFetchedResultsContro
         
         if self.fetchedResultsController.fetchedObjects!.count <= 0 {
             let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
-            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
-            operation.completionBlock = {
-                DispatchQueue.main.async(execute: {() -> Void in
-                    MBProgressHUD.hide(for: self.view, animated: true)
-                })
-            }
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
         }
         
         OperationQueue.main.addOperation(operation)

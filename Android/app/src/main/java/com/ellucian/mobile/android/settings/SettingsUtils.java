@@ -9,6 +9,8 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 /**
+ * These Preferences use the DEFAULT preferences file and ARE NOT deleted when changing configs.
+ *
  * A Utility class with static methods for retrieving and updating values
  * in the apps Default SharedPreferences
  */

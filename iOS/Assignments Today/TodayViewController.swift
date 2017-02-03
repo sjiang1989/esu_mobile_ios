@@ -60,7 +60,7 @@ class TodayViewController: UITableViewController, NCWidgetProviding {
         } else {
             cell = tableView.dequeueReusableCell(withIdentifier: "Assignment Today Cell iOS 9", for: indexPath) as UITableViewCell
         }
-
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         
         if let items = self.items {
             let item = items[itemNumber]

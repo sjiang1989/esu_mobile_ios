@@ -6,6 +6,6 @@
 <resources>
 
     <string name="ellucian_mobile_version_label" translatable="false">Ellucian-Mobile-Version</string>
-    <string name="ellucian_mobile_version" translatable="false">5.0</string>
+    <string name="ellucian_mobile_version" translatable="false">5.1</string>
 
 </resources>

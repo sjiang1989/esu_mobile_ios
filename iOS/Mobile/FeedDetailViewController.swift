@@ -64,10 +64,16 @@ class FeedDetailViewController: UIViewController, UIWebViewDelegate {
     func loadWebView() {
         let text : String
         let link = feed?.link?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-        if let link = link, link.characters.count > 0 {
-            text = "\(feed!.content!)<br><br>\(link)"
+        if let content = feed?.content {
+            if let link = link, link.characters.count > 0 {
+                text = "\(content)<br><br>\(link)"
+            } else {
+                text = content
+            }
+        } else if let link = link, link.characters.count > 0 {
+            text = link
         } else {
-            text = feed!.content!
+            text = ""
         }
         
         let pointSize = UIFont.preferredFont(forTextStyle: UIFontTextStyle.body).pointSize

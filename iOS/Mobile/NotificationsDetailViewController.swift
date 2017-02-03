@@ -78,6 +78,7 @@ class NotificationsDetailViewController : UIViewController, WKNavigationDelegate
         DispatchQueue.global(qos: .utility).async {
             self.markNotificationRead()
         }
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -194,12 +195,18 @@ class NotificationsDetailViewController : UIViewController, WKNavigationDelegate
     
     @IBAction func share(_ sender: UIBarButtonItem) {
         
-        var text = self.notification!.notificationDescription
-        if let link = self.notification?.hyperlink {
-            text = "\(text) \(link)"
+        let text : String
+        if let description = self.notification?.notificationDescription, let link = self.notification?.hyperlink, description.characters.count > 0 && link.characters.count > 0 {
+            text = "\(description) \(link)"
+        } else if let description = self.notification?.notificationDescription, description.characters.count > 0  {
+            text = description
+        } else if let link = self.notification?.hyperlink, link.characters.count > 0 {
+            text = link
+        } else {
+            text = notification?.title ?? ""
         }
         
-        let itemProvider = NotificationUIActivityItemProvider(subject: notification!.title!, text: text!)
+        let itemProvider = NotificationUIActivityItemProvider(subject: notification?.title ?? "", text: text)
         let activityVC = UIActivityViewController(activityItems: [itemProvider], applicationActivities: nil)
         activityVC.popoverPresentationController?.barButtonItem = sender
         activityVC.completionWithItemsHandler = {

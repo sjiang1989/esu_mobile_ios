@@ -5,10 +5,11 @@ package com.ellucian.mobile.android.client.registration;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.ellucian.mobile.android.adapter.EllucianRecyclerAdapter;
 import com.ellucian.mobile.android.client.courses.Instructor;
 import com.ellucian.mobile.android.client.courses.MeetingPattern;
 
-public class Section implements Parcelable {
+public class Section implements Parcelable, EllucianRecyclerAdapter.ItemInfoHolder  {
 	public static final String GRADING_TYPE_AUDIT = "Audit";
 	public static final String GRADING_TYPE_GRADED = "Graded";
 	public static final String GRADING_TYPE_PASS_FAIL = "PassFail";
@@ -50,10 +51,16 @@ public class Section implements Parcelable {
     public Integer available;
     public boolean authorizationCodeRequired;
     public String authorizationCodePresented;
-	
+    private boolean checkboxSelected;
+
 	public Section() {
 	}
 	
+    @Override
+    public String getDefaultText() {
+        return sectionTitle;
+    }
+
 	public Section(Parcel in) { 
 		readFromParcel(in);
 	}
@@ -144,6 +151,14 @@ public class Section implements Parcelable {
 			return new Section[size]; 
 		}
 	};
+
+    public boolean isCheckboxSelected() {
+        return checkboxSelected;
+    }
+
+    public void setCheckboxSelected(boolean checkboxSelected) {
+        this.checkboxSelected = checkboxSelected;
+    }
 
 }
 

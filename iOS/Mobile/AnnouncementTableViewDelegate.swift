@@ -86,7 +86,7 @@ class AnnouncementTableViewDelegate: NSObject, UITableViewDataSource, UITableVie
     tells `UITableView` updates are complete */
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         announcementTableView.endUpdates()
-        announcementTableHeightConstraint.constant = (CGFloat(announcementController!.fetchedObjects!.count) * 40.0) + 50.0
+        announcementTableHeightConstraint.constant = (CGFloat(announcementController!.fetchedObjects!.count) * 50.0) + 50.0
     }
     
     /* helper method to configure a `UITableViewCell`
@@ -103,6 +103,18 @@ class AnnouncementTableViewDelegate: NSObject, UITableViewDataSource, UITableVie
             let sectionNameLabel = cell.viewWithTag(102) as! UILabel
             sectionNameLabel.text = announcement.courseName + "-" + announcement.courseSectionNumber
         }
+        
+        let dateLabel = cell.viewWithTag(101) as! UILabel
+        
+        if announcement.date != nil {
+            if let announcementDate = announcement.date {
+                dateLabel.text = self.datetimeOutputFormatter()!.string(from: announcementDate)
+            } else {
+                dateLabel.text = ""
+            }
+        } else {
+            dateLabel.text = ""
+        }
     }
 
     
@@ -110,6 +122,7 @@ class AnnouncementTableViewDelegate: NSObject, UITableViewDataSource, UITableVie
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Announcement Cell", for: indexPath) as UITableViewCell
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         configureCell(cell, atIndexPath:indexPath)
         return cell
     }
@@ -117,7 +130,7 @@ class AnnouncementTableViewDelegate: NSObject, UITableViewDataSource, UITableVie
     func tableView(_ tableView: UITableView,
         heightForRowAt indexPath: IndexPath) -> CGFloat
     {
-        return 40.0
+        return 50.0
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -153,8 +166,8 @@ class AnnouncementTableViewDelegate: NSObject, UITableViewDataSource, UITableVie
         if (myDatetimeOutputFormatter == nil) {
             myDatetimeOutputFormatter = DateFormatter()
             myDatetimeOutputFormatter!.timeStyle = .short
+            myDatetimeOutputFormatter!.dateStyle = .short
         }
-        
         return myDatetimeOutputFormatter
     }
     

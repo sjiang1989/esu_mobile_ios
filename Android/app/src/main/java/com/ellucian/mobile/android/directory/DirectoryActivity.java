@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
 import com.ellucian.elluciango.R;
@@ -254,6 +255,7 @@ public class DirectoryActivity extends EllucianActivity implements SearchView.On
 
         final MenuItem item = menu.findItem(R.id.action_search);
         searchView = (SearchView) MenuItemCompat.getActionView(item);
+        searchView.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN);
         searchView.setQueryHint(getString(R.string.searchable_directory_hint));
         searchView.setOnQueryTextListener(this);
         searchView.setSubmitButtonEnabled(false);
@@ -412,8 +414,10 @@ public class DirectoryActivity extends EllucianActivity implements SearchView.On
             if (justAuthenticated) {
                 justAuthenticated = false;
                 // in case any directories had " - Sign In" appended to their filtered name, remove it
-                for (int i=0;i<filteredCategories.length;i++) {
-                    filteredCategories[i] = filteredCategories[i].replace(SIGN_IN_MESSAGE,"");
+                if (filteredCategories != null) {
+                    for (int i = 0; i < filteredCategories.length; i++) {
+                        filteredCategories[i] = filteredCategories[i].replace(SIGN_IN_MESSAGE, "");
+                    }
                 }
 
                 doQuery(mQueryString);

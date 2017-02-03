@@ -19,6 +19,12 @@
 /* Class = "UILabel"; text = "Announcements"; ObjectID = "559-jd-z3t"; */
 "559-jd-z3t.text" = "Annonces";
 
+/* Class = "UILabel"; text = "Label"; ObjectID = "825-b2-cZQ"; */
+"825-b2-cZQ.text" = "Libellé";
+
+/* Class = "UIButton"; accessibilityLabel = "Add to reminders"; ObjectID = "904-OA-pRc"; */
+"904-OA-pRc.accessibilityLabel" = "Ajouter aux rappels";
+
 /* Class = "UISegmentedControl"; EPr-qe-WsF.segmentTitles[0] = "By Due Date"; ObjectID = "EPr-qe-WsF"; */
 "EPr-qe-WsF.segmentTitles[0]" = "Par date limite";
 

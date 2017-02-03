@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ellucian Company L.P. and its affiliates.
+ * Copyright 2016-2017 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.util;
@@ -9,6 +9,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.preference.PreferenceManager;
+import android.support.v4.hardware.fingerprint.FingerprintManagerCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -201,7 +203,7 @@ public class UserUtils {
         SettingsUtils.addBooleanToPreferences(context, USER_FINGERPRINT_OPT_IN, false);
     }
 
-    public static void removeSavedUserPassword(Context context) {
+    private static void removeSavedUserPassword(Context context) {
         SharedPreferences preferences = context.getSharedPreferences(USER, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
 
@@ -219,8 +221,10 @@ public class UserUtils {
         if (getUseFingerprintEnabled(activity)) {
             if (activity.getEllucianApp().wasInBackground()) {
                 if (activity.getEllucianApp().hasFingerprintExpired()) {
-                    Log.d(TAG, "Fingerprint has expired. Setting Flag.");
+                    Log.d(TAG, "Fingerprint has expired. Setting Flag. Put locks on secure modules");
                     PreferencesUtils.addBooleanToPreferences(activity, USER, USER_FINGERPRINT_NEEDED, true);
+                    activity.getEllucianApp().resetModuleMenuAdapter();
+                    activity.configureNavigationDrawer();
                 } else {
                     activity.getEllucianApp().resetFingerprintValidTime();
                 }
@@ -262,4 +266,34 @@ public class UserUtils {
         activity.startService(intent);
     }
 
+    public static boolean isFingerprintOptionEnabled(Context context) {
+
+        if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Utils.FINGERPRINT_SENSOR_PRESENT, false)) {
+            FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(context);
+
+            if (fingerprintManager.hasEnrolledFingerprints()) {
+                String loginType = PreferencesUtils.getStringFromPreferences(context, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
+                if(loginType.equals(Utils.NATIVE_LOGIN_TYPE)) {
+                    return true;
+                } else {
+                    // Web based login cannot use fingerprint. Set it false if it was previously set true
+                    // by a previous configuration.
+                    if (SettingsUtils.getBooleanFromPreferences(context, UserUtils.USER_FINGERPRINT_OPT_IN, false)) {
+                        SettingsUtils.addBooleanToPreferences(context, UserUtils.USER_FINGERPRINT_OPT_IN, false);
+                    }
+                    return false;
+                }
+            } else {
+                Log.d(TAG, "User hasn't enrolled any fingerprints to authenticate with");
+                SettingsUtils.addBooleanToPreferences(context, UserUtils.USER_FINGERPRINT_OPT_IN, false);
+                return false;
+            }
+
+        } else {
+            // no fingerprint sensor on device.
+            SettingsUtils.addBooleanToPreferences(context, UserUtils.USER_FINGERPRINT_OPT_IN, false);
+            return false;
+        }
+
+    }
 }

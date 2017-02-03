@@ -64,34 +64,18 @@ extension WKWebViewController {
     }
     func primaryColor() {
         let script = "window.EllucianMobileDevice.color = \"\(UIColor.primary)\";"
-        webView?.evaluateJavaScript(script) { (result, error) in
-            if error != nil {
-                print(result)
-            }
-        }
+        webView?.evaluateJavaScript(script)
     }
     func accentColor() {
         let script = "window.EllucianMobileDevice.color = \"\(UIColor.accent)\";"
-        webView?.evaluateJavaScript(script) { (result, error) in
-            if error != nil {
-                print(result)
-            }
-        }
+        webView?.evaluateJavaScript(script)
     }
     func headerTextColor() {
         let script = "window.EllucianMobileDevice.color = \"\(UIColor.headerText)\";"
-        webView?.evaluateJavaScript(script) { (result, error) in
-            if error != nil {
-                print(result)
-            }
-        }
+        webView?.evaluateJavaScript(script)
     }
     func subheaderTextColor() {
         let script = "window.EllucianMobileDevice.color = \"\(UIColor.subheaderText)\";"
-        webView?.evaluateJavaScript(script) { (result, error) in
-            if error != nil {
-                print(result)
-            }
-        }
+        webView?.evaluateJavaScript(script)
     }
 }

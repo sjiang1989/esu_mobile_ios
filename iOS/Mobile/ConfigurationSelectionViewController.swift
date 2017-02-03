@@ -81,6 +81,9 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ConfigurationCell", for: indexPath) as UITableViewCell
         
+        cell.accessibilityTraits = UIAccessibilityTraitButton
+        cell.accessibilityHint = NSLocalizedString("Selects a school.", comment: "VoiceOver hint for button that selects a school")
+        
         let configuration : Configuration
         if (self.searchController.isActive) {
             configuration = self.filteredItems[(indexPath as NSIndexPath).row]
@@ -143,7 +146,9 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         
         if let window = window {
             let hud = MBProgressHUD.showAdded(to: window, animated: true)
-            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
         }
         
         
@@ -193,7 +198,9 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
                             
                             OperationQueue.main.addOperation(OpenModuleHomeOperation())
                         } else {
-                            self.tableView.deselectRow(at: self.tableView.indexPathForSelectedRow!, animated: true)
+                            if let row = self.tableView.indexPathForSelectedRow {
+                                self.tableView.deselectRow(at: row, animated: true)
+                            }
                             self.fetchConfigurations()
                             DispatchQueue.main.async {
                                 ConfigurationFetcher.showErrorAlertView(controller: self)
@@ -209,6 +216,14 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
         if fetchInProgress {
             return
         }
+        
+        if self.allItems.count == 0 {
+            let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
+        }
+        
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
 
         DispatchQueue.global(qos: .userInteractive).async {
@@ -263,6 +278,7 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
                         }
                     }
                     DispatchQueue.main.async(execute: {
+                        MBProgressHUD.hide(for: self.view, animated: true)
                         self.fetchInProgress = false
                         self.tableView.reloadData()
                     })
@@ -321,15 +337,14 @@ class ConfigurationSelectionViewController : UITableViewController, UISearchResu
     }
     
     func showErrorAlert() {
-        if self.allItems.count == 0 {
-            DispatchQueue.main.async(execute: {
+        DispatchQueue.main.async(execute: {
+            if self.allItems.count == 0 {
                 let alertController = UIAlertController(title: nil, message: NSLocalizedString("There are no institutions to display at this time.", comment: "configurations cannot be downloaded"), preferredStyle: .alert)
                 let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .cancel, handler: nil)
                 alertController.addAction(okAction)
-                
                 self.present(alertController, animated: true, completion: nil)
-            })
-        }
+            } 
+        })
     }
     
     override func sectionIndexTitles(for tableView: UITableView) -> [String]? {

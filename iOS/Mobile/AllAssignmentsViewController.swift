@@ -140,11 +140,7 @@ class AllAssignmentsViewController : UIViewController, UITableViewDataSource, UI
         let dueDateLabel = cell.viewWithTag(102) as! UILabel
         
         if let assignmentDate = assignment.dueDate {
-            if isOverdue {
-                dueDateLabel.text = self.overDueDatetimeOutputFormatter()!.string(from: assignmentDate)
-            } else {
-                dueDateLabel.text = self.datetimeOutputFormatter()!.string(from: assignmentDate)
-            }
+            dueDateLabel.text = self.datetimeOutputFormatter()!.string(from: assignmentDate)
         } else {
             dueDateLabel.text = ""
         }
@@ -205,6 +201,7 @@ class AllAssignmentsViewController : UIViewController, UITableViewDataSource, UI
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Assignment Cell", for: indexPath) as UITableViewCell
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         configureCell(cell, atIndexPath:indexPath)
         return cell
     }
@@ -392,20 +389,10 @@ class AllAssignmentsViewController : UIViewController, UITableViewDataSource, UI
         
         if (myDatetimeOutputFormatter == nil) {
             myDatetimeOutputFormatter = DateFormatter()
-            myDatetimeOutputFormatter!.dateStyle = .none
             myDatetimeOutputFormatter!.timeStyle = .short
+            myDatetimeOutputFormatter!.dateStyle = .short
         }
         return myDatetimeOutputFormatter
-    }
-    
-    func overDueDatetimeOutputFormatter() ->DateFormatter? {
-        
-        if (myOverDueDatetimeOutputFormatter == nil) {
-            myOverDueDatetimeOutputFormatter = DateFormatter()
-            myOverDueDatetimeOutputFormatter!.dateStyle = .short
-            myOverDueDatetimeOutputFormatter!.timeStyle = .short
-        }
-        return myOverDueDatetimeOutputFormatter
     }
     
     //    func setSelectedAssignment(item:CourseAssignment?)

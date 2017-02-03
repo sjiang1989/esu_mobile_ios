@@ -77,6 +77,8 @@
     <string name="label_done">Done</string>
     <string name="content_desc_warning">Warning</string>
     <string name="services_feature_not_supported">Feature is not supported by this device.</string>
+    <string name="no_connectivity">No internet connection</string>
+    <string name="snackbar_dismiss">Dismiss</string>
 
     <string name="label_format">
 	    <xliff:g id="label" example="Name">%1$s</xliff:g>:
@@ -99,6 +101,7 @@
     <string name="dialog_use_fingerprint">Use fingerprint to unlock</string>
     <string name="dialog_use_fingerprint_summary">Allow me to sign in with my fingerprint</string>
     <string name="dialog_stay_signed_in">Stay signed in</string>
+    <string name="dialog_stay_signed_in_disabled">Screen lock is required to stay signed in</string>
     <string name="dialog_username">Username</string>
     <string name="dialog_password">Password</string>
     <string name="dialog_sign_in_empty">Username or Password can not be empty.</string>
@@ -106,6 +109,7 @@
     <string name="dialog_signed_in">You have signed in.</string>
     <string name="dialog_signed_out">You have signed out.</string>
     <string name="dialog_idle_sign_out">You have been idle too long and have signed out.</string>
+    <string name="dialog_login_instructions">Please contact your institution’s IT staff for assistance with login.</string>
 
     <!-- Fingerprint Authentication -->
     <string name="fingerprint_cancel">Cancel</string>
@@ -348,10 +352,6 @@
         The app uses energy efficient beacon monitoring to recognize when you are near a point of
         interest and will not utilize your GPS location.
     </string>
-    <string name="location_services_title">Location Access Disabled</string>
-    <string name="location_services_message">Location services are used at your institution to
-        alert you when you are near location specific information or services. Please allow location
-        access in your device settings.</string>
     <string name="bluetooth_permissions_title">Bluetooth Disabled</string>
     <string name="bluetooth_permissions_message">Bluetooth is used at your institution to alert you
         when you are near location specific information or services. Please enable Bluetooth in your
@@ -417,7 +417,6 @@
     <string name="title_number_detail">Number Detail</string>
     <string name="numbers_no_entries">There are no important numbers</string>
     <string name="searchable_numbers_hint">Search Numbers</string>
-    <string name="searchable_numbers_label">Search Numbers</string>
 
     <!-- Registration -->
 

@@ -15,7 +15,6 @@ import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.text.TextUtils;
@@ -48,7 +47,7 @@ public class SettingsFragment extends PreferenceFragment {
 
         CheckBoxPreference fingerprintOptIn = (CheckBoxPreference) findPreference(UserUtils.USER_FINGERPRINT_OPT_IN);
 
-        if (!PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(Utils.FINGERPRINT_OPTION_ENABLED, false)) {
+        if (!UserUtils.isFingerprintOptionEnabled(getActivity())) {
             fingerprintOptIn.setEnabled(false);
         } else {
             fingerprintOptIn.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {

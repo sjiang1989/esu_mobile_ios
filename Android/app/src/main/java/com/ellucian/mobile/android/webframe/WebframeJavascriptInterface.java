@@ -1,4 +1,7 @@
-// Copyright 2014 Ellucian Company L.P and its affiliates.
+/*
+ * Copyright 2014-2017 Ellucian Company L.P. and its affiliates.
+ */
+
 package com.ellucian.mobile.android.webframe;
 
 import android.content.BroadcastReceiver;
@@ -20,7 +23,6 @@ import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.ModuleType;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
-import com.ellucian.mobile.android.app.DrawerLayoutHelper;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
@@ -185,10 +187,10 @@ class WebframeJavascriptInterface {
 
 						if (secure) {
 							if (!ellucianApplication.isUserAuthenticated()) {
-									LoginDialogFragment loginFragment = new LoginDialogFragment();
+									LoginDialogFragment loginFragment = LoginDialogFragment.newInstance(webActivity.getResources().getConfiguration());
 									loginFragment.queueIntent(intent, roles);
-									loginFragment.show(webActivity.getSupportFragmentManager(),
-											LoginDialogFragment.LOGIN_DIALOG);
+                                    loginFragment.show(webActivity.getSupportFragmentManager(),
+                                        LoginDialogFragment.LOGIN_DIALOG);
 									found = true;
 							} else if (type.equals(ModuleType.WEB)) {
 									// do if basic authentication only; web login will be
@@ -198,7 +200,7 @@ class WebframeJavascriptInterface {
 											Utils.NATIVE_LOGIN_TYPE);
 									if (loginType.equals(Utils.NATIVE_LOGIN_TYPE)
 											&& System.currentTimeMillis() > (ellucianApplication
-													.getLastAuthRefresh() + DrawerLayoutHelper.AUTH_REFRESH_TIME)) {
+													.getLastAuthRefresh() + EllucianApplication.AUTH_REFRESH_TIME)) {
 										LocalBroadcastManager lbm = LocalBroadcastManager
 												.getInstance(webActivity);
 										queuedIntentAuthenticationReceiver = new QueuedIntentAuthenticationReceiver();

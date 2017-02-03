@@ -285,8 +285,10 @@ public class BuildingDetailFragment extends EllucianDefaultDetailFragment {
 				mapButton.setVisibility(View.VISIBLE);
 				mapButton.setOnClickListener(new View.OnClickListener() {
 					public void onClick(View arg0) {
-						startActivity(MapUtils.buildMapPinIntent(getActivity(),
-								name, latitude, longitude));
+                        if (Utils.hasPlayServicesAvailable(activity)) {
+                            startActivity(MapUtils.buildMapPinIntent(getActivity(),
+                                    name, latitude, longitude));
+                        }
 					}
 				});
 

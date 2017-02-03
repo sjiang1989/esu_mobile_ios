@@ -193,7 +193,7 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 			// Only show academic levels info on the details selected from the search results list
 			TextView academicLevelsView = (TextView) rootView.findViewById(R.id.academic_levels);
 			if (args.containsKey(REQUESTING_LIST_FRAGMENT) && args.getString(REQUESTING_LIST_FRAGMENT)
-					.equals(RegistrationSearchResultsListFragment.class.getSimpleName())) {
+					.equals(RegistrationSearchResultsRecyclerFragment.class.getSimpleName())) {
 				
 				if (section.academicLevels != null && section.academicLevels.length > 0) {
 					String academicLevelsText = TextUtils.join(",", section.academicLevels);
@@ -211,7 +211,7 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 
             // Available/Capacity images & text - only shows on Search Results Tab
             if (args.containsKey(REQUESTING_LIST_FRAGMENT) && args.getString(REQUESTING_LIST_FRAGMENT)
-                    .equals(RegistrationSearchResultsListFragment.class.getSimpleName())) {
+                    .equals(RegistrationSearchResultsRecyclerFragment.class.getSimpleName())) {
                 LinearLayout seatsDetailsView = (LinearLayout) rootView.findViewById(R.id.seats_details);
                 if (section.available != null && section.capacity != null) {
                     String capacityText = getString(R.string.remaining_capacity,
@@ -466,8 +466,8 @@ public class RegistrationDetailFragment extends EllucianDefaultDetailFragment {
 	@Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		Bundle args = getArguments();
-		if (args.containsKey(REQUESTING_LIST_FRAGMENT) && 
-				args.getString(REQUESTING_LIST_FRAGMENT).equals(RegistrationCartListFragment.class.getSimpleName())) {
+		if (args.containsKey(REQUESTING_LIST_FRAGMENT) && args.getString(REQUESTING_LIST_FRAGMENT)
+                .equals(RegistrationCartRecyclerFragment.class.getSimpleName())) {
 			inflater.inflate(R.menu.registration_detail, menu);
 		}        
     }

@@ -23,15 +23,40 @@ class AuthenticatedRequest : NSObject {
     }
     
     func requestURL(_ url: URL?, fromView viewController: UIViewController?, addHTTPHeaderFields headers: [String : String]?) -> Data? {
+        doRequest(url: url, addHTTPHeaderFields: headers)
+        
+        //treat redirects from cas just like a log in is needed.  We can't detect which redirects are for cas and which are not.
+        if self.error?.code == NSURLErrorUserCancelledAuthentication || self.response?.statusCode == 302 {
+            presentLoginController(url: url, fromView: viewController, addHTTPHeaderFields: headers)
+        } else if self.response?.statusCode == 401 {
+            let controller = LoginExecutor.loginController().childViewControllers[0]
+            if let loginViewController = controller as? LoginViewController {
+                let responseStatusCode = loginViewController.backgroundLogin()
+                if responseStatusCode != 200 {
+                    presentLoginController(url: url, fromView: viewController, addHTTPHeaderFields: headers)
+                } else {
+                    doRequest(url: url, addHTTPHeaderFields: headers)
+                    if self.error?.code == NSURLErrorUserCancelledAuthentication || self.response?.statusCode == 302 || self.response?.statusCode == 401 {
+                        presentLoginController(url: url, fromView: viewController, addHTTPHeaderFields: headers)
+                    }
+                }
+            } else {
+                presentLoginController(url: url, fromView: viewController, addHTTPHeaderFields: headers)
+            }
+        }
+        return self.data
+    }
+    
+    func doRequest(url: URL?, addHTTPHeaderFields headers: [String : String]?) {
         self.url = url
         self.request = URLRequest(url: self.url!, cachePolicy: .reloadIgnoringCacheData, timeoutInterval: 90)
         if (LoginExecutor.isUsingBasicAuthentication()) {
             self.request?.addAuthenticationHeader()
         }
+        
         if let headers  = headers {
             for (name, headerValue) in headers {
                 self.request?.addValue(headerValue, forHTTPHeaderField: name)
-                
             }
         }
         
@@ -41,14 +66,13 @@ class AuthenticatedRequest : NSObject {
             data, response, error in
             
             DispatchQueue.main.async() {
-                
                 UIApplication.shared.isNetworkActivityIndicatorVisible = false
             }
-
+            
             if let error = error {
                 print(error.localizedDescription)
                 self.data = nil
-
+                
             } else if let response = response as? HTTPURLResponse {
                 self.data = data
                 self.response = response
@@ -57,19 +81,50 @@ class AuthenticatedRequest : NSObject {
         }
         dataTask?.resume()
         let _ = semaphore.wait(timeout: .distantFuture)
+    }
+    
+    func presentLoginController(url: URL?, fromView viewController: UIViewController?, addHTTPHeaderFields headers: [String : String]?) {
+        print("AuthenticatedRequest for url: \(url!.absoluteString) errorCode: \(self.error?.code)")
+        let user: CurrentUser = CurrentUser.sharedInstance
+        user.logoutWithNotification(postNotification: false, requestedByUser: false)
         
-        //treat redirects from cas just like a log in is needed.  We can't detect which redirects are for cas and which are not.
-        if self.error?.code == NSURLErrorUserCancelledAuthentication || self.response?.statusCode == 401 || self.response?.statusCode == 302 {
-            CurrentUser.sharedInstance.useFingerprint = false;
-            print("AuthenticatedRequest for url: \(url!.absoluteString) errorCode: \(self.error?.code)")
-            let user: CurrentUser = CurrentUser.sharedInstance
-            user.logoutWithNotification(postNotification: false, requestedByUser: false)
-            if let viewController = viewController {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    LoginExecutor.doLogin(viewController, successCompletionHandler: nil)
-                }
-            }
+        let topViewController: UIViewController
+        if let currViewController = viewController {
+            topViewController = currViewController
+        } else if let foundViewController = UIApplication.shared.topMostViewController() {
+            topViewController = foundViewController
+        } else {
+            return
         }
-        return self.data
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        LoginExecutor.doLoginUsingController(topViewController, successCompletionHandler: {semaphore.signal()})
+        let _ = semaphore.wait(timeout: .distantFuture)
+        doRequest(url: url, addHTTPHeaderFields: headers)
+    }
+    
+}
+
+extension UIViewController {
+    func topMostViewController() -> UIViewController? {
+        if self.presentedViewController == nil {
+            return self
+        }
+        if let navigation = self.presentedViewController as? UINavigationController {
+            return navigation.visibleViewController?.topMostViewController()
+        }
+        if let tab = self.presentedViewController as? UITabBarController {
+            if let selectedTab = tab.selectedViewController {
+                return selectedTab.topMostViewController()
+            }
+            return tab.topMostViewController()
+        }
+        return self.presentedViewController!.topMostViewController()
+    }
+}
+
+extension UIApplication {
+    func topMostViewController() -> UIViewController? {
+        return self.keyWindow?.rootViewController?.topMostViewController()
     }
 }

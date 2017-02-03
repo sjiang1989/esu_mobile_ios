@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -21,10 +22,14 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.TypedValue;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ellucian.elluciango.R;
@@ -37,11 +42,14 @@ import com.ellucian.mobile.android.login.Fingerprint.FingerprintDialogFragment;
 import com.ellucian.mobile.android.login.LoginDialogFragment;
 import com.ellucian.mobile.android.login.QueuedIntentHolder;
 import com.ellucian.mobile.android.provider.EllucianContract;
+import com.ellucian.mobile.android.settings.SettingsUtils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static android.content.Context.MODE_PRIVATE;
 
 public class Utils {
     public static final String TAG = Utils.class.getSimpleName();
@@ -106,8 +114,13 @@ public class Utils {
     public static final String LOCATIONS_NOTIF_TIMESTAMP = "locationsNotifTimestamp";
     public static final String LOCATIONS_NOTIF_REMIND = "locationsNotifRemind";
     public static final String MUTE_LOCATIONS = "muteLocations";
-    public static final String FINGERPRINT_OPTION_ENABLED = "fingerprintOptionEnabled";
+    public static final String FINGERPRINT_SENSOR_PRESENT = "fingerprintSensorPresent";
     public static final String PERMISSIONS_ASKED_FOR_LOCATION = "permissionsAskedForLocation";
+    public static final String LOGIN_USERNAME_HINT = "loginUsernameHint";
+    public static final String LOGIN_PASSWORD_HINT = "loginPasswordHint";
+    public static final String LOGIN_INSTRUCTIONS = "loginInstructions";
+    public static final String LOGIN_HELP_LABEL = "loginHelpLabel";
+    public static final String LOGIN_HELP_URL = "loginHelpUrl";
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 2000;
 
     // Time
@@ -155,7 +168,7 @@ public class Utils {
     }
 
 	private static int getColor(Context context, String key) {
-		SharedPreferences preferences = context.getSharedPreferences(APPEARANCE, Context.MODE_PRIVATE);
+		SharedPreferences preferences = context.getSharedPreferences(APPEARANCE, MODE_PRIVATE);
 		String color = preferences.getString(key, "#000000");
 		try {
 			return Color.parseColor(color);
@@ -365,7 +378,7 @@ public class Utils {
             }
         }
 
-        LoginDialogFragment loginFragment = new LoginDialogFragment();
+        LoginDialogFragment loginFragment = LoginDialogFragment.newInstance(activity.getResources().getConfiguration());
         if (intent != null) {
             loginFragment.queueIntent(intent, roles);
         }
@@ -414,7 +427,6 @@ public class Utils {
         mainIntent.putExtra(QueuedIntentHolder.QUEUED_INTENT_HOLDER, queuedIntentHolder);
         activity.startActivity(mainIntent);
         activity.finish();
-        return;
     }
 
     private static QueuedIntentHolder buildQueuedIntentHolder(Activity activity, String moduleId, String moduleType) {
@@ -431,8 +443,7 @@ public class Utils {
             cursor.close();
         }
 
-        QueuedIntentHolder queuedIntentHolder = new QueuedIntentHolder(moduleId, queuedIntent);
-        return queuedIntentHolder;
+        return new QueuedIntentHolder(moduleId, queuedIntent);
     }
 
     @SuppressWarnings("deprecation")
@@ -464,14 +475,67 @@ public class Utils {
 
         if (status != ConnectionResult.SUCCESS) {
             if (googleAPI.isUserResolvableError(status)) {
-                googleAPI.getErrorDialog(activity, status, PLAY_SERVICES_RESOLUTION_REQUEST).show();
+                googleAPI.showErrorDialogFragment(activity, status, PLAY_SERVICES_RESOLUTION_REQUEST);
+            } else {
+                Toast.makeText(activity, activity.getString(R.string.services_feature_not_supported), Toast.LENGTH_LONG).show();
             }
-
-            Toast.makeText(activity, activity.getString(R.string.services_feature_not_supported), Toast.LENGTH_LONG).show();
             return false;
         }
 
         return true;
     }
 
+    public static void makeTextViewHyperlink(TextView tv) {
+        SpannableStringBuilder ssb = new SpannableStringBuilder();
+        ssb.append(tv.getText());
+        ssb.setSpan(new URLSpan("#"), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        tv.setText(ssb, TextView.BufferType.SPANNABLE);
+    }
+
+    public static String getSizeName(Configuration configuration) {
+        int screenLayout = Configuration.SCREENLAYOUT_UNDEFINED;
+        if (configuration != null) {
+            screenLayout = configuration.screenLayout;
+            screenLayout &= Configuration.SCREENLAYOUT_SIZE_MASK;
+        }
+
+        switch (screenLayout) {
+            case Configuration.SCREENLAYOUT_SIZE_SMALL:
+                return "small";
+            case Configuration.SCREENLAYOUT_SIZE_NORMAL:
+                return "normal";
+            case Configuration.SCREENLAYOUT_SIZE_LARGE:
+                return "large";
+            case Configuration.SCREENLAYOUT_SIZE_XLARGE:
+                return "xlarge";
+            default:
+                return "undefined";
+        }
+    }
+
+    public static void changeConfiguration(Context context, EllucianApplication ellucianApplication,
+                       String configurationUrl, String configurationName, String id) {
+        // delete before retrieving the new configuration
+        context.getContentResolver().delete(EllucianContract.BASE_CONTENT_URI,
+                null, null);
+
+        context.getSharedPreferences(
+                Utils.GOOGLE_ANALYTICS, MODE_PRIVATE).edit().clear().apply();
+
+        final SharedPreferences preferences = context.getSharedPreferences(
+                Utils.CONFIGURATION, MODE_PRIVATE);
+        final SharedPreferences.Editor editor = preferences.edit();
+        // Clear all Configuration Preferences
+        editor.clear().apply();
+
+        // Clear all User Preferences
+        SettingsUtils.addBooleanToPreferences(context, UserUtils.USER_FINGERPRINT_OPT_IN, false);
+        ellucianApplication.removeAppUser();
+
+        editor.putString(Utils.CONFIGURATION_URL, configurationUrl);
+        editor.putString(Utils.CONFIGURATION_NAME, configurationName);
+        editor.putString(Utils.ID, id);
+        editor.commit();
+
+    }
 }

@@ -40,8 +40,8 @@
                 }
             }
             let data = authenticatedRequest.requestURL(url!, fromView: nil, addHTTPHeaderFields: authHTTPHeader)
-            let response = authenticatedRequest.response
-            let httpResponse = response! as HTTPURLResponse
+            guard let response = authenticatedRequest.response else { return 0 }
+            let httpResponse = response as HTTPURLResponse
             let responseStatusCode: Int = httpResponse.statusCode
             if let data = data, responseStatusCode == 200 {
 
@@ -117,7 +117,8 @@
     }
     
     class func doLogin(_ controller: UIViewController, successCompletionHandler: (() -> Void)? ) -> Void {
-        if (CurrentUser.sharedInstance.useFingerprint) {
+        let authenticationMode = AppGroupUtilities.userDefaults()?.string(forKey: "login-authenticationType")
+        if CurrentUser.sharedInstance.useFingerprint && authenticationMode != "browser" {
 
             // Create the Local Authentication Context
             let touchIDContext = LAContext()
@@ -184,6 +185,7 @@
                 default:
                     print("Local Authentication not available")
                 }
+                doLoginUsingController(controller, successCompletionHandler: successCompletionHandler)
             }
         } else {
             doLoginUsingController(controller, successCompletionHandler: successCompletionHandler)

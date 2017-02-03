@@ -60,6 +60,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone"
+            android:text="@string/fingerprint_use_password"
+            tools:visibility="visible"
             tools:targetApi="m" />
 
     </LinearLayout>

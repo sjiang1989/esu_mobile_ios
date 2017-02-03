@@ -81,9 +81,15 @@ class ILPViewController : UIViewController, UIGestureRecognizerDelegate, UISplit
     
         self.title = self.module!.name;
         
+        self.assignmentsCardTitle.accessibilityTraits = UIAccessibilityTraitButton
+        self.eventsCardTitle.accessibilityTraits = UIAccessibilityTraitButton
+        self.announcementsCardTitle.accessibilityTraits = UIAccessibilityTraitButton
+        
         if let hudView = self.view {
             let hud = MBProgressHUD.showAdded(to: hudView, animated: true)
-            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
         }
         
         NotificationCenter.default.addObserver(self, selector: #selector(ILPViewController.dataFinishedLoading(_:)), name: ILPViewController.AnnouncementsUpdatedNotification, object: nil)
@@ -188,7 +194,7 @@ class ILPViewController : UIViewController, UIGestureRecognizerDelegate, UISplit
         assignmentTableHeightConstraint.constant = totalRowHeight + (CGFloat(assignmentsFetchedResultController!.sections!.count) * 30.0) + 50.0
         
         eventTableHeightConstraint.constant = (CGFloat(eventsFetchedResultsController!.fetchedObjects!.count) * 50.0) + 50.0
-        announcementTableHeightConstraint.constant = (CGFloat(announcementsFetchedResultsController!.fetchedObjects!.count) * 40.0) + 50.0
+        announcementTableHeightConstraint.constant = (CGFloat(announcementsFetchedResultsController!.fetchedObjects!.count) * 50.0) + 50.0
         
         assignmentTableView.register(NSClassFromString("UITableViewHeaderFooterView"), forHeaderFooterViewReuseIdentifier: "Header")
         eventTableView.register(NSClassFromString("UITableViewHeaderFooterView"), forHeaderFooterViewReuseIdentifier: "Header")
@@ -266,8 +272,7 @@ class ILPViewController : UIViewController, UIGestureRecognizerDelegate, UISplit
             let responseData = authenticatedRequest.requestURL(url, fromView: self)
             
             UIApplication.shared.isNetworkActivityIndicatorVisible = false
-            if let response = responseData
-            {
+            if let response = responseData {
                 NotificationCenter.default.removeObserver(self, name:CurrentUser.LoginExecutorSuccessNotification, object:nil)
                 
                 let json = JSON(data: response)
@@ -302,6 +307,13 @@ class ILPViewController : UIViewController, UIGestureRecognizerDelegate, UISplit
                 } catch let saveError as NSError {
                     print("save error: \(saveError.localizedDescription)")
                 } catch {
+                }
+            } else {
+                DispatchQueue.main.async {
+                    let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                    let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                    alertController.addAction(alertAction)
+                    self.present(alertController, animated: true)
                 }
             }
             importContext.parent?.perform({
@@ -410,6 +422,13 @@ class ILPViewController : UIViewController, UIGestureRecognizerDelegate, UISplit
                 } catch let error as NSError {
                     print("save error: \(error.localizedDescription)")
                 } catch {
+                }
+            } else {
+                DispatchQueue.main.async {
+                    let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                    let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                    alertController.addAction(alertAction)
+                    self.present(alertController, animated: true)
                 }
             }
             importContext.parent?.perform({
@@ -524,6 +543,13 @@ class ILPViewController : UIViewController, UIGestureRecognizerDelegate, UISplit
                     print("save error: \(error.localizedDescription)")
                 } catch {
                     
+                }
+            } else {
+                DispatchQueue.main.async {
+                    let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                    let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                    alertController.addAction(alertAction)
+                    self.present(alertController, animated: true)
                 }
             }
             importContext.parent?.perform({

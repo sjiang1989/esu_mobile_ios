@@ -4,6 +4,7 @@
 
 package com.ellucian.mobile.android.adapter;
 
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -183,7 +184,7 @@ public class ModuleMenuAdapter extends CursorTreeAdapter {
 				int showGuestInt = modulesCursor.getInt(showGuestIndex);
 				boolean showGuest = showGuestInt == 1 ? true : false;
 				List<String> moduleRoles = getModuleRoles(ellucianApplication.getContentResolver(), moduleId);
-				boolean lock = ellucianApplication.isUserAuthenticated() ? false : showLock(context, type, subType, secure, moduleRoles, moduleId);
+                boolean lock = ellucianApplication.isSignInNeeded() ? showLock(context, type, subType, secure, moduleRoles, moduleId) : false;
 
 				if (doesModuleShowForUser(ellucianApplication, moduleId, showGuest) && display.equals("true")) {
 					currentChildCursor.addRow(new Object[] { "1", type, subType,
@@ -241,7 +242,7 @@ public class ModuleMenuAdapter extends CursorTreeAdapter {
 					int showGuestInt = modulesCursor.getInt(showGuestIndex);
 					boolean showGuest = showGuestInt == 1 ? true : false;
 					List<String> moduleRoles = getModuleRoles(ellucianApplication.getContentResolver(), moduleId);
-					boolean lock = ellucianApplication.isUserAuthenticated() ? false : showLock(context, type, subType, secure, moduleRoles, moduleId);
+                    boolean lock = ellucianApplication.isSignInNeeded() ? showLock(context, type, subType, secure, moduleRoles, moduleId) : false;
 					String rightText = null;
 					if(type.equals(ModuleType.NOTIFICATIONS) && ellucianApplication.isUserAuthenticated()) {
                         int count = UserUtils.getUnreadNotificationsCount(context);
@@ -572,9 +573,10 @@ public class ModuleMenuAdapter extends CursorTreeAdapter {
 		return null;
 	}
 
-	public static Intent getIntent(Context context, String type, String subType,
+	public static Intent getIntent(Activity activity, String type, String subType,
 			String moduleName, String moduleId) {
 
+        Context context = activity.getApplicationContext();
 		HashMap<String, String> moduleProperties = new HashMap<>();
 		if (moduleId != null) {
 
@@ -743,21 +745,27 @@ public class ModuleMenuAdapter extends CursorTreeAdapter {
 
             return intent;
         } else if (type.equals(ModuleType.MAPS)) {
-			intent.setClass(context, MapsActivity.class);
-			String campusesUrl = moduleProperties.get("campuses");
-			if (!TextUtils.isEmpty(campusesUrl)) {
-				intent.putExtra(Extra.MAPS_CAMPUSES_URL, campusesUrl);
-			}
-			String buildingsUrl = moduleProperties.get("buildings");
-			if (!TextUtils.isEmpty(buildingsUrl)) {
-				intent.putExtra(Extra.MAPS_BUILDINGS_URL, buildingsUrl);
-			}
+            if (Utils.hasPlayServicesAvailable(activity)) {
 
-			// Set in preferences that the map module is present
-			PreferencesUtils.addBooleanToPreferences(context, Utils.CONFIGURATION,
-					Utils.MAP_PRESENT, true);
+                intent.setClass(context, MapsActivity.class);
+                String campusesUrl = moduleProperties.get("campuses");
+                if (!TextUtils.isEmpty(campusesUrl)) {
+                    intent.putExtra(Extra.MAPS_CAMPUSES_URL, campusesUrl);
+                }
+                String buildingsUrl = moduleProperties.get("buildings");
+                if (!TextUtils.isEmpty(buildingsUrl)) {
+                    intent.putExtra(Extra.MAPS_BUILDINGS_URL, buildingsUrl);
+                }
 
-			return intent;
+                // Set in preferences that the map module is present
+                PreferencesUtils.addBooleanToPreferences(context, Utils.CONFIGURATION,
+                        Utils.MAP_PRESENT, true);
+
+                return intent;
+            } else {
+                return null;
+            }
+
 		} else if (type.equals(ModuleType.NOTIFICATIONS)) {
 			intent.setClass(context, NotificationsActivity.class);
 			

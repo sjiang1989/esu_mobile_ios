@@ -97,6 +97,9 @@
 /* Class = "UILabel"; text = "Label"; ObjectID = "f8N-Iu-T8W"; */
 "f8N-Iu-T8W.text" = "Etiqueta";
 
+/* Class = "UILabel"; text = "Label"; ObjectID = "fEt-xU-Of5"; */
+"fEt-xU-Of5.text" = "Etiqueta";
+
 /* Class = "UILabel"; text = "Label"; ObjectID = "iJk-tS-n2z"; */
 "iJk-tS-n2z.text" = "Etiqueta";
 
@@ -117,6 +120,9 @@
 
 /* Class = "UILabel"; text = "Events for today"; ObjectID = "sE6-xr-EYy"; */
 "sE6-xr-EYy.text" = "Eventos para hoy";
+
+/* Class = "UIButton"; accessibilityLabel = "Add to reminders"; ObjectID = "sT9-BZ-dGG"; */
+"sT9-BZ-dGG.accessibilityLabel" = "Agregar a los recordatorios";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "scQ-3n-K5V"; */
 "scQ-3n-K5V.text" = "Etiqueta";

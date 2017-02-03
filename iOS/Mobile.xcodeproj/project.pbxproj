@@ -34,6 +34,7 @@
 		0DB898F71BB05475001EF44E /* DefaultsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB898F61BB05475001EF44E /* DefaultsCache.swift */; };
 		1EA217851D14379A0093F511 /* ImportantNumbersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EA217831D14379A0093F511 /* ImportantNumbersTests.swift */; };
 		1EA217861D14379A0093F511 /* MapsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EA217841D14379A0093F511 /* MapsTests.swift */; };
+		5402A13E1E4284E700FE8EB7 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5402A13D1E4284E700FE8EB7 /* NotificationManager.swift */; };
 		540431141D2EFB4200BC62AD /* AppearanceChanger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 540431131D2EFB4200BC62AD /* AppearanceChanger.swift */; };
 		540BD30B1B33702000626BA8 /* Ellucian GO WatchKit Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5494D80C1AEAD8E20030EE4A /* Ellucian GO WatchKit Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		540BD30E1B33702000626BA8 /* Ellucian GO WatchKit App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5494D81B1AEAD8E20030EE4A /* Ellucian GO WatchKit App.app */; };
@@ -215,7 +216,6 @@
 		54AC0EC71CE67AB000E5971D /* AuthenticatedRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54AC0EC61CE67AB000E5971D /* AuthenticatedRequest.swift */; };
 		54AC0ECA1CEA52A600E5971D /* WebLoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54AC0EC91CEA52A600E5971D /* WebLoginViewController.swift */; };
 		54AC0ECC1CEA5AB300E5971D /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54AC0ECB1CEA5AB300E5971D /* LoginViewController.swift */; };
-		54AD31971A82BA700049147C /* Customizations.plist in Resources */ = {isa = PBXBuildFile; fileRef = 54AD31961A82BA700049147C /* Customizations.plist */; };
 		54AE922A1AC1A1A7006210C0 /* StudentFinancialsTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54AE92281AC1A1A7006210C0 /* StudentFinancialsTransaction.swift */; };
 		54AED7EE1BC46E620071E2C3 /* CalendarViewAllDayGridView.m in Sources */ = {isa = PBXBuildFile; fileRef = 54AED7ED1BC46E620071E2C3 /* CalendarViewAllDayGridView.m */; };
 		54AED7F11BC46EFE0071E2C3 /* CalendarViewDayGridView.m in Sources */ = {isa = PBXBuildFile; fileRef = 54AED7F01BC46EFE0071E2C3 /* CalendarViewDayGridView.m */; };
@@ -237,6 +237,7 @@
 		54CC7F2A1941673F0044C31E /* Module.m in Sources */ = {isa = PBXBuildFile; fileRef = 54CC7F281941673F0044C31E /* Module.m */; };
 		54CCFD751B0B86DD000CECAF /* AssignmentsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CCFD741B0B86DD000CECAF /* AssignmentsFetcher.swift */; };
 		54CE14E91AC0B090004E5B4D /* StudentFinancialsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CE14E71AC0B090004E5B4D /* StudentFinancialsViewController.swift */; };
+		54CFBCFE1DBAC1C000C9107E /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CFBCFD1DBAC1C000C9107E /* Reachability.swift */; };
 		54D4B05E1BE2B66400CE16AB /* CourseGradesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D4B05D1BE2B66400CE16AB /* CourseGradesViewController.swift */; };
 		54D4B0601BE4219600CE16AB /* RosterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D4B05F1BE4219600CE16AB /* RosterViewController.swift */; };
 		54D578D81B7D38580071F04A /* NotificationsDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D578D71B7D38580071F04A /* NotificationsDetailViewController.swift */; };
@@ -311,7 +312,6 @@
 		54EA253F1B875C9D00F14325 /* VideoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54EA253E1B875C9D00F14325 /* VideoViewController.swift */; };
 		54EA25411B87A43600F14325 /* AudioViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54EA25401B87A43600F14325 /* AudioViewController.swift */; };
 		54EA962A1893011100BCCF24 /* RegistrationRegisteredSectionsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 54EA96281893011100BCCF24 /* RegistrationRegisteredSectionsViewController.m */; };
-		54EA962B1893012100BCCF24 /* NotificationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0DDD89E21886545900D1EE3A /* NotificationManager.m */; };
 		54EB2F961CF37EDE00B5D143 /* LoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54EB2F951CF37EDE00B5D143 /* LoginTests.swift */; };
 		54EB393F1811A5C5002008C8 /* EllucianModules.plist in Resources */ = {isa = PBXBuildFile; fileRef = 54EB393D1811A5C5002008C8 /* EllucianModules.plist */; };
 		54ED3B2B1A71BD2500A43677 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5491340B17B16A7A0001CE29 /* Images.xcassets */; };
@@ -440,10 +440,9 @@
 		0DACC4811BA35EAD00824239 /* MapsFetchOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapsFetchOperation.swift; sourceTree = "<group>"; };
 		0DB6D6651D49AFD400509D7D /* LaunchBeaconManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LaunchBeaconManager.swift; sourceTree = "<group>"; };
 		0DB898F61BB05475001EF44E /* DefaultsCache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DefaultsCache.swift; sourceTree = "<group>"; };
-		0DDD89E11886545900D1EE3A /* NotificationManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NotificationManager.h; sourceTree = "<group>"; };
-		0DDD89E21886545900D1EE3A /* NotificationManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NotificationManager.m; sourceTree = "<group>"; };
 		1EA217831D14379A0093F511 /* ImportantNumbersTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImportantNumbersTests.swift; sourceTree = "<group>"; };
 		1EA217841D14379A0093F511 /* MapsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapsTests.swift; sourceTree = "<group>"; };
+		5402A13D1E4284E700FE8EB7 /* NotificationManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		540431131D2EFB4200BC62AD /* AppearanceChanger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppearanceChanger.swift; sourceTree = "<group>"; };
 		540BD3131B34A6C600626BA8 /* MenuViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MenuViewController.swift; path = Mobile/MenuViewController.swift; sourceTree = "<group>"; };
 		540C46801BDA7B7800A4BD42 /* CourseDetailTabBarController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CourseDetailTabBarController.swift; sourceTree = "<group>"; };
@@ -783,7 +782,6 @@
 		54AC962E16C074FA009C1B25 /* CourseTerm.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CourseTerm.m; sourceTree = "<group>"; };
 		54ACCAAD16CC17CB00E06947 /* CourseSection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CourseSection.h; sourceTree = "<group>"; };
 		54ACCAAE16CC17CB00E06947 /* CourseSection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CourseSection.m; sourceTree = "<group>"; };
-		54AD31961A82BA700049147C /* Customizations.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Customizations.plist; sourceTree = "<group>"; };
 		54AE92281AC1A1A7006210C0 /* StudentFinancialsTransaction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StudentFinancialsTransaction.swift; sourceTree = "<group>"; };
 		54AED7EA1BC46CBC0071E2C3 /* CalendarViewDayViewDataSource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CalendarViewDayViewDataSource.h; sourceTree = "<group>"; };
 		54AED7EB1BC46DB30071E2C3 /* CalendarViewDayViewDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CalendarViewDayViewDelegate.h; sourceTree = "<group>"; };
@@ -880,6 +878,8 @@
 		54CC7F281941673F0044C31E /* Module.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Module.m; sourceTree = "<group>"; };
 		54CCFD741B0B86DD000CECAF /* AssignmentsFetcher.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssignmentsFetcher.swift; sourceTree = "<group>"; };
 		54CE14E71AC0B090004E5B4D /* StudentFinancialsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StudentFinancialsViewController.swift; sourceTree = "<group>"; };
+		54CFBCFA1DBAC13E00C9107E /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
+		54CFBCFD1DBAC1C000C9107E /* Reachability.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
 		54D1BCF416D41F21005E0DEC /* CourseDetail.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CourseDetail.h; sourceTree = "<group>"; };
 		54D1BCF516D41F21005E0DEC /* CourseDetail.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CourseDetail.m; sourceTree = "<group>"; };
 		54D1BCF716D433EF005E0DEC /* CourseMeetingPattern.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CourseMeetingPattern.h; sourceTree = "<group>"; };
@@ -1096,8 +1096,7 @@
 		0DDD89E01886531D00D1EE3A /* Notification Center */ = {
 			isa = PBXGroup;
 			children = (
-				0DDD89E11886545900D1EE3A /* NotificationManager.h */,
-				0DDD89E21886545900D1EE3A /* NotificationManager.m */,
+				5402A13D1E4284E700FE8EB7 /* NotificationManager.swift */,
 			);
 			name = "Notification Center";
 			sourceTree = "<group>";
@@ -1171,7 +1170,6 @@
 				54412FA51A7BD9E20085AD82 /* MainInterface.storyboard */,
 				544E649B1A715CBD00220746 /* Supporting Files */,
 				544E649D1A715CBD00220746 /* TodayViewController.swift */,
-				54AD31961A82BA700049147C /* Customizations.plist */,
 			);
 			name = "Ellucian GO Assignments Today";
 			path = "Assignments Today";
@@ -1333,10 +1331,10 @@
 			children = (
 				54AB47C81B8E42CB00320AB0 /* ECSlidingViewController */,
 				54C1471A177B6AD800C6CCBD /* Google Analytics Library */,
-				54CC12E716D566C200173D7B /* MBProgressHUD.h */,
-				54CC12E816D566C200173D7B /* MBProgressHUD.m */,
+				54CFBCF61DBAC0FE00C9107E /* MBProgressHUD */,
+				54CFBCF81DBAC11400C9107E /* Reachability */,
 				54A8DBE116CD617500E20871 /* RNCryptor */,
-				A9F498021A93923600E71CC1 /* SwiftyJSON.swift */,
+				54CFBCF71DBAC10900C9107E /* SwiftyJSON */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -1424,6 +1422,32 @@
 				542C81881B7BD0DE000D6B56 /* StudentFinancialsStoryboard.storyboard */,
 			);
 			name = "Student Financials";
+			sourceTree = "<group>";
+		};
+		54CFBCF61DBAC0FE00C9107E /* MBProgressHUD */ = {
+			isa = PBXGroup;
+			children = (
+				54CC12E716D566C200173D7B /* MBProgressHUD.h */,
+				54CC12E816D566C200173D7B /* MBProgressHUD.m */,
+			);
+			name = MBProgressHUD;
+			sourceTree = "<group>";
+		};
+		54CFBCF71DBAC10900C9107E /* SwiftyJSON */ = {
+			isa = PBXGroup;
+			children = (
+				A9F498021A93923600E71CC1 /* SwiftyJSON.swift */,
+			);
+			name = SwiftyJSON;
+			sourceTree = "<group>";
+		};
+		54CFBCF81DBAC11400C9107E /* Reachability */ = {
+			isa = PBXGroup;
+			children = (
+				54CFBCFA1DBAC13E00C9107E /* Reachability.h */,
+				54CFBCFD1DBAC1C000C9107E /* Reachability.swift */,
+			);
+			name = Reachability;
 			sourceTree = "<group>";
 		};
 		54D303CE1758F50200234758 /* ILP */ = {
@@ -2043,7 +2067,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0730;
-				LastUpgradeCheck = 0800;
+				LastUpgradeCheck = 0810;
 				ORGANIZATIONNAME = "Ellucian Company L.P. and its affiliates.";
 				TargetAttributes = {
 					5444D0081CB2E33100403AA6 = {
@@ -2162,7 +2186,6 @@
 				54412FBB1A7C26D70085AD82 /* InfoPlist.strings in Resources */,
 				54412FA31A7BD9E20085AD82 /* MainInterface.storyboard in Resources */,
 				54E6D41D1B3D9FA20025C651 /* Customizations.plist in Resources */,
-				54AD31971A82BA700049147C /* Customizations.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2324,6 +2347,7 @@
 				548155E81C7B58AD00927A3B /* AppDelegate.swift in Sources */,
 				0D2084C51D496A94000437D5 /* ModuleManager.swift in Sources */,
 				54D6CEE61C6551080053DC4B /* DirectoryDefinition.swift in Sources */,
+				5402A13E1E4284E700FE8EB7 /* NotificationManager.swift in Sources */,
 				544BE9401B9738BD008FD51D /* ECSlidingInteractiveTransition.m in Sources */,
 				547459981D33E8F30033D1AC /* VersionChecker.swift in Sources */,
 				54639E061D42968B00A77F78 /* WebViewController.swift in Sources */,
@@ -2379,6 +2403,7 @@
 				544467821D2462AE00FA554F /* RegistrationPlannedSectionInstructor.m in Sources */,
 				54E9D7641D6E36CC007C00BD /* OpenModuleSettingsOperation.swift in Sources */,
 				544A15E41CEBAA2400D9FD80 /* LoginProtocol.swift in Sources */,
+				54CFBCFE1DBAC1C000C9107E /* Reachability.swift in Sources */,
 				5429CE2F1D6B9416003A0119 /* MapPOI+CoreDataClass.swift in Sources */,
 				54283872188443A800768CFC /* RegistrationSearchResultsViewController.m in Sources */,
 				5419C6341B7940BE00827DF2 /* EventsDetailViewController.swift in Sources */,
@@ -3388,7 +3413,9 @@
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -3428,7 +3455,9 @@
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -3447,6 +3476,7 @@
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				SDKROOT = iphoneos;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};

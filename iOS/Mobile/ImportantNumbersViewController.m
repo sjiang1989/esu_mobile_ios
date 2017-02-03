@@ -42,6 +42,12 @@
     self.searchController.definesPresentationContext = YES;
     self.tableView.tableHeaderView = self.searchController.searchBar;
     
+    UIView *hudView = self.view;
+    MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:hudView animated:YES];
+    NSString *loadingString = NSLocalizedString(@"Loading", @"loading message while waiting for data to load");
+    hud.label.text = loadingString;
+    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString);
+    
     [self fetchImportantNumbers];
     
     // Ensure that searchController will not persist
@@ -258,6 +264,13 @@
                 
                 
             }
+        } else {
+            dispatch_async(dispatch_get_main_queue(), ^(void){
+                UIAlertController* alert = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Poor Network Connection",@"title when data cannot load due to a poor netwrok connection") message:NSLocalizedString(@"Data could not be retrieved.",@"message when data cannot load due to a poor netwrok connection") preferredStyle:UIAlertControllerStyleAlert];
+                UIAlertAction* alertAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"OK",@"OK") style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {}];
+                [alert addAction:alertAction];
+                [self presentViewController:alert animated:YES completion:nil];
+            });
         }
         
         if (![importContext save:&error]) {
@@ -278,8 +291,10 @@
             }
             [self.tableView reloadData];
         }];
-    }
-     ];
+        dispatch_async(dispatch_get_main_queue(), ^(void){
+            [MBProgressHUD hideHUDForView:self.view animated:YES];
+        });
+    }];
     
 }
 

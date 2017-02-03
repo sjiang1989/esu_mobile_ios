@@ -44,6 +44,11 @@
 -(void) viewDidLoad
 {
     [super viewDidLoad];
+    
+    if ([self traitCollection].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        self.splitViewController.preferredDisplayMode = UISplitViewControllerDisplayModeAllVisible;
+    }
+    
     self.searchTextField.delegate = self;
     
     self.termTextField.leftView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Registration Search Term Picker Image"]];
@@ -168,7 +173,9 @@
 {
     [self.searchTextField resignFirstResponder];
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-    hud.label.text = NSLocalizedString(@"Searching", @"searching message");
+    NSString *loadingString = NSLocalizedString(@"Searching", @"searching message");
+    hud.label.text = loadingString;
+    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString);
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.01 * NSEC_PER_SEC);
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
         NSMutableArray *searchCourses = [self searchForCourses];
@@ -376,7 +383,7 @@
             }
         }
     } else {
-        [self.registrationTabController reportError:authenticatedRequest.error.localizedDescription];
+        [self.registrationTabController reportNetworkError];
     }
     return plannedSections;
 }

@@ -82,6 +82,9 @@ Pays";
 /* Class = "UILabel"; text = "To use directory, search above"; ObjectID = "jMG-wT-17h"; */
 "jMG-wT-17h.text" = "Pour utiliser l'annuaire, lancez une recherche ci-dessus.";
 
+/* Class = "UIButton"; accessibilityLabel = "Message"; ObjectID = "nmM-3Q-NFi"; */
+"nmM-3Q-NFi.accessibilityLabel" = "Message";
+
 /* Class = "UILabel"; text = "Label"; ObjectID = "oeC-Q5-nbg"; */
 "oeC-Q5-nbg.text" = "Libellé";
 

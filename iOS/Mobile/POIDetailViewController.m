@@ -108,10 +108,8 @@
     else if(self.additionalServices) {
         self.descriptionTextView.text = self.additionalServices;
     }
-    self.descriptionTextViewHeightConstraint.constant = self.descriptionTextView.contentSize.height;
-    [self.scrollView invalidateIntrinsicContentSize];
-    [self.descriptionTextView invalidateIntrinsicContentSize];
 
+    [self.descriptionTextView sizeToFit];
 }
 
 -(void) viewDidAppear:(BOOL)animated

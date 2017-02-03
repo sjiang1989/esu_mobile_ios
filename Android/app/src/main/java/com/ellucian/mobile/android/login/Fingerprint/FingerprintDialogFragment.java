@@ -29,6 +29,7 @@ import android.widget.TextView;
 
 import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
+import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.app.EllucianDialogFragment;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
@@ -58,8 +59,15 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
 
     private CryptoObject mCryptoObject;
     private FingerprintUiHelper mFingerprintUiHelper;
+    private EllucianActivity activity;
 
     public FingerprintDialogFragment() {
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        activity = (EllucianActivity) getActivity();
     }
 
     @SuppressLint("InlinedApi")
@@ -89,7 +97,6 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
 
         // Use Password button (appears after failed fingerprint attempt)
         Button passwordButton = (Button) v.findViewById(R.id.use_password_button);
-        passwordButton.setText(R.string.fingerprint_use_password);
         passwordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -127,14 +134,14 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
         super.onResume();
         mFingerprintUiHelper.startListening(mCryptoObject);
         mainAuthenticationReceiver = new MainAuthenticationReceiver();
-        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mainAuthenticationReceiver, new IntentFilter(AuthenticateUserIntentService.ACTION_UPDATE_MAIN));
+        LocalBroadcastManager.getInstance(activity).registerReceiver(mainAuthenticationReceiver, new IntentFilter(AuthenticateUserIntentService.ACTION_UPDATE_MAIN));
     }
 
     @Override
     public void onPause() {
         super.onPause();
         mFingerprintUiHelper.stopListening();
-        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mainAuthenticationReceiver);
+        LocalBroadcastManager.getInstance(activity).unregisterReceiver(mainAuthenticationReceiver);
     }
 
     /**
@@ -154,10 +161,10 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
         mFingerprintUiHelper.stopListening();
         dismiss();
 
-        LoginDialogFragment loginFragment = new LoginDialogFragment();
+        LoginDialogFragment loginFragment = LoginDialogFragment.newInstance(getResources().getConfiguration());
         loginFragment.queueIntent(queuedIntent, roles);
         loginFragment.setPreviousUserName(UserUtils.getSavedUserName(getContext()));
-        loginFragment.show(getActivity().getSupportFragmentManager(),
+        loginFragment.show(activity.getSupportFragmentManager(),
                 LoginDialogFragment.LOGIN_DIALOG);
     }
 
@@ -174,15 +181,18 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
      */
     @Override
     public void onAuthenticated() {
-        PreferencesUtils.addBooleanToPreferences(getActivity(), UserUtils.USER, UserUtils.USER_FINGERPRINT_NEEDED, false);
+        PreferencesUtils.addBooleanToPreferences(activity, UserUtils.USER, UserUtils.USER_FINGERPRINT_NEEDED, false);
         sendEvent(GoogleAnalyticsConstants.CATEGORY_AUTHENTICATION, GoogleAnalyticsConstants.ACTION_LOGIN, "Fingerprint authentication", null, null);
         if (refreshRoles) {
             // even if there's a queued intent, we cannot start it until we refresh the users roles.
-            UserUtils.reAuthenticateUser(FingerprintDialogFragment.this.getActivity(), userName, password, false, true);
+            UserUtils.reAuthenticateUser(activity, userName, password, false, true);
         } else {
-            LoginDialogFragment.startQueuedIntent(getActivity(), queuedIntent, roles, false);
+            LoginDialogFragment.startQueuedIntent(activity, queuedIntent, roles, false);
             dismiss();
         }
+        EllucianApplication ellucianApp = activity.getEllucianApp();
+        ellucianApp.resetModuleMenuAdapter();
+        activity.configureNavigationDrawer();
     }
 
     @Override
@@ -200,7 +210,7 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
         Log.e(TAG, "onRedisplay() called");
         dismiss();
 
-        FragmentManager manager = getActivity().getSupportFragmentManager();
+        FragmentManager manager = activity.getSupportFragmentManager();
         FingerprintDialogFragment fingerprintDialogFragment =
                 (FingerprintDialogFragment) manager.findFragmentByTag(FingerprintDialogFragment.FINGERPRINT_DIALOG);
 
@@ -231,12 +241,12 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
                     result.equals(AuthenticateUserIntentService.ACTION_SUCCESS)) {
 
                 LocalBroadcastManager.getInstance(context).unregisterReceiver(mainAuthenticationReceiver);
-                EllucianApplication ellucianApp = FingerprintDialogFragment.this.getEllucianActivity().getEllucianApp();
+                EllucianApplication ellucianApp = activity.getEllucianApp();
 
                 ellucianApp.startNotifications();
 
                 // Checks to see if the dialog was opened by a request for an auth-necessary activity
-                LoginDialogFragment.startQueuedIntent(getActivity(), queuedIntent, roles, false);
+                LoginDialogFragment.startQueuedIntent(activity, queuedIntent, roles, false);
                 queuedIntent = null;
             } else {
                 usePasswordInstead();
@@ -254,4 +264,9 @@ public class FingerprintDialogFragment extends EllucianDialogFragment
         super.onDestroyView();
     }
 
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        activity = null;
+    }
 }

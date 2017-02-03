@@ -176,6 +176,7 @@ class AllEventsViewController : UIViewController, UITableViewDataSource, UITable
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Event Cell", for: indexPath) as UITableViewCell
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         configureCell(cell, atIndexPath:indexPath)
         return cell
 

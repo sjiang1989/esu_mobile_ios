@@ -655,6 +655,46 @@ public class ConfigurationUpdateService extends IntentService {
             }
         }
 
+        /** Adding Login Info **/
+        // clear out all existing values first
+        PreferencesUtils.removeValuesFromPreferences(this, Utils.CONFIGURATION,
+                Utils.LOGIN_USERNAME_HINT,
+                Utils.LOGIN_PASSWORD_HINT,
+                Utils.LOGIN_INSTRUCTIONS,
+                Utils.LOGIN_HELP_LABEL,
+                Utils.LOGIN_HELP_URL);
+
+        if (jsonConfiguration.has("login")) {
+            JSONObject login = jsonConfiguration.getJSONObject("login");
+
+            if (login.has("usernameHint") && !TextUtils.isEmpty(login.getString("usernameHint"))) {
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
+                        Utils.LOGIN_USERNAME_HINT, login.getString("usernameHint"));
+            }
+
+            if (login.has("passwordHint") && !TextUtils.isEmpty(login.getString("passwordHint"))) {
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
+                        Utils.LOGIN_PASSWORD_HINT, login.getString("passwordHint"));
+            }
+
+            if (login.has("instructions") && !TextUtils.isEmpty(login.getString("instructions"))) {
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
+                        Utils.LOGIN_INSTRUCTIONS, login.getString("instructions"));
+            }
+
+            if (login.has("help")) {
+                JSONObject help = login.getJSONObject("help");
+                String helpDisplayLabel = help.has("display") ? help.getString("display") : null;
+                String helpUrl = help.has("url") ? help.getString("url") : null;
+
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
+                        Utils.LOGIN_HELP_LABEL, helpDisplayLabel);
+                PreferencesUtils.addStringToPreferences(this, Utils.CONFIGURATION,
+                        Utils.LOGIN_HELP_URL, helpUrl);
+            }
+
+        }
+
         /** Adding Home Screen Shortcuts */
         PreferencesUtils.removeValuesFromPreferences(this, Utils.CONFIGURATION, Utils.HOME_SCREEN_ICONS, Utils.HOME_SCREEN_OVERLAY);
 
@@ -668,30 +708,19 @@ public class ConfigurationUpdateService extends IntentService {
             }
         }
 
-        // Set if fingerprint can unlock app
-        boolean fingerprintOptionEnabled = true;
-        String authenticationType = PreferencesUtils.getStringFromPreferences(this, Utils.SECURITY, Utils.AUTHENTICATION_TYPE, "null");
+        boolean fingerprintSensorPresent;
 
-        // Allow any authType to use fingerprint.
-        if (authenticationType.equals("null")) {
-            Log.i(TAG, "Configuration Authentication type doesn't support fingerprint authentication");
-            fingerprintOptionEnabled = false;
+        FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(this);
+
+        if (fingerprintManager.isHardwareDetected()) {
+            fingerprintSensorPresent = true;
         } else {
-            // Only show fingerprint option if hardware permits it
-            FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(this);
-
-            if (!fingerprintManager.isHardwareDetected()) {
-                Log.i(TAG, "Device doesn't support fingerprint authentication");
-                fingerprintOptionEnabled = false;
-            } else if (!fingerprintManager.hasEnrolledFingerprints()) {
-                Log.d(TAG, "User hasn't enrolled any fingerprints to authenticate with");
-                fingerprintOptionEnabled = false;
-            }
-
+            Log.i(TAG, "Device doesn't support fingerprint authentication");
+            fingerprintSensorPresent = false;
         }
 
         SharedPreferences.Editor defaultEditor = PreferenceManager.getDefaultSharedPreferences(this).edit();
-        defaultEditor.putBoolean(Utils.FINGERPRINT_OPTION_ENABLED, fingerprintOptionEnabled);
+        defaultEditor.putBoolean(Utils.FINGERPRINT_SENSOR_PRESENT, fingerprintSensorPresent);
         defaultEditor.apply();
 
 	}

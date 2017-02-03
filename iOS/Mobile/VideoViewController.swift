@@ -30,8 +30,12 @@ class VideoViewController : UIViewController, UIGestureRecognizerDelegate, Elluc
     override func viewDidLoad() {
         
         let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
-        hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+        let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+        hud.label.text = loadingString
+        UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
         
+        label.accessibilityTraits = UIAccessibilityTraitButton
+        label.accessibilityHint = NSLocalizedString("Plays the video.", comment: "VoiceOver hint for button that plays a video")
         
         self.title = module!.name
         if let labelText = self.module?.property(forKey: "description") , labelText.characters.count > 0 {
@@ -81,7 +85,6 @@ class VideoViewController : UIViewController, UIGestureRecognizerDelegate, Elluc
                 }
             } catch let error as NSError {
                 DispatchQueue.main.async {
-                    
                     MBProgressHUD.hide(for: self.view, animated: true)
                     let alertController = UIAlertController(title: NSLocalizedString("Error Loading Video", comment: "title when error loading video"), message: error.localizedDescription, preferredStyle: .alert)
                     

@@ -57,6 +57,12 @@ class DirectoryEntryViewController : UITableViewController, CNContactViewControl
         tableView.rowHeight = UITableViewAutomaticDimension
         tableView.estimatedRowHeight = 160.0
         tableView.tableFooterView = UIView(frame: CGRect.zero)
+        
+        emailCell.accessibilityTraits = UIAccessibilityTraitButton
+        mobileCell.accessibilityTraits = UIAccessibilityTraitButton
+        phoneCell.accessibilityTraits = UIAccessibilityTraitButton
+        addressCell.accessibilityTraits = UIAccessibilityTraitButton
+        
         populateCells()
     }
     
@@ -266,7 +272,7 @@ class DirectoryEntryViewController : UITableViewController, CNContactViewControl
                 
                 let geocoder = CLGeocoder()
                 geocoder.geocodeAddressString(address, completionHandler: {(placemarks, error) -> Void in
-                    if((error) != nil){
+                    if let error = error {
                         print("Error", error)
                     }
                     if let placemark = placemarks?.first {

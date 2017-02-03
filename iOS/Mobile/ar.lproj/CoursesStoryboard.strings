@@ -4,11 +4,11 @@
 /* Class = "UILabel"; text = "Label"; ObjectID = "2IA-SC-G6y"; */
 "2IA-SC-G6y.text" = "المسمى";
 
-/* Class = "UILabel"; text = "No instructors assigned"; ObjectID = "2h1-rG-p0i"; */
-"2h1-rG-p0i.text" = "لم يتم تخصيص أي أستاذ";
+/* Class = "UILabel"; text = "Instructors have not been assigned"; ObjectID = "2h1-rG-p0i"; */
+"2h1-rG-p0i.text" = "لم يتم تحديد المحاضرين";
 
-/* Class = "UILabel"; text = "No meeting patterns defined"; ObjectID = "2ie-Jl-z37"; */
-"2ie-Jl-z37.text" = "لم يتم تعريف أي نمط اجتماع";
+/* Class = "UILabel"; text = "Meeting times have not been assigned"; ObjectID = "2ie-Jl-z37"; */
+"2ie-Jl-z37.text" = "لم يتم تحديد مواعيد الاجتماع";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "3TR-0j-Al6"; */
 "3TR-0j-Al6.text" = "المسمى";

@@ -1,27 +1,38 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.login;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Application;
 import android.app.Dialog;
+import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.ColorStateList;
+import android.content.res.Configuration;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
+import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
+import android.text.util.Linkify;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -30,6 +41,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ellucian.elluciango.R;
@@ -54,66 +66,88 @@ import static com.ellucian.mobile.android.settings.SettingsUtils.getBooleanFromP
 public class LoginDialogFragment extends EllucianDialogFragment {
 	public static final String TAG = LoginDialogFragment.class.getSimpleName();
 	public static final String LOGIN_DIALOG = "login_dialog";
-	private AlertDialog loginDialog;
     private Intent queuedIntent;
 	private List<String> roles;
     private String previousUserName;
+    private View dialogView;
 
 	private MainAuthenticationReceiver mainAuthenticationReceiver;
 	private boolean forcedLogin;
+    private boolean fullScreenFragment;
+
+    public static LoginDialogFragment newInstance(Configuration configuration) {
+        LoginDialogFragment f = new LoginDialogFragment();
+        Bundle args = new Bundle();
+        args.putParcelable("configuration", configuration);
+        f.setArguments(args);
+
+        return f;
+    }
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setRetainInstance(true);
 	}
-	
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		String loginType = PreferencesUtils.getStringFromPreferences(getActivity(), Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
-		if(loginType.equals(Utils.NATIVE_LOGIN_TYPE)) {
-			createBasicAuthenticationLoginDialog();
-		} else {
-			createWebAuthenticationLoginDialog();
-		}
 
-		return loginDialog;
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        String loginType = PreferencesUtils.getStringFromPreferences(getActivity(), Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
+        if(loginType.equals(Utils.NATIVE_LOGIN_TYPE)) {
+            dialogView = inflater.inflate(R.layout.fragment_login_dialog, container, false);
+            createBasicAuthenticationLoginDialog();
+        } else {
+            dialogView = inflater.inflate(R.layout.fragment_login_web_dialog, container, false);
+            createWebAuthenticationLoginDialog();
+        }
+        return dialogView;
+    }
+
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        Dialog dialog = super.onCreateDialog(savedInstanceState);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		return dialog;
 	}
 
-	@SuppressLint("SetJavaScriptEnabled")
+    @Override
+    public void show(FragmentManager manager, String tag) {
+        Configuration configuration = getArguments().getParcelable("configuration");
+
+        String screenSizeName = Utils.getSizeName(configuration);
+
+        if (TextUtils.equals(screenSizeName, "large")
+                || TextUtils.equals(screenSizeName, "xlarge")) {
+            fullScreenFragment = false;
+            super.show(manager, tag);
+        } else {
+            fullScreenFragment = true;
+            FragmentTransaction transaction = manager.beginTransaction();
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+            // To make it fullscreen, use the 'content' root view as the container
+            // for the fragment, which is always the root view for the activity
+            transaction.add(android.R.id.content, this)
+                    .addToBackStack(null).commit();
+        }
+
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
 	private void createWebAuthenticationLoginDialog() {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());
-		LayoutInflater inflater = getActivity().getLayoutInflater();
-		final ViewGroup dialogView = (ViewGroup) inflater.inflate(R.layout.fragment_login_web_dialog, null);
-		builder.setView(dialogView);
-
-        loginDialog = builder.create();
-        final CheckBox useFingerprintCheckBox = (CheckBox) dialogView.findViewById(R.id.useFingerprintCheckBox);
-
-        loginDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+        Button cancelButton = (Button) dialogView.findViewById(R.id.cancel_button);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onShow(DialogInterface dialog) {
-
-                Button cancelButton = (Button) dialogView.findViewById(R.id.cancel_button);
-                cancelButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        view.setEnabled(false);
-                        doCancel();
-                    }
-                });
-
-                if (PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(Utils.FINGERPRINT_OPTION_ENABLED, false)) {
-                    boolean fingerprintOptIn = getBooleanFromPreferences(getContext(), UserUtils.USER_FINGERPRINT_OPT_IN, false);
-                    useFingerprintCheckBox.setChecked(fingerprintOptIn);
-                } else {
-                    useFingerprintCheckBox.setVisibility(View.GONE);
-                }
-
+            public void onClick(View view) {
+                view.setEnabled(false);
+                doCancel();
             }
         });
 
 		final WebView webView = (WebView) dialogView.findViewById(R.id.login_webview);
 
+        if (fullScreenFragment) {
+            webView.setVisibility(View.VISIBLE);
+        }
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setUseWideViewPort(true);
@@ -138,7 +172,7 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 				if ("Authentication Success".equals(title)) {
 					sendEvent(GoogleAnalyticsConstants.CATEGORY_AUTHENTICATION, GoogleAnalyticsConstants.ACTION_LOGIN, "Authentication using web login", null, null);
 
-                    loginUser(null, null, false, useFingerprintCheckBox.isChecked());
+                    loginUser(null, null, false, false);
 				}
 			}
 		});
@@ -150,97 +184,169 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 	}
 
 	private void createBasicAuthenticationLoginDialog() {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());
-		LayoutInflater inflater = getActivity().getLayoutInflater();
-		
-		final ViewGroup dialogView = (ViewGroup) inflater.inflate(R.layout.fragment_login_dialog, null);
-        builder.setView(dialogView);
+        final String usernameHint = PreferencesUtils.getStringFromPreferences(getContext(), Utils.CONFIGURATION, Utils.LOGIN_USERNAME_HINT, getString(R.string.dialog_username));
+        final String passwordHint = PreferencesUtils.getStringFromPreferences(getContext(), Utils.CONFIGURATION, Utils.LOGIN_PASSWORD_HINT, getString(R.string.dialog_password));
+        final String instructions = PreferencesUtils.getStringFromPreferences(getContext(), Utils.CONFIGURATION, Utils.LOGIN_INSTRUCTIONS, getString(R.string.dialog_login_instructions));
+        final String helpDisplayLabel = PreferencesUtils.getStringFromPreferences(getContext(), Utils.CONFIGURATION, Utils.LOGIN_HELP_LABEL, null);
+        final String helpUrl = PreferencesUtils.getStringFromPreferences(getContext(), Utils.CONFIGURATION, Utils.LOGIN_HELP_URL, null);
 
-        builder.setNegativeButton(android.R.string.cancel, null);
-		builder.setPositiveButton(R.string.dialog_sign_in, null);
+        TextInputLayout usernameWrapper = (TextInputLayout) dialogView.findViewById(R.id.login_dialog_username_wrapper);
+        usernameWrapper.setHint(usernameHint);
+        final EditText usernameView = (EditText) dialogView.findViewById(R.id.login_dialog_username);
+        if (!TextUtils.isEmpty(previousUserName)) {
+            usernameView.setText(previousUserName);
+        }
 
-        loginDialog = builder.create();
-
-        loginDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+        final Button positive = (Button) dialogView.findViewById(R.id.sign_in_button);
+        Button negative = (Button) dialogView.findViewById(R.id.cancel_button);
+        negative.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onShow(DialogInterface dialog) {
-
-                EditText usernameView = (EditText) loginDialog.findViewById(R.id.login_dialog_username);
-                if (!TextUtils.isEmpty(previousUserName)) {
-                    usernameView.setText(previousUserName);
-                }
-
-                Button positive = loginDialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                Button negative = loginDialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-                negative.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        view.setEnabled(false);
-                        doCancel();
-                    }
-                });
-
-				final CheckBox useFingerprint = (CheckBox) loginDialog.findViewById(R.id.fingerprint_login_checkbox);
-				final CheckBox staySignedIn = (CheckBox) loginDialog.findViewById(R.id.login_dialog_checkbox);
-
-				useFingerprint.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-					@Override
-					public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-						if (isChecked) {
-							staySignedIn.setChecked(false);
-							staySignedIn.setEnabled(false);
-						} else {
-							staySignedIn.setEnabled(true);
-						}
-					}
-				});
-
-				staySignedIn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-					@Override
-					public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-						if (isChecked) {
-							useFingerprint.setChecked(false);
-							useFingerprint.setEnabled(false);
-						} else {
-							useFingerprint.setEnabled(true);
-						}
-					}
-				});
-
-                // Do not display fingerprint option if it can't be used
-                if (!PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(Utils.FINGERPRINT_OPTION_ENABLED, false)) {
-                    useFingerprint.setEnabled(false);
-                    useFingerprint.setVisibility(View.GONE);
-                } else {
-                    boolean fingerprintOptIn = getBooleanFromPreferences(getContext(), UserUtils.USER_FINGERPRINT_OPT_IN, false);
-                    useFingerprint.setChecked(fingerprintOptIn);
-                }
-
-				positive.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        view.setEnabled(false);
-                        Dialog loginDialog = getDialog();
-                        EditText usernameView = (EditText) loginDialog.findViewById(R.id.login_dialog_username);
-                        String username = usernameView.getText().toString();
-                        EditText passwordView = (EditText) loginDialog.findViewById(R.id.login_dialog_password);
-                        String password = passwordView.getText().toString();
-
-                        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
-                            Toast emptyMessage = Toast.makeText(LoginDialogFragment.this.getActivity(), R.string.dialog_sign_in_empty, Toast.LENGTH_LONG);
-                            emptyMessage.setGravity(Gravity.CENTER, 0, 0);
-                            emptyMessage.show();
-                            view.setEnabled(true);
-                        } else {
-                            boolean staySignedInChecked = staySignedIn.isChecked();
-							boolean useFingerprintChecked = useFingerprint.isChecked();
-                            loginDialog.findViewById(R.id.progress_spinner).setVisibility(View.VISIBLE);
-                            loginUser(username, password, staySignedInChecked, useFingerprintChecked);
-                        }
-
-                    }
-                });
+            public void onClick(View view) {
+                view.setEnabled(false);
+                doCancel();
             }
+        });
+
+        TextInputLayout passwordWrapper = (TextInputLayout) dialogView.findViewById(R.id.login_dialog_password_wrapper);
+        passwordWrapper.setHint(passwordHint);
+        final EditText passwordView = (EditText) dialogView.findViewById(R.id.login_dialog_password);
+        passwordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_GO) {
+                    hideKeyboard(v);
+                    positive.callOnClick();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        // Hide keyboard if user tapped outside Username or Password Edit Text views.
+        usernameView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    if (!passwordView.hasFocus()) {
+                        hideKeyboard(v);
+                    }
+                }
+            }
+        });
+
+        passwordView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    if (!usernameView.hasFocus()) {
+                        hideKeyboard(v);
+                    }
+                }
+            }
+        });
+
+        final CheckBox useFingerprint = (CheckBox) dialogView.findViewById(R.id.fingerprint_login_checkbox);
+        final CheckBox staySignedIn = (CheckBox) dialogView.findViewById(R.id.stay_signed_in_checkbox);
+        final ColorStateList enabledTextColor = staySignedIn.getTextColors();
+
+        enableStaySignedIn(staySignedIn, enabledTextColor);
+
+        final CompoundButton.OnCheckedChangeListener staySignedInChangeListener =
+                new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        if (isChecked) {
+                            useFingerprint.setChecked(false);
+                            useFingerprint.setEnabled(false);
+                            useFingerprint.setTextColor(VersionSupportUtils.getColorHelper(getContext(), R.color.disabled_text_color));
+                        } else {
+                            useFingerprint.setEnabled(true);
+                            useFingerprint.setTextColor(enabledTextColor);
+                        }
+                    }
+                };
+
+        staySignedIn.setOnCheckedChangeListener(staySignedInChangeListener);
+
+        useFingerprint.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // When use fingerprint is selected, null out the Stay Signed In change listener,
+                // so that we can check the box, but not disable Use Fingerprint. Then set it again at the end.
+                staySignedIn.setOnCheckedChangeListener(null);
+                if (isChecked) {
+                    staySignedIn.setChecked(true);
+                    staySignedIn.setEnabled(false);
+                    staySignedIn.setTextColor(VersionSupportUtils.getColorHelper(getContext(), R.color.disabled_text_color));
+                } else {
+                    staySignedIn.setChecked(false);
+                    enableStaySignedIn(staySignedIn, enabledTextColor);
+                }
+                staySignedIn.setOnCheckedChangeListener(staySignedInChangeListener);
+
+            }
+        });
+
+        // Do not display fingerprint option if it can't be used
+        if (UserUtils.isFingerprintOptionEnabled(getContext())) {
+            boolean fingerprintOptIn = getBooleanFromPreferences(getContext(), UserUtils.USER_FINGERPRINT_OPT_IN, false);
+            useFingerprint.setChecked(fingerprintOptIn);
+        } else {
+            useFingerprint.setEnabled(false);
+            useFingerprint.setVisibility(View.GONE);
+        }
+
+        final TextView loginInstructions = (TextView) dialogView.findViewById(R.id.login_instructions);
+        if (TextUtils.isEmpty(instructions)) {
+            loginInstructions.setVisibility(View.GONE);
+        } else {
+            loginInstructions.setText(instructions);
+            Linkify.addLinks(loginInstructions, Linkify.ALL);
+        }
+
+        TextView loginHelp = (TextView) dialogView.findViewById(R.id.login_help);
+        if (!TextUtils.isEmpty(helpDisplayLabel) && !TextUtils.isEmpty(helpUrl)) {
+            loginHelp.setVisibility(View.VISIBLE);
+            loginHelp.setText(helpDisplayLabel);
+            // for displaying TextView as a link
+            Utils.makeTextViewHyperlink(loginHelp);
+
+            loginHelp.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    sendEventToTracker1(GoogleAnalyticsConstants.CATEGORY_UI_ACTION, GoogleAnalyticsConstants.ACTION_BUTTON_PRESS, "Open login help url", null, getEllucianActivity().moduleName);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(helpUrl));
+                    startActivity(intent);
+                }
+            });
+
+        } else {
+            loginHelp.setVisibility(View.GONE);
+        }
+
+        positive.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                view.setEnabled(false);
+                hideKeyboard(view);
+                EditText usernameView = (EditText) dialogView.findViewById(R.id.login_dialog_username);
+                String username = usernameView.getText().toString();
+                String password = passwordView.getText().toString();
+
+                if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
+                    Toast emptyMessage = Toast.makeText(LoginDialogFragment.this.getActivity(), R.string.dialog_sign_in_empty, Toast.LENGTH_LONG);
+                    emptyMessage.setGravity(Gravity.CENTER, 0, 0);
+                    emptyMessage.show();
+                    view.setEnabled(true);
+                } else {
+                    boolean staySignedInChecked = staySignedIn.isChecked();
+                    boolean useFingerprintChecked = useFingerprint.isChecked();
+                    dialogView.findViewById(R.id.progress_spinner).setVisibility(View.VISIBLE);
+                    loginUser(username, password, staySignedInChecked, useFingerprintChecked);
+                }
+
+                    }
         });
 
 	}
@@ -253,7 +359,7 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 	
 	private void doCancel() {
 		sendEvent(GoogleAnalyticsConstants.CATEGORY_AUTHENTICATION, GoogleAnalyticsConstants.ACTION_CANCEL, "Click Cancel", null, null);
-		loginDialog.cancel();
+        closeLoginDialog();
 		// Make sure queue is empty in case of another login attempt
 		clearQueuedIntent();
         SettingsUtils.addBooleanToPreferences(getContext(), UserUtils.USER_FINGERPRINT_OPT_IN, false);
@@ -287,7 +393,6 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 	public static void startQueuedIntent(final Activity activity, Intent queuedIntent,
                          List<String> roles, boolean forcedLogin) {
 		if (queuedIntent != null) {
-			Intent startedIntent = queuedIntent;
 
 			boolean authorized = false;
 			if(roles != null) {
@@ -319,7 +424,7 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 			}
 			
 			if(authorized) {
-				activity.startActivity(startedIntent);
+				activity.startActivity(queuedIntent);
 				if(forcedLogin) {
 					activity.finish();
 				}
@@ -374,16 +479,15 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 		@Override
 		public void onReceive(Context context, Intent incomingIntent) {
             // Progress spinner only occurs on Native (Basic) Auth login dialog.
-            View progressSpinner = loginDialog.findViewById(R.id.progress_spinner);
+            View progressSpinner = dialogView.findViewById(R.id.progress_spinner);
             if (progressSpinner != null) {
                 progressSpinner.setVisibility(View.GONE);
             }
 
             Toast signInMessage = Toast.makeText(LoginDialogFragment.this.getActivity(), R.string.dialog_sign_in_failed, Toast.LENGTH_LONG);
 			signInMessage.setGravity(Gravity.CENTER, 0, 0);
-			AlertDialog loginDialog = (AlertDialog) getDialog();
-            CheckBox useFingerprint = (CheckBox) loginDialog.findViewById(R.id.fingerprint_login_checkbox);
-            CheckBox staySignedIn = (CheckBox) loginDialog.findViewById(R.id.login_dialog_checkbox);
+            CheckBox useFingerprint = (CheckBox) dialogView.findViewById(R.id.fingerprint_login_checkbox);
+            CheckBox staySignedIn = (CheckBox) dialogView.findViewById(R.id.stay_signed_in_checkbox);
 
 			String result = incomingIntent.getStringExtra(Extra.LOGIN_SUCCESS);
 			
@@ -408,15 +512,15 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 
 			} else {
 				signInMessage.show();
-                loginDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                dialogView.findViewById(R.id.sign_in_button).setEnabled(true);
 			}
 			
 		}		
 	}
 	
 	private void closeLoginDialog() {
-		getDialog().dismiss();
-	}
+        getFragmentManager().beginTransaction().remove(this).commit();
+    }
 
 	/**
 	 * If true, call finish after a successful login.
@@ -440,6 +544,35 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 
     public void setPreviousUserName(String previousUserName) {
         this.previousUserName = previousUserName;
+    }
+
+    public void hideKeyboard(View view) {
+        InputMethodManager inputMethodManager =(InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
+        inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    private boolean doesDeviceHaveScreenLockOn() {
+
+        KeyguardManager keyguardManager = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            //true if a PIN, pattern or password was set.
+            return keyguardManager.isDeviceSecure();
+        } else {
+            return VersionSupportUtils.doesDeviceHaveScreenLockOn(getContext(), keyguardManager);
+        }
+
+    }
+
+    private void enableStaySignedIn(CheckBox staySignedIn, ColorStateList enabledTextColor) {
+        if (doesDeviceHaveScreenLockOn()) {
+            staySignedIn.setEnabled(true);
+            staySignedIn.setTextColor(enabledTextColor);
+        } else {
+            staySignedIn.setEnabled(false);
+            TextView disabledText = (TextView) dialogView.findViewById(R.id.stay_signed_in_disabled_text);
+            disabledText.setVisibility(View.VISIBLE);
+            staySignedIn.setTextColor(VersionSupportUtils.getColorHelper(getContext(), R.color.disabled_text_color));
+        }
     }
 
 }

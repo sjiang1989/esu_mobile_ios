@@ -9,12 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
-import android.database.MatrixCursor;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.BaseColumns;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.TabLayout.Tab;
 import android.support.v4.app.Fragment;
@@ -26,24 +22,15 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.CheckBox;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.SimpleCursorAdapter;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ellucian.elluciango.R;
-import com.ellucian.mobile.android.adapter.CheckableCursorAdapter;
-import com.ellucian.mobile.android.adapter.CheckableCursorAdapter.OnCheckBoxClickedListener;
-import com.ellucian.mobile.android.adapter.CheckableSectionedListAdapter;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
 import com.ellucian.mobile.android.app.EllucianActivity;
-import com.ellucian.mobile.android.app.EllucianDefaultListFragment;
+import com.ellucian.mobile.android.app.EllucianDefaultRecyclerFragment;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.client.MobileClient;
-import com.ellucian.mobile.android.client.courses.Instructor;
-import com.ellucian.mobile.android.client.courses.MeetingPattern;
 import com.ellucian.mobile.android.client.registration.CartResponse;
 import com.ellucian.mobile.android.client.registration.EligibilityResponse;
 import com.ellucian.mobile.android.client.registration.EligibleTerm;
@@ -59,7 +46,6 @@ import com.ellucian.mobile.android.client.registration.UpdateResponse;
 import com.ellucian.mobile.android.client.services.RegisterService;
 import com.ellucian.mobile.android.client.services.RegistrationCartUpdateService;
 import com.ellucian.mobile.android.registration.RefineSearchDialogFragment.OnDoneFilteringListener;
-import com.ellucian.mobile.android.util.CalendarUtils;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.Utils;
 import com.ellucian.mobile.android.util.VersionSupportUtils;
@@ -67,44 +53,33 @@ import com.google.gson.Gson;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 
 public class RegistrationActivity extends EllucianActivity implements OnDoneFilteringListener {
     private static final String TAG = RegistrationActivity.class.getSimpleName();
 
     private final Activity activity = this;
-    private final int CART_TAB_INDEX = 0;
-    private final int SEARCH_TAB_INDEX = 1;
-    private final int REGISTERED_TAB_INDEX = 2;
+    static final int CART_TAB_INDEX = 0;
+    static final int SEARCH_TAB_INDEX = 1;
+    static final int REGISTERED_TAB_INDEX = 2;
 
     static final int REGISTRATION_DETAIL_REQUEST_CODE = 8888;
     static final int RESULT_REMOVE = 9999;
 
-    private static final String PLAN_ID = "planId";
     public static final String TERM_ID = "termId";
-    static final String SECTION_ID = "sectionId";
     static final String SECTION = "section";
-    private static final String TERM_NAME = "termName";
-    private static final String CART_IDENTIFIER = "Cart";
-    private static final String REGISTERED_IDENTIFIER = "Registered";
     private static final String ACTION_REGISTER = "actionRegister";
     private static final String ACTION_DROP = "actionDrop";
 
-    private RegistrationCartListAdapter cartAdapter;
-    private RegistrationCartListFragment cartFragment;
+    private RegistrationCartRecyclerAdapter cartRecyclerAdapter;
+    private RegistrationCartRecyclerFragment cartRecyclerFragment;
     private RegistrationSearchFragment searchFragment;
     private RegistrationResultsFragment registerResultsFragment;
-    private RegistrationSearchResultsListFragment searchResultsFragment;
-    private RegistrationRegisteredListFragment registeredFragment;
+    private RegistrationSearchResultsRecyclerFragment searchResultsFragment;
+    private RegistrationRegisteredRecyclerFragment registeredFragment;
     private CartResponse currentCart;
     private RetrieveCartListTask cartListTask;
     private int previousSelected;
@@ -120,20 +95,15 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     private SearchSectionTask searchTask;
     private SearchResponse currentResults;
-    private CheckableSectionedListAdapter resultsAdapter;
-    private CheckableSectionedListAdapter registeredAdapter;
+    private RegistrationSearchResultsRecyclerAdapter resultsAdapter;
+    private RegistrationRegisteredRecyclerAdapter registeredAdapter;
 
     OpenTerm[] openTerms;
     private HashMap<String, String> termPinMap;
 
-    private SimpleDateFormat defaultTimeParserFormat;
-    private SimpleDateFormat altTimeParserFormat;
-    private DateFormat timeFormatter;
-
     private Gson gson;
 
     private boolean isInForeground;
-    static final String AUTH_CODE_REQUIRED = "AUTH_CODE_REQUIRED";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,37 +113,36 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         setTitle(moduleName);
 
         isInForeground = true;
-
-        defaultTimeParserFormat = new SimpleDateFormat("HH:mm'Z'", Locale.US);
-        defaultTimeParserFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-        altTimeParserFormat = new SimpleDateFormat("HH:mm", Locale.US);
-        timeFormatter = android.text.format.DateFormat.getTimeFormat(this);
-
         gson = new Gson();
 
-
         FragmentManager manager = getSupportFragmentManager();
-        cartFragment = (RegistrationCartListFragment) manager.findFragmentByTag("RegistrationCartListFragment");
+        cartRecyclerFragment = (RegistrationCartRecyclerFragment) manager
+                .findFragmentByTag(RegistrationCartRecyclerFragment.class.getName());
 
-        if (cartFragment == null) {
-            cartFragment = (RegistrationCartListFragment) EllucianDefaultListFragment.newInstance(this, RegistrationCartListFragment.class.getName(), null);
+
+        if (cartRecyclerFragment == null) {
+            cartRecyclerFragment = (RegistrationCartRecyclerFragment) EllucianDefaultRecyclerFragment
+                    .newInstance(this, RegistrationCartRecyclerFragment.class.getName(), null);
         }
 
-        searchFragment = (RegistrationSearchFragment) manager.findFragmentByTag("RegistrationSearchFragment");
+        searchFragment = (RegistrationSearchFragment) manager
+                .findFragmentByTag(RegistrationSearchFragment.class.getName());
 
         if (searchFragment == null) {
             searchFragment = (RegistrationSearchFragment) Fragment.instantiate(this, RegistrationSearchFragment.class.getName());
         }
 
-        registeredFragment = (RegistrationRegisteredListFragment) manager.findFragmentByTag("RegistrationRegisteredListFragment");
+        registeredFragment = (RegistrationRegisteredRecyclerFragment) manager
+                .findFragmentByTag(RegistrationRegisteredRecyclerFragment.class.getName());
 
         if (registeredFragment == null) {
-            registeredFragment = (RegistrationRegisteredListFragment) Fragment.instantiate(this, RegistrationRegisteredListFragment.class.getName());
+            registeredFragment = (RegistrationRegisteredRecyclerFragment)
+                    Fragment.instantiate(this, RegistrationRegisteredRecyclerFragment.class.getName());
         }
 
-        cartAdapter = new RegistrationCartListAdapter(this, R.layout.registration_auth_required_header, AUTH_CODE_REQUIRED);
-        resultsAdapter = new CheckableSectionedListAdapter(this);
-        registeredAdapter = new CheckableSectionedListAdapter(this);
+        cartRecyclerAdapter = new RegistrationCartRecyclerAdapter(this);
+        resultsAdapter = new RegistrationSearchResultsRecyclerAdapter(this);
+        registeredAdapter = new RegistrationRegisteredRecyclerAdapter(this);
 
         // Setup the 3 tabs for Cart, Search, Registered in 1 TabLayout.
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -222,37 +191,27 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
             planPresent = true;
             Log.d(TAG, "Cart is current, building adapter.");
 
-            fillCartAdapter(currentCart, savedInstanceState);
-            fillRegisteredAdapter(currentCart, savedInstanceState);
-            if (cartAdapter == null) {
-                Log.e(TAG, "cartAdapter is null");
+            fillCartAdapter(currentCart);
+            fillRegisteredAdapter(currentCart);
+            if (cartRecyclerAdapter == null) {
+                Log.e(TAG, "cartRecyclerAdapter is null");
             }
 
         }
 
         if (currentResults != null) {
             Log.d(TAG, "Results is current, building adapter.");
+            resultsAdapter = new RegistrationSearchResultsRecyclerAdapter(this);
 
-            boolean addAuthCodeWarning = false;
-            for (Section section : currentResults.sections) {
-                if (section.authorizationCodeRequired) {
-                    addAuthCodeWarning = true;
-                }
-            }
-
-            if (addAuthCodeWarning) {
-                resultsAdapter = new CheckableSectionedListAdapter(this, R.layout.registration_search_results_header);
-            }
-
-            fillSearchResultsAdapter(currentResults, savedInstanceState, addAuthCodeWarning);
+            fillSearchResultsAdapter(currentResults);
             if (resultsAdapter == null) {
                 Log.e(TAG, "resultsAdapter is null");
             }
 
         }
 
-        cartFragment.setListAdapter(cartAdapter);
-        registeredFragment.setListAdapter(registeredAdapter);
+        cartRecyclerFragment.setAdapter(cartRecyclerAdapter);
+        registeredFragment.setAdapter(registeredAdapter);
 
         if (!eligibilityChecked) {
             eligibilityTask = new CheckEligibilityTask();
@@ -274,8 +233,9 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
                 ll.getChildAt(SEARCH_TAB_INDEX).setSelected(true);
                 tabLayout.setScrollPosition(SEARCH_TAB_INDEX, 0, true);
 
-                searchResultsFragment = (RegistrationSearchResultsListFragment) manager.findFragmentByTag("RegistrationSearchResultsListFragment");
-                searchResultsFragment.setListAdapter(resultsAdapter);
+                searchResultsFragment = (RegistrationSearchResultsRecyclerFragment) manager
+                        .findFragmentByTag(RegistrationSearchResultsRecyclerFragment.class.getName());
+                searchResultsFragment.setAdapter(resultsAdapter);
                 ft.attach(searchResultsFragment);
                 ft.commit();
             } else {
@@ -362,34 +322,11 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         if (currentCart != null) {
             outState.putParcelable("currentCart", currentCart);
 
-            if (cartAdapter != null) {
-                for (int i = 0; i < cartAdapter.headers.getCount(); i++) {
-                    String adapterSectionIdentifier = cartAdapter.identifiers.get(i);
-                    CheckableCursorAdapter cursorAdapter = (CheckableCursorAdapter) cartAdapter.sections.get(i);
-                    outState.putBooleanArray(CART_IDENTIFIER + "-" + adapterSectionIdentifier, cursorAdapter.getCheckedStatesAsBooleanArray());
-
-                }
-            }
-            if (registeredAdapter != null) {
-                for (int i = 0; i < registeredAdapter.headers.getCount(); i++) {
-                    String adapterSectionIdentifier = registeredAdapter.identifiers.get(i);
-                    CheckableCursorAdapter cursorAdapter = (CheckableCursorAdapter) registeredAdapter.sections.get(i);
-                    outState.putBooleanArray(REGISTERED_IDENTIFIER + "-" + adapterSectionIdentifier, cursorAdapter.getCheckedStatesAsBooleanArray());
-
-                }
-            }
         }
 
         if (currentResults != null) {
             outState.putParcelable("currentResults", currentResults);
 
-            if (resultsAdapter != null) {
-                for (int i = 0; i < resultsAdapter.headers.getCount(); i++) {
-                    String headerName = resultsAdapter.headers.getItem(i);
-                    CheckableCursorAdapter cursorAdapter = (CheckableCursorAdapter) resultsAdapter.sections.get(i);
-                    outState.putBooleanArray(headerName, cursorAdapter.getCheckedStatesAsBooleanArray());
-                }
-            }
         }
 
         int mCurrentTab = currentTab;
@@ -454,10 +391,10 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     // Get the updated text for the Cart Tab showing the number of items currently in the cart
     private String getCurrentCartText() {
-        if (cartAdapter != null && cartAdapter.getCountWithoutHeaders() > 0) {
+        if (cartRecyclerAdapter != null && cartRecyclerAdapter.getItemCountWithoutHeaders() > 0) {
             return getString(R.string.label_with_count_format,
                     getString(R.string.registration_tab_cart),
-                    cartAdapter.getCountWithoutHeaders());
+                    cartRecyclerAdapter.getItemCountWithoutHeaders());
         } else {
             return getString(R.string.registration_tab_cart);
         }
@@ -493,12 +430,10 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         }
     }
 
-    private void fillCartAdapter(CartResponse response, Bundle savedInstanceState) {
-        //  First time through, display courses that require authorization
-        splitCartAdapter(true, response, savedInstanceState);
-
-        //  Second time through, display courses that DO NOT require authorization
-        splitCartAdapter(false, response, savedInstanceState);
+    private void fillCartAdapter(CartResponse response) {
+        splitCartAdapter(response);
+        cartRecyclerAdapter.registerOnCheckBoxClickedListener(new RegisterCheckBoxClickedListener());
+        cartRecyclerAdapter.updateCheckedPositions();
 
         // After adapter is filled update the number of items in cart showing in tab
         if (tabLayout.getTabCount() > 0) {
@@ -514,75 +449,72 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     }
 
-    private void splitCartAdapter(boolean sectionsWithAuthCodeRequired, CartResponse response, Bundle savedInstanceState) {
+    private void splitCartAdapter(CartResponse response) {
+
+        // First time through, only pick up courses that require Auth Code
+        int sectionsRequiringAuthCode = 0;
         if (response.plans != null) {
             for (Plan plan : response.plans) {
                 for (Term term : plan.terms) {
+                    ArrayList<Section> coursesByTerm = new ArrayList<>(); // reset for each term
 
                     if (term.plannedCourses.length > 0) {
 
-                        MatrixCursor sectionedCursor = new MatrixCursor(new String[]{
-                                BaseColumns._ID, SECTION_ID, TERM_ID, TERM_NAME, PLAN_ID
-                        });
-
-                        int row = 1;
                         for (Section course : term.plannedCourses) {
-                            if (!sectionsWithAuthCodeRequired == course.authorizationCodeRequired) {
-                                continue;
-                            }
+                            // add termName to Course Section
+                            course.termName = term.name;
+                            // add planId to Course Section
+                            course.planId = plan.planId;
 
-                            // only showing non-registered sections
-                            if (!TextUtils.isEmpty(course.classification) && !course.classification.equals(Section.CLASSIFICATION_REGISTERED)) {
-                                Log.d(TAG, course.courseName + " is not registered, showing in cart");
-                                sectionedCursor.addRow(new Object[]{"" + row++,
-                                        course.sectionId, term.termId, term.name, plan.planId
-                                });
-                            } else {
-                                Log.d(TAG, course.courseName + " is already registered");
+                            if (course.authorizationCodeRequired) {
+                                Log.d(TAG, "Requires AUTH Code: "+ course.termId + " " + course.sectionId );
+
+                                // only showing non-registered sections
+                                if (!TextUtils.isEmpty(course.classification) && !course.classification.equals(Section.CLASSIFICATION_REGISTERED)) {
+                                    Log.d(TAG, course.courseName + " is not registered, showing in cart");
+                                    coursesByTerm.add(course);
+                                    sectionsRequiringAuthCode++;
+                                } else {
+                                    Log.d(TAG, course.courseName + " is already registered");
+                                }
+                            }
+                        }
+
+                        if (!coursesByTerm.isEmpty()) {
+                            RegistrationHeaderHolder headerHolder = new RegistrationHeaderHolder(term.name, true);
+                            cartRecyclerAdapter.addSection(headerHolder, coursesByTerm);
+                        }
+                    }
+                }
+            }
+        }
+
+        cartRecyclerAdapter.setSectionsRequiringAuthCode(sectionsRequiringAuthCode);
+
+        // 2nd time through, only pick up courses that do NOT require Auth Code
+        if (response.plans != null) {
+            for (Plan plan : response.plans) {
+                for (Term term : plan.terms) {
+                    ArrayList<Section> coursesByTerm = new ArrayList<>(); // reset for each term
+
+                    if (term.plannedCourses.length > 0) {
+
+                        for (Section course : term.plannedCourses) {
+                            if (!course.authorizationCodeRequired) {
+
+                                // only showing non-registered sections
+                                if (!TextUtils.isEmpty(course.classification) && !course.classification.equals(Section.CLASSIFICATION_REGISTERED)) {
+                                    Log.d(TAG, course.courseName + " is not registered, showing in cart");
+                                    coursesByTerm.add(course);
+                                } else {
+                                    Log.d(TAG, course.courseName + " is already registered");
+                                }
                             }
                         }
 
-                        CheckableCursorAdapter cursorAdapter;
-                        if (sectionsWithAuthCodeRequired) {
-                            cursorAdapter = new RegistrationCartCheckableAdapter(
-                                    this,
-                                    R.layout.registration_list_checkbox_row,
-                                    sectionedCursor,
-                                    new String[]{SECTION_ID},
-                                    new int[]{R.id.registration_row_layout},
-                                    0,
-                                    R.id.checkbox);
-
-                            cursorAdapter.setViewBinder(new RegistrationViewBinder());
-                            ((RegistrationCartCheckableAdapter) cursorAdapter).registerOnCartCheckBoxClickedListener(new RegisterAuthCodeCheckBoxClickedListener());
-
-                        } else {
-                            cursorAdapter = new CheckableCursorAdapter(
-                                    this,
-                                    R.layout.registration_list_checkbox_row,
-                                    sectionedCursor,
-                                    new String[]{SECTION_ID},
-                                    new int[]{R.id.registration_row_layout},
-                                    0,
-                                    R.id.checkbox);
-
-                            cursorAdapter.setViewBinder(new RegistrationViewBinder());
-                            cursorAdapter.registerOnCheckBoxClickedListener(new RegisterCheckBoxClickedListener());
-                        }
-
-                        if (savedInstanceState != null) {
-                            boolean[] checkedStatesBooleanArray = savedInstanceState.getBooleanArray(CART_IDENTIFIER + "-" + term.termId);
-                            if (checkedStatesBooleanArray != null) {
-                                cursorAdapter.setCheckedStates(checkedStatesBooleanArray);
-                            }
-                        }
-                        if (sectionedCursor.getCount() > 0) {
-                            if (sectionsWithAuthCodeRequired) {
-                                cartAdapter.addSection(term.name, AUTH_CODE_REQUIRED, cursorAdapter);
-                            } else {
-                                cartAdapter.addSection(term.name, term.termId, cursorAdapter);
-                            }
-
+                        if (!coursesByTerm.isEmpty()) {
+                            RegistrationHeaderHolder headerHolder = new RegistrationHeaderHolder(term.name, false);
+                            cartRecyclerAdapter.addSection(headerHolder, coursesByTerm);
                         }
                     }
                 }
@@ -590,58 +522,38 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         }
     }
 
-    private void fillRegisteredAdapter(CartResponse response, Bundle savedInstanceState) {
+    private void fillRegisteredAdapter(CartResponse response) {
+        if (response.plans != null) {
+            for (Plan plan : response.plans) {
+                for (Term term : plan.terms) {
+                    ArrayList<Section> coursesByTerm = new ArrayList<>(); // reset for each term
 
-        for (Plan plan : response.plans) {
-            for (Term term : plan.terms) {
+                    if (term.plannedCourses.length > 0) {
 
-                if (term.plannedCourses.length > 0) {
+                        for (Section course : term.plannedCourses) {
 
-                    MatrixCursor sectionedCursor = new MatrixCursor(new String[]{
-                            BaseColumns._ID, SECTION_ID, TERM_ID, TERM_NAME, PLAN_ID
-                    });
+                            if (!TextUtils.isEmpty(course.classification) && course.classification.equals(Section.CLASSIFICATION_REGISTERED)) {
+                                Log.d(TAG, course.courseName + " is registered, showing in cart");
+                                coursesByTerm.add(course);
+                            } else {
+                                Log.d(TAG, course.courseName + " is not registered");
+                            }
 
-                    int row = 1;
-                    for (Section course : term.plannedCourses) {
-
-                        if (!TextUtils.isEmpty(course.classification) && course.classification.equals(Section.CLASSIFICATION_REGISTERED)) {
-                            Log.d(TAG, course.courseName + " is registered, showing in cart");
-                            sectionedCursor.addRow(new Object[]{"" + row++,
-                                    course.sectionId, term.termId, term.name, plan.planId
-                            });
-                        } else {
-                            Log.d(TAG, course.courseName + " is not registered");
                         }
 
-                    }
-
-                    CheckableCursorAdapter cursorAdapter = new CheckableCursorAdapter(
-                            this,
-                            R.layout.registration_list_checkbox_row,
-                            sectionedCursor,
-                            new String[]{SECTION_ID},
-                            new int[]{R.id.registration_row_layout},
-                            0,
-                            R.id.checkbox);
-
-                    cursorAdapter.setViewBinder(new RegistrationViewBinder());
-                    cursorAdapter.registerOnCheckBoxClickedListener(new DropCheckBoxClickedListener());
-                    if (savedInstanceState != null) {
-                        boolean[] checkedStatesBooleanArray = savedInstanceState.getBooleanArray(REGISTERED_IDENTIFIER + "-" + term.termId);
-                        if (checkedStatesBooleanArray != null) {
-                            cursorAdapter.setCheckedStates(checkedStatesBooleanArray);
+                        if (!coursesByTerm.isEmpty()) {
+                            RegistrationHeaderHolder headerHolder = new RegistrationHeaderHolder(term.name);
+                            registeredAdapter.addSection(headerHolder, coursesByTerm);
                         }
-                    }
-                    if (sectionedCursor.getCount() > 0) {
-                        registeredAdapter.addSection(term.name, term.termId, cursorAdapter);
                     }
                 }
             }
         }
-
+        registeredAdapter.registerOnCheckBoxClickedListener(new DropCheckBoxClickedListener());
+        registeredAdapter.updateCheckedPositions();
     }
 
-    Section findSectionInCart(String termId, String sectionId) {
+    private Section findSectionInCart(String termId, String sectionId) {
         if (currentCart != null) {
             for (Plan plan : currentCart.plans) {
                 for (Term term : plan.terms) {
@@ -720,22 +632,23 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     private List<TermInfoHolder> getTermsThatNeedPins(String action) {
         Log.d(TAG, "Looking for selected terms that require a pin for action: " + action);
-        CheckableSectionedListAdapter adapter;
-        if (!TextUtils.isEmpty(action) && action.equals(ACTION_DROP)) {
-            adapter = (CheckableSectionedListAdapter) registeredFragment.getListAdapter();
-        } else {
-            adapter = (CheckableSectionedListAdapter) cartFragment.getListAdapter();
-        }
 
         List<TermInfoHolder> termListToCheck = new ArrayList<>();
         List<TermInfoHolder> termsThatNeedPins = new ArrayList<>();
 
-        Cursor cursor;
+        RegistrationRecyclerAdapter adapter;
+
+        if (!TextUtils.isEmpty(action) && action.equals(ACTION_DROP)) {
+            // User is dropping courses from registeredAdapter
+            adapter = registeredAdapter;
+        } else { // User is registering courses from cartRecyclerAdapter
+            adapter = cartRecyclerAdapter;
+        }
+
         for (int checkedPosition : adapter.getCheckedPositions()) {
-            cursor = (Cursor) adapter.getItem(checkedPosition);
-            String termId = cursor.getString(cursor.getColumnIndex(TERM_ID));
-            String termName = cursor.getString(cursor.getColumnIndex(TERM_NAME));
-            cursor.close();
+            Section courseSection = (Section) adapter.getItem(checkedPosition);
+            String termId = courseSection.termId;
+            String termName = courseSection.termName;
             TermInfoHolder holder = new TermInfoHolder();
             holder.termId = termId;
             holder.termName = termName;
@@ -784,17 +697,14 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     private List<PlanToRegister> getPlansToRegister() {
         HashMap<String, List<SectionRegistration>> selectionMap = new HashMap<>();
-        CheckableSectionedListAdapter adapter = (CheckableSectionedListAdapter) cartFragment.getListAdapter();
 
         List<SectionRegistration> currentSelectionList;
-        for (int checkedPosition : adapter.getCheckedPositions()) {
-            Cursor cursor = (Cursor) adapter.getItem(checkedPosition);
+        for (int checkedPosition : cartRecyclerAdapter.getCheckedPositions()) {
+            Section courseSection = (Section) cartRecyclerAdapter.getItem(checkedPosition);
 
-            String sectionId = cursor.getString(cursor.getColumnIndex(SECTION_ID));
-            String termId = cursor.getString(cursor.getColumnIndex(TERM_ID));
-            String planId = cursor.getString(cursor.getColumnIndex(PLAN_ID));
-
-            cursor.close();
+            String sectionId = courseSection.sectionId;
+            String termId = courseSection.termId;
+            String planId = courseSection.planId;
 
             if (selectionMap.containsKey(planId)) {
                 currentSelectionList = selectionMap.get(planId);
@@ -804,6 +714,8 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
             }
 
             Section section = findSectionInCart(termId, sectionId);
+            section.setCheckboxSelected(false); // uncheck the section
+
             String action;
             Float credits = null;
             if (!TextUtils.isEmpty(section.gradingType) && section.gradingType.equals(Section.GRADING_TYPE_AUDIT)) {
@@ -861,12 +773,12 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         }
 
         if (updated > 0) {
-            cartAdapter = new RegistrationCartListAdapter(this, R.layout.registration_auth_required_header, AUTH_CODE_REQUIRED);
-            registeredAdapter = new CheckableSectionedListAdapter(this);
-            cartFragment.setListAdapter(cartAdapter);
-            registeredFragment.setListAdapter(registeredAdapter);
-            fillCartAdapter(currentCart, null);
-            fillRegisteredAdapter(currentCart, null);
+            cartRecyclerAdapter = new RegistrationCartRecyclerAdapter(this);
+            registeredAdapter = new RegistrationRegisteredRecyclerAdapter(this);
+            cartRecyclerFragment.setAdapter(cartRecyclerAdapter);
+            registeredFragment.setAdapter(registeredAdapter);
+            fillCartAdapter(currentCart);
+            fillRegisteredAdapter(currentCart);
         }
     }
 
@@ -918,17 +830,14 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     private List<PlanToRegister> getPlansToDrop() {
         HashMap<String, List<SectionRegistration>> selectionMap = new HashMap<>();
-        CheckableSectionedListAdapter adapter = (CheckableSectionedListAdapter) registeredFragment.getListAdapter();
 
         List<SectionRegistration> currentSelectionList;
-        for (int checkedPosition : adapter.getCheckedPositions()) {
-            Cursor cursor = (Cursor) adapter.getItem(checkedPosition);
+        for (int checkedPosition : registeredAdapter.getCheckedPositions()) {
+            Section courseSection = (Section) registeredAdapter.getItem(checkedPosition);
 
-            String sectionId = cursor.getString(cursor.getColumnIndex(SECTION_ID));
-            String termId = cursor.getString(cursor.getColumnIndex(TERM_ID));
-            String planId = cursor.getString(cursor.getColumnIndex(PLAN_ID));
-
-            cursor.close();
+            String sectionId = courseSection.sectionId;
+            String termId = courseSection.termId;
+            String planId = courseSection.planId;
 
             if (selectionMap.containsKey(planId)) {
                 currentSelectionList = selectionMap.get(planId);
@@ -938,6 +847,8 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
             }
 
             Section section = findSectionInCart(termId, sectionId);
+            section.setCheckboxSelected(false); // uncheck the section
+
             String action;
             Float credits = null;
 
@@ -985,10 +896,8 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
     }
 
     void onVariableCreditsConfirmCancelClicked(int position) {
-        CheckBox checkBox = resultsAdapter.getCheckBoxAtPosition(position);
-        if (checkBox != null) {
-            checkBox.performClick();
-        }
+        resultsAdapter.uncheckCheckbox(position);
+        searchResultsFragment.updateAddToCartButton(resultsAdapter.getCheckedPositions());
     }
 
     void onAuthCodeConfirmOkClicked(String termId, String sectionId, String authCodeEntered) {
@@ -996,13 +905,14 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         String authCode = section.authorizationCodePresented;
         section.authorizationCodePresented = authCodeEntered;
 
-        if (authCode != section.authorizationCodePresented) {
-            cartAdapter.notifyDataSetChanged();
+        if (!TextUtils.equals(authCode, section.authorizationCodePresented)) {
+            cartRecyclerAdapter.notifyDataSetChanged();
         }
     }
 
-    void onAuthCodeConfirmCancelClicked(int position, String termId, String sectionId) {
-        cartAdapter.uncheckCheckbox(position, termId, sectionId);
+    void onAuthCodeConfirmCancelClicked(int position) {
+        cartRecyclerAdapter.uncheckCheckbox(position);
+        cartRecyclerFragment.updateRegisterButton(cartRecyclerAdapter.getCheckedPositions());
     }
 
     public void onAddToCartClicked(View view) {
@@ -1014,17 +924,17 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     void onAddToCartConfirmOkClicked() {
         sendEvent(GoogleAnalyticsConstants.CATEGORY_UI_ACTION, GoogleAnalyticsConstants.ACTION_BUTTON_PRESS, "Add to cart", null, moduleName);
-        CheckableSectionedListAdapter adapter = (CheckableSectionedListAdapter) searchResultsFragment.getListAdapter();
 
         String successMessage = "";
         List<Section> updateServerList = new ArrayList<>();
-        for (int checkedPosition : adapter.getCheckedPositions()) {
-            Cursor cursor = (Cursor) adapter.getItem(checkedPosition);
+        for (int checkedPosition : resultsAdapter.getCheckedPositions()) {
+            Section courseSection = (Section) resultsAdapter.getItem(checkedPosition);
 
-            String sectionId = cursor.getString(cursor.getColumnIndex(SECTION_ID));
-            String termId = cursor.getString(cursor.getColumnIndex(TERM_ID));
+            String sectionId = courseSection.sectionId;
+            String termId = courseSection.termId;
 
             Section section = findSectionInResults(termId, sectionId);
+            section.setCheckboxSelected(false); // uncheck the section
             if (addSectionToCart(section)) {
                 successMessage += getString(R.string.registration_added_to_cart_success_format, section.courseName, section.courseSectionNumber) + "\n\n";
                 // create list of sections for updating server cart info
@@ -1033,18 +943,18 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
                 successMessage += getString(R.string.registration_added_to_cart_failed_format, section.courseName, section.courseSectionNumber) + "\n\n";
             }
         }
-        if (currentCart != null && adapter.getCheckedPositions().size() > 0) {
-            cartAdapter = new RegistrationCartListAdapter(this, R.layout.registration_auth_required_header, AUTH_CODE_REQUIRED);
-            registeredAdapter = new CheckableSectionedListAdapter(this);
-            cartFragment.setListAdapter(cartAdapter);
-            registeredFragment.setListAdapter(registeredAdapter);
-            fillCartAdapter(currentCart, null);
-            fillRegisteredAdapter(currentCart, null);
+        if (currentCart != null && resultsAdapter.getCheckedPositions().size() > 0) {
+            cartRecyclerAdapter = new RegistrationCartRecyclerAdapter(this);
+            registeredAdapter = new RegistrationRegisteredRecyclerAdapter(this);
+            cartRecyclerFragment.setAdapter(cartRecyclerAdapter);
+            registeredFragment.setAdapter(registeredAdapter);
+            fillCartAdapter(currentCart);
+            fillRegisteredAdapter(currentCart);
 
             // Clear checked positions and remove button
-            adapter.clearCheckedPositions();
-            adapter.notifyDataSetChanged();
-            searchResultsFragment.showAddToCartButton(false, 0);
+            resultsAdapter.clearCheckedPositions();
+            resultsAdapter.notifyDataSetChanged();
+            searchResultsFragment.updateAddToCartButton(null);
 
             // Show success/fail toast
             if (!TextUtils.isEmpty(successMessage)) {
@@ -1111,16 +1021,16 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
     void removeItemFromCart() {
 
-        int position = cartFragment.getCurrentPosition();
-        Cursor cursor = (Cursor) cartFragment.getListView().getItemAtPosition(position);
+        int position = cartRecyclerFragment.getCurrentSelected();
+        Section courseSection = (Section) cartRecyclerAdapter.getItem(position);
 
-        String sectionId = cursor.getString(cursor.getColumnIndex(SECTION_ID));
-        String termId = cursor.getString(cursor.getColumnIndex(TERM_ID));
+        String sectionId = courseSection.sectionId;
+        String termId = courseSection.termId;
 
         Section section = findAndRemoveSectionFromCart(termId, sectionId);
         // clear the current details and also clear the bundle so it wont be displayed on rotate
         clearDetailFragment();
-        cartFragment.setDetailBundle(null);
+        cartRecyclerFragment.clearCurrentDetailFragment();
 
         List<Section> updateServerList = new ArrayList<>();
         updateServerList.add(section);
@@ -1145,13 +1055,13 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
                                 term.plannedCourses = sectionList.toArray(new Section[sectionList.size()]);
 
                                 // update adapters to show the new state
-                                cartAdapter = new RegistrationCartListAdapter(this, R.layout.registration_auth_required_header, AUTH_CODE_REQUIRED);
-                                registeredAdapter = new CheckableSectionedListAdapter(this);
+                                cartRecyclerAdapter = new RegistrationCartRecyclerAdapter(this);
+                                registeredAdapter = new RegistrationRegisteredRecyclerAdapter(this);
 
-                                fillCartAdapter(currentCart, null);
-                                fillRegisteredAdapter(currentCart, null);
-                                cartFragment.setListAdapter(cartAdapter);
-                                registeredFragment.setListAdapter(registeredAdapter);
+                                fillCartAdapter(currentCart);
+                                fillRegisteredAdapter(currentCart);
+                                cartRecyclerFragment.setAdapter(cartRecyclerAdapter);
+                                registeredFragment.setAdapter(registeredAdapter);
 
                                 return returnedSection;
                             }
@@ -1272,59 +1182,35 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         Utils.showProgressIndicator(activity);
     }
 
-    private void fillSearchResultsAdapter(SearchResponse response, Bundle savedInstanceState,
-                      boolean addAuthCodeWarning) {
+    private void fillSearchResultsAdapter(SearchResponse response) {
 
         if (response.sections.length > 0) {
             ArrayList<Section> sections = new ArrayList<>(Arrays.asList(response.sections));
 
-            MatrixCursor sectionedCursor = new MatrixCursor(new String[]{
-                    BaseColumns._ID, RegistrationActivity.SECTION_ID, RegistrationActivity.TERM_ID
-            });
+            ArrayList<Section> sortedSectionList = new ArrayList<>();
+            RegistrationHeaderHolder headerHolder;
 
-            int row = 1;
-
-            // First, add any sections that require an AuthCode
+            // First, find any sections that require an AuthCode. Those will be on the top.
             ArrayList<Section> sectionsRequiringAuthCode = sectionsRequiringAuthCode(sections);
-            for (Section section : sectionsRequiringAuthCode) {
-                Log.d(TAG, "Creating row for : " + section.sectionId + "/" + section.termId);
-                sectionedCursor.addRow(new Object[]{"" + row++,
-                        section.sectionId, section.termId});
+            if (sectionsRequiringAuthCode.size() > 0) {
+                Log.d(TAG, "Adding " + sectionsRequiringAuthCode.size() + " courses needing AuthCode");
+                sortedSectionList.addAll(sectionsRequiringAuthCode);
+                headerHolder = new RegistrationHeaderHolder(getString(R.string.registration_approval_required), true);
+            } else {
+                headerHolder = new RegistrationHeaderHolder(getString(R.string.search_results_label), false);
             }
+            resultsAdapter.setSectionsRequiringAuthCode(sectionsRequiringAuthCode.size());
 
             // Then add all remaining sections
             sections.removeAll(sectionsRequiringAuthCode);
-
-            for (Section section : sections) {
-                Log.d(TAG, "Creating row for : " + section.sectionId + "/" + section.termId);
-                sectionedCursor.addRow(new Object[]{"" + row++,
-                        section.sectionId, section.termId});
+            if (sections.size() > 0) {
+                Log.d(TAG, "Adding " + sections.size() + " courses NOT needing AuthCode");
+                sortedSectionList.addAll(sections);
             }
 
-            CheckableCursorAdapter checkableAdapter = new CheckableCursorAdapter(
-                    this,
-                    R.layout.registration_list_checkbox_row,
-                    sectionedCursor,
-                    new String[]{RegistrationActivity.SECTION_ID},
-                    new int[]{R.id.registration_row_layout},
-                    0,
-                    R.id.checkbox);
+            resultsAdapter.addSection(headerHolder, sortedSectionList);
+            resultsAdapter.registerOnCheckBoxClickedListener(new SearchCheckBoxClickedListener());
 
-            checkableAdapter.setViewBinder(new RegistrationSearchViewBinder());
-            checkableAdapter.registerOnCheckBoxClickedListener(new SearchCheckBoxClickedListener());
-
-            if (savedInstanceState != null) {
-                boolean[] checkedStatesBooleanArray = savedInstanceState.getBooleanArray("Results");
-                if (checkedStatesBooleanArray != null) {
-                    checkableAdapter.setCheckedStates(checkedStatesBooleanArray);
-                }
-            }
-
-            if (addAuthCodeWarning) {
-                resultsAdapter.addSection(getString(R.string.registration_approval_required), checkableAdapter);
-            } else {
-                resultsAdapter.addSection(getString(R.string.search_results_label), checkableAdapter);
-            }
         }
     }
 
@@ -1366,7 +1252,7 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         public String sectionId;
         public String action;
         public Float credits;
-        public String authorizationCode;
+        String authorizationCode;
     }
 
     private class CartPlan {
@@ -1421,7 +1307,7 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         @Override
         protected void onPostExecute(EligibilityResponse result) {
 
-            if (result != null && result.eligible == true) {
+            if (result != null && result.eligible) {
                 Log.d(TAG, "Eligibility check: true");
             } else {
                 Log.d(TAG, "Eligibility check: false");
@@ -1438,7 +1324,7 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
                     }
                 }
 
-                cartFragment.setShowEligibilityError(true, message);
+                cartRecyclerFragment.setShowEligibilityError(true, message);
 
                 EligibilityDialogFragment eligibilityDialogFragment = EligibilityDialogFragment.newInstance(message);
                 if (isInForeground) {
@@ -1467,8 +1353,7 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
             requestUrl = client.addUserToUrl(requestUrl);
             requestUrl += "/plans?planningTool=" + planningTool;
 
-            CartResponse response = client.getCartList(requestUrl);
-            return response;
+            return client.getCartList(requestUrl);
         }
 
         @Override
@@ -1478,12 +1363,12 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
             enableTabs();
 
             if (result != null) {
-                if (result.plans != null || result.plans.length > 0) {
+                if (result.plans != null && result.plans.length > 0) {
                     planPresent = true;
-                    fillCartAdapter(result, null);
-                    fillRegisteredAdapter(result, null);
+                    fillCartAdapter(result);
+                    fillRegisteredAdapter(result);
 
-                    if (cartAdapter.getCount() > 0) {
+                    if (cartRecyclerAdapter.getItemCount() > 0) {
                         if (isInForeground) {
                             tabLayout.getTabAt(CART_TAB_INDEX).select();
                             Utils.hideProgressIndicator(activity);
@@ -1561,17 +1446,17 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
 
                     Section section = findSectionInCart(failure.termId, failure.sectionId);
                     String authCode = section.authorizationCodePresented;
-                    section.authorizationCodePresented = null;
 
-                    if (authCode != section.authorizationCodePresented) {
+                    if (authCode != null) {
                         Log.d(TAG, "Clearing Authorization Code for section that failed registration: " + failure.sectionId);
-                        cartAdapter.notifyDataSetChanged();
+                        section.authorizationCodePresented = null;
+                        cartRecyclerAdapter.notifyDataSetChanged();
                     }
 
                 }
             }
 
-            cartAdapter.clearCheckedPositions();
+            cartRecyclerAdapter.clearCheckedPositions();
             clearDetailFragment();
             Utils.hideProgressIndicator(activity);
 
@@ -1703,65 +1588,54 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
                 }
             }
 
-            SearchResponse jsonResponse = client.findSections(requestUrl);
+            return client.findSections(requestUrl);
 
-            return jsonResponse;
         }
 
         @Override
         protected void onPostExecute(SearchResponse result) {
 
-            if (this != null) {
+            if (result != null && result.sections != null) {
                 currentResults = result;
+            } else {
+                 currentResults = null;
+            }
 
-                boolean addAuthCodeWarning = false;
-                for (Section section : result.sections) {
-                    if (section.authorizationCodeRequired) {
-                        addAuthCodeWarning = true;
-                    }
-                }
+            resultsAdapter = new RegistrationSearchResultsRecyclerAdapter(RegistrationActivity.this);
 
-                if (addAuthCodeWarning) {
-                    resultsAdapter = new CheckableSectionedListAdapter(RegistrationActivity.this, R.layout.registration_search_results_header);
+            FragmentManager manager = getSupportFragmentManager();
+            FragmentTransaction ft = manager.beginTransaction();
+            searchResultsFragment = (RegistrationSearchResultsRecyclerFragment)
+                    manager.findFragmentByTag(RegistrationSearchResultsRecyclerFragment.class.getName());
+
+            clearMainFragment();
+
+            if (searchResultsFragment == null) {
+                searchResultsFragment = (RegistrationSearchResultsRecyclerFragment) RegistrationSearchResultsRecyclerFragment.newInstance(
+                        RegistrationActivity.this, RegistrationSearchResultsRecyclerFragment.class.getName(), null);
+                searchResultsFragment.setNewSearch(true);
+                searchResultsFragment.setAdapter(resultsAdapter);
+                ft.add(R.id.frame_main, searchResultsFragment, RegistrationSearchResultsRecyclerFragment.class.getName());
+            } else {
+                searchResultsFragment.setNewSearch(true);
+                searchResultsFragment.setAdapter(resultsAdapter);
+                ft.attach(searchResultsFragment);
+            }
+            ft.commitAllowingStateLoss();
+
+            if (currentResults != null) {
+
+                if (currentResults.sections != null && currentResults.sections.length > 0) {
+                    fillSearchResultsAdapter(currentResults);
                 } else {
-                    resultsAdapter = new CheckableSectionedListAdapter(RegistrationActivity.this);
-                }
-
-                FragmentManager manager = getSupportFragmentManager();
-                FragmentTransaction ft = manager.beginTransaction();
-                searchResultsFragment = (RegistrationSearchResultsListFragment)
-                        manager.findFragmentByTag("RegistrationSearchResultsListFragment");
-
-                clearMainFragment();
-
-                if (searchResultsFragment == null) {
-                    searchResultsFragment = (RegistrationSearchResultsListFragment) RegistrationSearchResultsListFragment.newInstance(
-                            RegistrationActivity.this, RegistrationSearchResultsListFragment.class.getName(), null);
-                    searchResultsFragment.setNewSearch(true);
-                    searchResultsFragment.setListAdapter(resultsAdapter);
-                    ft.add(R.id.frame_main, searchResultsFragment, "RegistrationSearchResultsListFragment");
-                } else {
-                    searchResultsFragment.setNewSearch(true);
-                    searchResultsFragment.setListAdapter(resultsAdapter);
-                    ft.attach(searchResultsFragment);
-                }
-                ft.commitAllowingStateLoss();
-
-                if (currentResults != null) {
-
-                    if (currentResults.sections != null && currentResults.sections.length > 0) {
-                        fillSearchResultsAdapter(currentResults, null, addAuthCodeWarning);
-                    } else {
-                        Log.e(TAG, "Sections array null or empty");
-                        resultsAdapter = null;
-                    }
-                } else {
-                    Log.e(TAG, "Search response is null");
+                    Log.e(TAG, "Sections array null or empty");
                     resultsAdapter = null;
                 }
-                Utils.hideProgressIndicator(activity);
-
+            } else {
+                Log.e(TAG, "Search response is null");
+                resultsAdapter = null;
             }
+            Utils.hideProgressIndicator(activity);
         }
     }
 
@@ -1816,19 +1690,19 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         private void determineTab(int tabPosition) {
             switch (tabPosition) {
                 case 2: // Register
-                    mClass = RegistrationRegisteredListFragment.class;
-                    mTag = "RegistrationRegisteredListFragment";
+                    mClass = RegistrationRegisteredRecyclerFragment.class;
+                    mTag = RegistrationRegisteredRecyclerFragment.class.getName();
                     mFragment = registeredFragment;
                     break;
                 case 1: // Search
                     mClass = RegistrationSearchFragment.class;
-                    mTag = "RegistrationSearchFragment";
+                    mTag = RegistrationSearchFragment.class.getName();
                     mFragment = searchFragment;
                     break;
                 case 0: // Cart
-                    mClass = RegistrationCartListFragment.class;
-                    mTag = "RegistrationCartListFragment";
-                    mFragment = cartFragment;
+                    mClass = RegistrationCartRecyclerFragment.class;
+                    mTag = RegistrationCartRecyclerFragment.class.getName();
+                    mFragment = cartRecyclerFragment;
                     break;
             }
         }
@@ -1839,14 +1713,14 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
             determineTab(tab.getPosition());
             FragmentTransaction ft = fragmentManager.beginTransaction();
 
-            if (cartFragment != null) {
+            if (cartRecyclerFragment != null) {
                 // Detach the fragment, because another one is being attached
-                ft.detach(cartFragment);
+                ft.detach(cartRecyclerFragment);
             }
 
             Fragment fragment = fragmentManager.findFragmentByTag(tab.getText().toString());
             if (fragment != null) {
-                ft.detach(cartFragment);
+                ft.detach(cartRecyclerFragment);
             }
             ft.commitAllowingStateLoss();
         }
@@ -1857,399 +1731,58 @@ public class RegistrationActivity extends EllucianActivity implements OnDoneFilt
         }
     }
 
-    private class RegistrationViewBinder implements SimpleCursorAdapter.ViewBinder {
-        @Override
-        public boolean setViewValue(View view, Cursor cursor, int index) {
-            if (index == cursor.getColumnIndex(SECTION_ID)) {
-                String sectionId = cursor.getString(index);
-                String termId = cursor.getString(cursor.getColumnIndex(TERM_ID));
-
-                Section section = findSectionInCart(termId, sectionId);
-
-                setRowView(section, view);
-
-                return true;
-            }
-            return false;
-        }
-    }
-
-    private class RegistrationSearchViewBinder implements SimpleCursorAdapter.ViewBinder {
-        @Override
-        public boolean setViewValue(View view, Cursor cursor, int index) {
-            if (index == cursor.getColumnIndex(RegistrationActivity.SECTION_ID)) {
-                String sectionId = cursor.getString(index);
-                String termId = cursor.getString(cursor.getColumnIndex(RegistrationActivity.TERM_ID));
-
-                Section section = findSectionInResults(termId, sectionId);
-
-                setRowView(section, view);
-                return true;
-            }
-            return false;
-        }
-    }
-
-    private void setRowView(Section section, View view) {
-        // Reset views to visible for next view
-        view.findViewById(R.id.instructor_credits_separator).setVisibility(View.VISIBLE);
-
-        if (!TextUtils.isEmpty(section.courseName)) {
-            String titleString = section.courseName;
-            if (!TextUtils.isEmpty(section.courseSectionNumber)) {
-                titleString = getString(R.string.default_course_section_format,
-                        section.courseName,
-                        section.courseSectionNumber);
-            }
-            TextView courseNameView = (TextView) view.findViewById(R.id.course_name);
-            courseNameView.setText(titleString);
-        }
-
-        // For Search Tab Only
-        if (searchResultsFragment != null && searchResultsFragment.isAdded()) {
-            String academicLevels = "";
-            if (section.academicLevels != null && section.academicLevels.length > 0) {
-                academicLevels = TextUtils.join(",", section.academicLevels);
-            }
-
-            String levelAndLocationText = "";
-            TextView levelAndLocationView = (TextView) view.findViewById(R.id.academic_level_and_location);
-            if (!TextUtils.isEmpty(academicLevels) && !TextUtils.isEmpty(section.location)) {
-                levelAndLocationText = getString(R.string.default_two_string_separator_format,
-                        academicLevels,
-                        section.location);
-
-            } else if (!TextUtils.isEmpty(academicLevels)) {
-                levelAndLocationText = academicLevels;
-            } else if (!TextUtils.isEmpty(section.location)) {
-                levelAndLocationText = section.location;
-            }
-
-            levelAndLocationView.setText(levelAndLocationText);
-
-            // Available/Capacity images & text
-            if (section.available != null && section.capacity != null) {
-                String capacityText = getString(R.string.remaining_capacity,
-                        section.available,
-                        section.capacity);
-                Drawable meterImage = null;
-                meterImage = RegistrationDetailFragment.getMeterImage(section, this);
-
-                RelativeLayout seatsAvailView = (RelativeLayout) view.findViewById(R.id.seats_available_box);
-                seatsAvailView.setVisibility(View.VISIBLE);
-                if (meterImage != null) {
-                    VersionSupportUtils.enableMirroredDrawable(meterImage);
-                    ((ImageView) seatsAvailView.findViewById(R.id.seats_available_image)).setImageDrawable(meterImage);
-                }
-                ((TextView) seatsAvailView.findViewById(R.id.seats_available_text)).setText(capacityText);
-            }
-
-            // Authorization Code
-            handleAuthorizationCode(section, view);
-        }
-
-        // For Cart Tab Only
-        if (cartFragment != null && cartFragment.isAdded()) {
-            handleAuthorizationCode(section, view);
-        }
-
-        if (!TextUtils.isEmpty(section.sectionTitle)) {
-            TextView sectionTitleView = (TextView) view.findViewById(R.id.section_title);
-            sectionTitleView.setText(section.sectionTitle);
-        }
-
-        TextView instructorView = (TextView) view.findViewById(R.id.instructor);
-        if (section.instructors != null && section.instructors.length != 0) {
-            String instructorNames = "";
-            for (Instructor instructor : section.instructors) {
-
-                if (!TextUtils.isEmpty(instructorNames)) {
-                    instructorNames += " ; ";
-                }
-
-                if (!TextUtils.isEmpty(instructor.lastName)) {
-                    String shortName = "";
-                    if (!TextUtils.isEmpty(instructor.firstName)) {
-                        shortName += getString(R.string.default_last_name_first_initial_format,
-                                instructor.lastName,
-                                instructor.firstName.charAt(0));
-                    } else {
-                        shortName = instructor.lastName;
-                    }
-                    instructorNames += shortName;
-                } else if (!TextUtils.isEmpty(instructor.formattedName)) {
-                    instructorNames += instructor.formattedName;
-                }
-
-            }
-
-            instructorView.setText(instructorNames);
-        } else {
-            view.findViewById(R.id.instructor_credits_separator).setVisibility(View.GONE);
-        }
-
-        TextView creditsView = (TextView) view.findViewById(R.id.credits);
-        String creditsString = "";
-
-        if (section.selectedCredits != -1) {
-
-            if (!TextUtils.isEmpty(section.gradingType) && section.gradingType.equals(Section.GRADING_TYPE_AUDIT)) {
-                creditsString = getString(R.string.registration_row_credits_with_type_format,
-                        section.selectedCredits,
-                        getString(R.string.registration_credits),
-                        getString(R.string.registration_audit));
-            } else if (!TextUtils.isEmpty(section.gradingType) && section.gradingType.equals(Section.GRADING_TYPE_PASS_FAIL)) {
-                creditsString = getString(R.string.registration_row_credits_with_type_format,
-                        section.selectedCredits,
-                        getString(R.string.registration_credits),
-                        getString(R.string.registration_pass_fail_abbrev));
-            } else {
-                creditsString = getString(R.string.registration_row_credits_format,
-                        section.selectedCredits,
-                        getString(R.string.registration_credits));
-            }
-
-        } else if (section.credits != 0) {
-
-            if (!TextUtils.isEmpty(section.gradingType) && section.gradingType.equals(Section.GRADING_TYPE_AUDIT)) {
-                creditsString = getString(R.string.registration_row_credits_with_type_format,
-                        section.credits,
-                        getString(R.string.registration_credits),
-                        getString(R.string.registration_audit));
-            } else if (!TextUtils.isEmpty(section.gradingType) && section.gradingType.equals(Section.GRADING_TYPE_PASS_FAIL)) {
-                creditsString = getString(R.string.registration_row_credits_with_type_format,
-                        section.credits,
-                        getString(R.string.registration_credits),
-                        getString(R.string.registration_pass_fail_abbrev));
-            } else {
-                creditsString = getString(R.string.registration_row_credits_format,
-                        section.credits,
-                        getString(R.string.registration_credits));
-            }
-
-        } else if ((!TextUtils.isEmpty(section.variableCreditOperator) && section.variableCreditOperator.equals(Section.VARIABLE_OPERATOR_OR))
-                || section.minimumCredits != 0) {
-
-            if (section.maximumCredits != 0) {
-                creditsString = getString(R.string.registration_row_credits_min_max_format,
-                        section.minimumCredits,
-                        section.maximumCredits,
-                        getString(R.string.registration_credits));
-            } else {
-                creditsString = getString(R.string.registration_row_credits_format,
-                        section.minimumCredits,
-                        getString(R.string.registration_credits));
-            }
-
-        } else if (section.ceus != 0) {
-            creditsString = getString(R.string.registration_row_credits_format,
-                    section.ceus,
-                    getString(R.string.registration_ceus));
-        } else {
-            // Only want to display zero in last possible case to avoid not showing the correct alternative
-            if (!TextUtils.isEmpty(section.gradingType) && section.gradingType.equals(Section.GRADING_TYPE_AUDIT)) {
-                creditsString = getString(R.string.registration_row_credits_with_type_format,
-                        0f,
-                        getString(R.string.registration_credits),
-                        getString(R.string.registration_audit));
-            } else if (!TextUtils.isEmpty(section.gradingType) && section.gradingType.equals(Section.GRADING_TYPE_PASS_FAIL)) {
-                creditsString = getString(R.string.registration_row_credits_with_type_format,
-                        0f,
-                        getString(R.string.registration_credits),
-                        getString(R.string.registration_pass_fail_abbrev));
-            } else {
-                creditsString = getString(R.string.registration_row_credits_format,
-                        0f,
-                        getString(R.string.registration_credits));
-            }
-        }
-        creditsView.setText(creditsString);
-
-
-
-        TextView meetingsTypeView = (TextView) view.findViewById(R.id.meetings_and_type);
-        if (section.meetingPatterns != null && section.meetingPatterns.length != 0) {
-
-            String meetingsString = "";
-
-            for (MeetingPattern pattern : section.meetingPatterns) {
-
-                if (!TextUtils.isEmpty(meetingsString)) {
-                    meetingsString += " ; ";
-                }
-
-                String daysString = "";
-                if (pattern.daysOfWeek != null && pattern.daysOfWeek.length != 0) {
-
-                    for (int dayNumber : pattern.daysOfWeek) {
-
-                        if (!TextUtils.isEmpty(daysString)) {
-                            daysString += ", ";
-                        }
-                        // Adding 1 to number to make the Calendar constants
-                        daysString += CalendarUtils.getDayShortName(dayNumber);
-                    }
-
-                }
-
-                Date startTimeDate = null;
-                Date endTimeDate = null;
-                String displayStartTime = "";
-                String displayEndTime = "";
-
-                try {
-                    if (!TextUtils.isEmpty(pattern.sisStartTimeWTz) && pattern.sisStartTimeWTz.contains(" ")) {
-                        String[] splitTimeAndZone = pattern.sisStartTimeWTz.split(" ");
-                        String time = splitTimeAndZone[0];
-                        String timeZone = splitTimeAndZone[1];
-                        altTimeParserFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
-                        startTimeDate = altTimeParserFormat.parse(time);
-                    } else if (!TextUtils.isEmpty(pattern.startTime)) {
-                        startTimeDate = defaultTimeParserFormat.parse(pattern.startTime);
-                    }
-
-                    if (!TextUtils.isEmpty(pattern.sisEndTimeWTz) && pattern.sisEndTimeWTz.contains(" ")) {
-                        String[] splitTimeAndZone = pattern.sisEndTimeWTz.split(" ");
-                        String time = splitTimeAndZone[0];
-                        String timeZone = splitTimeAndZone[1];
-                        altTimeParserFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
-                        endTimeDate = altTimeParserFormat.parse(time);
-                    } else if (!TextUtils.isEmpty(pattern.endTime)) {
-                        endTimeDate = defaultTimeParserFormat.parse(pattern.endTime);
-                    }
-
-                    if (startTimeDate != null) {
-                        displayStartTime = timeFormatter.format(startTimeDate);
-                    }
-                    if (endTimeDate != null) {
-                        displayEndTime = timeFormatter.format(endTimeDate);
-                    }
-                } catch (ParseException e) {
-                    Log.e(TAG, "ParseException: ", e);
-                }
-
-                if (!TextUtils.isEmpty(displayStartTime)) {
-
-                    if (!TextUtils.isEmpty(pattern.instructionalMethodCode)) {
-                        meetingsString += getString(R.string.default_meeting_days_times_and_type_format,
-                                daysString,
-                                displayStartTime,
-                                displayEndTime,
-                                pattern.instructionalMethodCode);
-                    } else {
-                        meetingsString += getString(R.string.default_meeting_days_and_times_format,
-                                daysString,
-                                displayStartTime,
-                                displayEndTime);
-                    }
-
-                } else {
-                    meetingsString += daysString;
-                }
-
-            }
-
-            if (!TextUtils.isEmpty(meetingsString)) {
-                meetingsTypeView.setText(meetingsString);
-            }
-        } else {
-            meetingsTypeView.setVisibility(View.GONE);
-        }
-    }
-
-    private void handleAuthorizationCode(Section section, View view) {
-        if (section.authorizationCodeRequired) {
-            LinearLayout ll = (LinearLayout) view.findViewById(R.id.registration_row_layout);
-            ll.setBackgroundColor(VersionSupportUtils.getColorHelper(this, R.color.status_important_text_light_color));
-        }
-    }
-
-    private class RegisterCheckBoxClickedListener implements OnCheckBoxClickedListener {
+    private class RegisterCheckBoxClickedListener implements RegistrationRecyclerAdapter.OnCheckBoxClickedListener {
 
         @Override
         public void onCheckBoxClicked(CheckBox checkBox, boolean isChecked, int position) {
 
-            if (isChecked || !cartAdapter.getCheckedPositions().isEmpty()) {
-                cartFragment.showRegisterButton(true, cartAdapter.getCheckedPositions().size());
-            } else {
-                cartFragment.showRegisterButton(false, 0);
-            }
-        }
-    }
-
-    // Click listener for sections that require an Authorization Code
-    private class RegisterAuthCodeCheckBoxClickedListener implements RegistrationCartCheckableAdapter.OnCartCheckBoxClickedListener {
-        @Override
-        public void onCartCheckBoxClicked(CheckBox checkBox, boolean isChecked, int position, String termId, String sectionId) {
-            Log.e(TAG, "onCheckBoxClicked: position/term/section" + position +"/"+termId+"/"+sectionId );
-
-            if (isChecked || !cartAdapter.getCheckedPositions().isEmpty()) {
-                if (isChecked) {
-                    // Have to add 1 to position because of the header
-                    Section section = findSectionInCart(termId, sectionId);
-
-                    if (section != null
-                            && (section.authorizationCodeRequired && TextUtils.isEmpty(section.authorizationCodePresented))) {
-
-                        AuthCodeConfirmDialogFragment authCodeDialogFragment = AuthCodeConfirmDialogFragment.newInstance(section, position);
+            if (isChecked) {
+                Section sectionSelected = (Section) cartRecyclerAdapter.getItem(position);
+                if (sectionSelected.authorizationCodeRequired) {
+                    Log.d(TAG, "Authorization code required for " + sectionSelected.sectionTitle );
+                    if (TextUtils.isEmpty(sectionSelected.authorizationCodePresented)) {
+                        AuthCodeConfirmDialogFragment authCodeDialogFragment = AuthCodeConfirmDialogFragment.newInstance(sectionSelected, position);
                         // Stops the back button from closing dialog
                         authCodeDialogFragment.setCancelable(false);
                         authCodeDialogFragment.show(getSupportFragmentManager(), "AuthCodeConfirmDialogFragment");
                     }
-
                 }
-                cartFragment.showRegisterButton(true, cartAdapter.getCheckedPositions().size());
-            } else {
-                cartFragment.showRegisterButton(false, 0);
             }
-
+            cartRecyclerFragment.updateRegisterButton(cartRecyclerAdapter.getCheckedPositions());
         }
+
     }
     
-    private class DropCheckBoxClickedListener implements OnCheckBoxClickedListener {
+    private class DropCheckBoxClickedListener implements RegistrationRecyclerAdapter.OnCheckBoxClickedListener {
 
         @Override
         public void onCheckBoxClicked(CheckBox checkBox, boolean isChecked, int position) {
-
-            if (isChecked || !registeredAdapter.getCheckedPositions().isEmpty()) {
-                registeredFragment.showDropButton(true, registeredAdapter.getCheckedPositions().size());
-            } else {
-                registeredFragment.showDropButton(false, 0);
-            }
+            registeredFragment.updateDropButton(registeredAdapter.getCheckedPositions());
         }
+
     }
 
-    private class SearchCheckBoxClickedListener implements OnCheckBoxClickedListener {
+    private class SearchCheckBoxClickedListener implements RegistrationRecyclerAdapter.OnCheckBoxClickedListener {
 
         @Override
         public void onCheckBoxClicked(CheckBox checkBox, boolean isChecked, int position) {
 
-            if (isChecked || !resultsAdapter.getCheckedPositions().isEmpty()) {
+            if (isChecked) {
+                Section section = (Section) resultsAdapter.getItem(position);
 
-                if (isChecked) {
-                    // Have to add 1 to position because of the header
-                    Cursor cursor = (Cursor) resultsAdapter.getItem(position + 1);
+                if (section != null
+                        && (!TextUtils.isEmpty(section.variableCreditOperator) && section.variableCreditOperator.equals(Section.VARIABLE_OPERATOR_OR))
+                        || (section.minimumCredits != 0 && section.maximumCredits != 0)) {
 
-                    String sectionId = cursor.getString(cursor.getColumnIndex(RegistrationActivity.SECTION_ID));
-                    String termId = cursor.getString(cursor.getColumnIndex(RegistrationActivity.TERM_ID));
-
-                    Section section = findSectionInResults(termId, sectionId);
-
-                    if (section != null
-                            && (!TextUtils.isEmpty(section.variableCreditOperator) && section.variableCreditOperator.equals(Section.VARIABLE_OPERATOR_OR))
-                            || (section.minimumCredits != 0 && section.maximumCredits != 0)) {
-
-                        VariableCreditsConfirmDialogFragment creditsDialogFragment = VariableCreditsConfirmDialogFragment.newInstance(section, position);
-                        // Stops the back button from closing dialog
-                        creditsDialogFragment.setCancelable(false);
-                        creditsDialogFragment.show(getSupportFragmentManager(), "VariableCreditsConfirmDialogFragment");
-                    }
-
+                    VariableCreditsConfirmDialogFragment creditsDialogFragment = VariableCreditsConfirmDialogFragment.newInstance(section, position);
+                    // Stops the back button from closing dialog
+                    creditsDialogFragment.setCancelable(false);
+                    creditsDialogFragment.show(getSupportFragmentManager(), "VariableCreditsConfirmDialogFragment");
                 }
-                searchResultsFragment.showAddToCartButton(true, resultsAdapter.getCheckedPositions().size());
-            } else {
-                searchResultsFragment.showAddToCartButton(false, 0);
+
             }
+
+            searchResultsFragment.updateAddToCartButton(resultsAdapter.getCheckedPositions());
 
         }
     }

@@ -14,38 +14,88 @@ class LoginViewController : UIViewController, LoginProtocol {
     @IBOutlet weak var passwordField: UITextField!
     @IBOutlet weak var cancelButton: UIButton!
     @IBOutlet weak var signInButton: UIButton!
+    @IBOutlet weak var loginInstructions: UITextView!
     @IBOutlet weak var rememberUserSwitch: UISwitch!
     @IBOutlet weak var useFingerprintSwitch: UISwitch!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     @IBOutlet weak var useFingerprintSwitchLabel: UILabel!
+    @IBOutlet weak var requiresPasscodeConstraint: NSLayoutConstraint!
+    @IBOutlet weak var requiresPasscodeMessage: UILabel!
+    @IBOutlet weak var loginHelpButton: UIButton!
     var url : String?
     var httpResponse : HTTPURLResponse?
     var canceled = false
     var completionBlock: (() -> Void)?
     var allowTouchId = false
+    var deviceHasPasscode : Bool?
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         self.usernameField.leftView = UIImageView(image: UIImage(named: "login_username"))
         self.usernameField.leftViewMode = .always
+        if let usernamePlaceholder = AppGroupUtilities.userDefaults()?.string(forKey: "login-username-hint") {
+            self.usernameField.placeholder = usernamePlaceholder
+        }
+        
         self.passwordField.leftView = UIImageView(image: UIImage(named: "login_password"))
         self.passwordField.leftViewMode = .always
+        if let passwordPlaceholder = AppGroupUtilities.userDefaults()?.string(forKey: "login-password-hint") {
+            self.passwordField.placeholder = passwordPlaceholder
+        }
+        
+        if let loginInstructions = AppGroupUtilities.userDefaults()?.string(forKey: "login-instructions") {
+            self.loginInstructions.text = loginInstructions
+        }
+        updateViewForSizeClass()
+        
+        if let helpLabel = AppGroupUtilities.userDefaults()?.string(forKey: "login-help-display"), let _ = AppGroupUtilities.userDefaults()?.string(forKey: "login-help-url") {
+            self.loginHelpButton.setTitle(helpLabel, for: UIControlState.normal)
+        } else {
+            self.loginHelpButton.removeFromSuperview()
+        }
+        
         self.signInButton.addBorderAndColor()
         self.cancelButton.addBorderAndColor()
         self.url = AppGroupUtilities.userDefaults()?.string(forKey: "login-url")
         self.usernameField.text = CurrentUser.sharedInstance.userauth
         self.rememberUserSwitch.isOn = CurrentUser.sharedInstance.remember
-        self.useFingerprintSwitch.isOn = CurrentUser.sharedInstance.useFingerprint
+        if CurrentUser.sharedInstance.useFingerprint {
+            self.useFingerprintSwitch.isOn = true
+            self.rememberUserSwitch.isOn = true
+            self.rememberUserSwitch.isEnabled = false
+        }
         
         self.rememberUserSwitch.addTarget(self, action: #selector(LoginViewController.rememberUserSwitchToggled), for: .valueChanged)
         self.useFingerprintSwitch.addTarget(self, action: #selector(LoginViewController.useFingerprintSwitchLabelToggled), for: .valueChanged)
         
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(LoginViewController.dismissKeyboard))
+        view.addGestureRecognizer(tap)
+        
+        var touchIDError : NSError?
+        if !LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error:&touchIDError), touchIDError!.code == LAError.passcodeNotSet.rawValue {
+            deviceHasPasscode = false
+            self.rememberUserSwitch.isOn = false
+            self.rememberUserSwitch.isEnabled = false
+        } else {
+            deviceHasPasscode = true
+            requiresPasscodeMessage.removeFromSuperview()
+        }
+    
         evaluateTouchID()
+    }
+    
+    func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         self.sendView( "Sign In Page", moduleName: nil)
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        updateViewForSizeClass()
     }
     
     @IBAction func signInCanceled(_ sender: AnyObject) {
@@ -57,6 +107,17 @@ class LoginViewController : UIViewController, LoginProtocol {
         CurrentUser.sharedInstance.logoutWithoutUpdatingUI()
         NotificationCenter.default.post(name: CurrentUser.SignInReturnToHomeNotification, object: nil)
         self.dismiss(animated: true, completion: { _ in })
+    }
+    
+    func updateViewForSizeClass() {
+        let horizontalClass = self.traitCollection.horizontalSizeClass
+        let verticalClass = self.traitCollection.verticalSizeClass
+        
+        if horizontalClass == UIUserInterfaceSizeClass.compact && verticalClass == UIUserInterfaceSizeClass.compact {
+            self.loginInstructions.textAlignment = .left
+        } else {
+            self.loginInstructions.textAlignment = .center
+        }
     }
     
     @IBAction func textFieldDoneEditing(_ sender: AnyObject) {
@@ -73,18 +134,21 @@ class LoginViewController : UIViewController, LoginProtocol {
         DispatchQueue.main.async(execute: {() -> Void in
             self.activityIndicator.startAnimating()
         })
-        if self.rememberUserSwitch.isOn {
-            self.sendEvent(category: .authentication, action: .login, label: "Authentication with save credential", moduleName: nil)
-        } else if self.useFingerprintSwitch.isOn {
+        var useFingerprint = false
+        var useRememberUser = false
+        if self.useFingerprintSwitch.isOn {
             self.sendEvent(category: .authentication, action: .login, label: "Authentication with use fingerprint", moduleName: nil)
-        }
-        else {
+            useFingerprint = true
+        } else if self.rememberUserSwitch.isOn {
+            self.sendEvent(category: .authentication, action: .login, label: "Authentication with save credential", moduleName: nil)
+            useRememberUser = true
+        } else {
             self.sendEvent(category: .authentication, action: .login, label: "Authentication without save credential", moduleName: nil)
         }
         self.signInButton.isEnabled = false
         
         DispatchQueue.global(qos: .userInitiated).async(execute: {() -> Void in
-            self.httpResponse = self.performLogin(self.url!, forUser: self.usernameField.text!, andPassword: self.passwordField.text!, andRememberUser: self.rememberUserSwitch.isOn, fingerprint: self.useFingerprintSwitch.isOn)
+            self.httpResponse = self.performLogin(self.url!, forUser: self.usernameField.text!, andPassword: self.passwordField.text!, andRememberUser: useRememberUser, fingerprint: useFingerprint)
             
             let canceled: Bool = self.canceled
             let activityIndicator: UIActivityIndicatorView = self.activityIndicator
@@ -93,15 +157,24 @@ class LoginViewController : UIViewController, LoginProtocol {
                 if canceled {
                     return
                 }
-                else if let httpResponse = self.httpResponse , httpResponse.statusCode == 200 {
-                    if let completionBlock = self.completionBlock {
-                        completionBlock()
+                else if let httpResponse = self.httpResponse {
+                    if httpResponse.statusCode == 200 {
+                        if let completionBlock = self.completionBlock {
+                            completionBlock()
+                        }
+                        self.dismiss(animated: true, completion: { _ in })
+                    } else {
+                        let alertController: UIAlertController = UIAlertController(title: NSLocalizedString("Sign In Failed", comment: "title for failed sign in"), message: NSLocalizedString("The password or user name you entered is incorrect. Please try again.", comment: "message for failed sign in"), preferredStyle: .alert)
+                        let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK action"), style: .default, handler: {(action: UIAlertAction) -> Void in
+                            self.signInButton.isEnabled = true
+                        })
+                        alertController.addAction(okAction)
+                        self.present(alertController, animated: true, completion: { _ in })
                     }
-                    self.dismiss(animated: true, completion: { _ in })
                 }
                 else {
-                    let alertController: UIAlertController = UIAlertController(title: NSLocalizedString("Sign In Failed", comment: "title for failed sign in"), message: NSLocalizedString("The password or user name you entered is incorrect. Please try again.", comment: "message for failed sign in"), preferredStyle: .alert)
-                    let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK action"), style: .default, handler: {(action: UIAlertAction) -> Void in
+                    let alertController: UIAlertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment: "title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment: "message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                    let okAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: {(action: UIAlertAction) -> Void in
                         self.signInButton.isEnabled = true
                     })
                     alertController.addAction(okAction)
@@ -257,6 +330,7 @@ class LoginViewController : UIViewController, LoginProtocol {
     }
     
     func rememberUserSwitchToggled() {
+        dismissKeyboard()
         if(rememberUserSwitch.isOn) {
             self.useFingerprintSwitch.isOn = false
             self.useFingerprintSwitch.isEnabled = false
@@ -266,11 +340,19 @@ class LoginViewController : UIViewController, LoginProtocol {
     }
     
     func useFingerprintSwitchLabelToggled() {
-        if(useFingerprintSwitch.isOn) {
-            self.rememberUserSwitch.isOn = false
+        dismissKeyboard()
+        if useFingerprintSwitch.isOn || !deviceHasPasscode! {
+            self.rememberUserSwitch.isOn = true
             self.rememberUserSwitch.isEnabled = false
         } else {
+            self.rememberUserSwitch.isOn = false
             self.rememberUserSwitch.isEnabled = true
         }
     }
+    
+    @IBAction func onClickLoginHelp(_ sender: Any) {
+        UIApplication.shared.openURL(NSURL(string: AppGroupUtilities.userDefaults()!.string(forKey: "login-help-url")!) as! URL)
+        self.sendEvent(category: .ui_Action, action: .button_Press, label: "Open login help url")
+    }
+    
 }

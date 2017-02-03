@@ -18,11 +18,17 @@ class ScheduleViewController : UITableViewController, ScheduleTermSelectedDelega
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+    var hud : MBProgressHUD!
     
     @IBOutlet var termsButton: UIBarButtonItem!
     override func viewDidLoad() {
         super.viewDidLoad()
         self.navigationItem.title = self.module?.name
+        
+        hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+        let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+        hud.label.text = loadingString
+        UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
         fetchSchedule()
     }
     
@@ -64,6 +70,9 @@ class ScheduleViewController : UITableViewController, ScheduleTermSelectedDelega
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "Schedule Cell", for: indexPath) as UITableViewCell
+        
+        cell.accessibilityTraits = UIAccessibilityTraitButton
+        cell.accessibilityHint = NSLocalizedString("Displays course detail.", comment:"VoiceOver hint for button that displays a course's details")
         
         let courseNameLabel = cell.viewWithTag(1) as! UILabel
         let sectionTitleLabel = cell.viewWithTag(2) as! UILabel
@@ -185,10 +194,23 @@ class ScheduleViewController : UITableViewController, ScheduleTermSelectedDelega
                             DispatchQueue.main.async(execute: {
                                 self.loadSchedule()
                             })
-                        }}
-                    
+                        } else {
+                            DispatchQueue.main.async(execute: {
+                                let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                                let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                                alertController.addAction(alertAction)
+                                self.present(alertController, animated: true)
+                            })
+                        }
+                    }
+                    DispatchQueue.main.async(execute: {
+                        self.hud.hide(animated: true)
+                    })
                 } catch let error {
                     print (error)
+                    DispatchQueue.main.async(execute: {
+                        self.hud.hide(animated: true)
+                    })
                 }
                 
             }

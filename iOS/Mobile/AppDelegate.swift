@@ -9,22 +9,26 @@
 import UIKit
 import CoreData
 import WebKit
+import UserNotifications
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     
     static let localNotification = Notification.Name("GoLocalNotification")
     static let wkProcessPool = WKProcessPool()
+    private var reachability : Reachability!
     
     var window: UIWindow?
     
     var openModuleWhenActiveModuleKey: String?
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey : Any]? = nil) -> Bool {
-        // Override point for customization after application launch.
+
+        bootstrapReachability()
         
         let _ = WatchConnectivityManager.sharedInstance.ensureWatchConnectivityInitialized()
         
         // boot strap Launch Beacon Manager
+        //this is where notifications are getting configured now
         LaunchBeaconManager.start()
         
         NSSetUncaughtExceptionHandler { exception in
@@ -32,43 +36,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print(exception.callStackSymbols)
         }
         
+        
+        //bootstrap notification
+        if #available(iOS 10.0, *) {
+            UNUserNotificationCenter.current().delegate = NotificationManager.shared
+        }
+
         //Google Analytics
-        let gai = GAI.sharedInstance()
-        gai?.trackUncaughtExceptions = true
-        gai?.dispatchInterval = 20
-        gai?.logger.logLevel = GAILogLevel.error
+        bootstrapGoogleAnalytics()
                 
-        if !UserDefaults.standard.bool(forKey: "didMigrateToAppGroups") {
-            var oldDefaults = UserDefaults.standard.dictionaryRepresentation()
-            
-            for key: String in oldDefaults.keys {
-                AppGroupUtilities.userDefaults()?.set(oldDefaults[key], forKey: key)
-            }
-            if let appDomain = Bundle.main.bundleIdentifier {
-                UserDefaults.standard.removePersistentDomain(forName: appDomain)
-            UserDefaults.standard.set(true, forKey: "didMigrateToAppGroups")
-        }
-        }
+        migrateToSharedAppGroup()
         
-        
-        
-        let slidingViewController = self.window?.rootViewController as? ECSlidingViewController
-        if let slidingViewController = slidingViewController {
-            self.slidingViewController = slidingViewController
-            slidingViewController.anchorRightRevealAmount = 276
-            slidingViewController.anchorLeftRevealAmount = 276
-            slidingViewController.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.tapping , ECSlidingViewControllerAnchoredGesture.panning]
-            let storyboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
-            let menu: UIViewController = storyboard.instantiateViewController(withIdentifier: "Menu")
-            
-            
-            let direction: UIUserInterfaceLayoutDirection = UIView.userInterfaceLayoutDirection(for: (self.window?.rootViewController!.view.semanticContentAttribute)!)
-            if direction == .rightToLeft {
-                slidingViewController.underRightViewController = menu
-            } else {
-                slidingViewController.underLeftViewController = menu
-            }
-        }
+        bootstrapMenu()
         
         NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.applicationDidTimeout(_:)), name: MobileUIApplication.ApplicationDidTimeoutNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.applicationDidTouch(_:)), name: MobileUIApplication.ApplicationDidTouchNotification, object: nil)
@@ -87,52 +66,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // for when swapping the application in, honor the current logged in/out state
         logoutOnStartup = false
         
-        if let prefs = AppGroupUtilities.userDefaults() {
-            if let configurationUrl = prefs.string(forKey: "configurationUrl") {
-                
-                //reload if upgrading app version
-                let oldVersion = prefs.string(forKey: "app-version")
-                let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-                
-                if oldVersion != currentVersion {
-                    if self.useDefaultConfiguration && !self.allowSwitchSchool {
-                        if let defaultConfigUrl = self.defaultConfigUrl {
-                            prefs.set(defaultConfigUrl, forKey: "configurationUrl")
-                            DispatchQueue.main.async(execute: {() -> Void in
-                                let storyboard: UIStoryboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
-                                let vc: UIViewController = storyboard.instantiateViewController(withIdentifier: "Loading")
-                                self.window?.rootViewController = vc
-                                DispatchQueue.main.async(execute: {() -> Void in
-                                    self.loadConfigurationInBackground(URL(string: defaultConfigUrl)!)
-                                })
-                            })
-                        }
-                        
-                    } else {
-                        self.loadDefaultConfiguration(configurationUrl)
-                    }
-                    prefs.set(currentVersion, forKey: "app-version")
-                }
-                
-                AppearanceChanger.applyAppearanceChanges()
-                OperationQueue.main.addOperation(OpenModuleHomeOperation())
-                
-            } else {
-                if self.useDefaultConfiguration {
-                    prefs.set(self.defaultConfigUrl, forKey: "configurationUrl")
-                    self.loadDefaultConfiguration(self.defaultConfigUrl!)
-                } else {
-                    let storyboard: UIStoryboard = UIStoryboard(name: "ConfigurationSelectionStoryboard", bundle: nil)
-                    let navcontroller = storyboard.instantiateViewController(withIdentifier: "ConfigurationSelector") as! UINavigationController
-                    let vc = navcontroller.childViewControllers[0] as! ConfigurationSelectionViewController
-                    vc.modalPresentationStyle = .fullScreen
-                    self.window?.rootViewController = navcontroller
-                    AppearanceChanger.applyAppearanceChanges()
-                    
-                }
-            }
-        }
+        forceUpgradeOnVersionChange()
         
+        //no longer using badge number.  reset to zero for users who upgrade
         UIApplication.shared.applicationIconBadgeNumber = 0
         
         if let localNotification = launchOptions?[UIApplicationLaunchOptionsKey.localNotification] as! UILocalNotification? {
@@ -181,12 +117,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-        if let prefs = AppGroupUtilities.userDefaults() {
-            let configurationUrl = prefs.string(forKey: "configurationUrl")
-            if let defaultConfigUrl = self.defaultConfigUrl , configurationUrl == nil && useDefaultConfiguration {
-                self.loadDefaultConfiguration(defaultConfigUrl)
-            }
-            
+        if let _ = AppGroupUtilities.userDefaults() {
             if AppDelegate.openURL != true {
                 NotificationCenter.default.post(name: ConfigurationSelectionViewController.ConfigurationListRefreshIfPresentNotification, object: nil)
             }
@@ -305,12 +236,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     // MARK: - 3d touch
-    @available(iOS 9.0, *)
     func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
         completionHandler(handleShortcut(shortcutItem))
     }
     
-    @available(iOS 9.0, *)
     private func handleShortcut(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
         let shortcutType = shortcutItem.type
         
@@ -340,7 +269,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     // MARK: Noficiations
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        print("Application deviceToken: \(deviceToken)")
+        let deviceTokenString = deviceToken.reduce("", {$0 + String(format: "%02X", $1)})
+        print("Application deviceToken: \(deviceTokenString)")
         NotificationManager.registerDeviceToken(deviceToken)
     }
     
@@ -364,6 +294,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) {
+        
+        self.application(application, didReceiveRemoteNotification: userInfo) { (UIBackgroundFetchResult) in
+            
+        }
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Swift.Void) {
         
         let uuid = userInfo["uuid"] as? String
         print("didReceiveRemoteNotification - for uuid: \(uuid)")
@@ -512,7 +449,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func loadDefaultConfiguration(_ defaultConfigUrl: String) {
         if let hudView = self.window?.rootViewController?.view {
             let hud = MBProgressHUD.showAdded(to: hudView, animated: true)
-            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 let manager = ConfigurationManager.shared
@@ -530,8 +469,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     func loadConfigurationInBackground(_ scheme: String, host: String, newPath: String, passcode: String?) {
-        
-        
         let components = NSURLComponents()
         components.scheme = scheme
         components.host = host
@@ -649,5 +586,125 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 OperationQueue.main.addOperation(OpenModuleConfigurationSelectionOperation())
             }
         })
+    }
+    
+    func bootstrapGoogleAnalytics() {
+        let gai = GAI.sharedInstance()
+        gai?.trackUncaughtExceptions = true
+        gai?.dispatchInterval = 20
+        gai?.logger.logLevel = GAILogLevel.error
+    }
+    
+    func forceUpgradeOnVersionChange() {
+        if let prefs = AppGroupUtilities.userDefaults() {
+            if let _ = prefs.string(forKey: "configurationUrl") {
+                
+                //reload if upgrading app version
+                let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+                
+                if prefs.string(forKey: "app-version") != currentVersion {
+                    prefs.set(currentVersion, forKey: "app-version")
+                    if self.useDefaultConfiguration && !self.allowSwitchSchool, let defaultConfigUrl = self.defaultConfigUrl {
+                        prefs.set(defaultConfigUrl, forKey: "configurationUrl")
+                    }
+                    
+                    DispatchQueue.main.async(execute: {() -> Void in
+                        let storyboard: UIStoryboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
+                        let vc: UIViewController = storyboard.instantiateViewController(withIdentifier: "Loading")
+                        self.window?.rootViewController = vc
+                        DispatchQueue.main.async(execute: {() -> Void in
+                            self.loadConfigurationInBackground(URL(string: prefs.string(forKey: "configurationUrl")!)!)
+                        })
+                    })
+                }
+                
+                AppearanceChanger.applyAppearanceChanges()
+                OperationQueue.main.addOperation(OpenModuleHomeOperation())
+                
+            } else {
+                if prefs.string(forKey: "app-version") == nil {
+                    let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+                    prefs.set(currentVersion, forKey: "app-version")
+                }
+                
+                if self.useDefaultConfiguration {
+                    prefs.set(self.defaultConfigUrl, forKey: "configurationUrl")
+                    self.loadDefaultConfiguration(self.defaultConfigUrl!)
+                } else {
+                    let storyboard: UIStoryboard = UIStoryboard(name: "ConfigurationSelectionStoryboard", bundle: nil)
+                    let navcontroller = storyboard.instantiateViewController(withIdentifier: "ConfigurationSelector") as! UINavigationController
+                    let vc = navcontroller.childViewControllers[0] as! ConfigurationSelectionViewController
+                    vc.modalPresentationStyle = .fullScreen
+                    self.window?.rootViewController = navcontroller
+                    AppearanceChanger.applyAppearanceChanges()
+                    
+                }
+            }
+        }
+
+    }
+    
+    func bootstrapReachability() {
+        reachability = Reachability()!
+        
+        reachability.whenReachable = { reachability in
+            DispatchQueue.main.async {
+                if reachability.isReachableViaWiFi {
+                    print("Reachable via WiFi")
+                } else {
+                    print("Reachable via Cellular")
+                }
+            }
+        }
+        reachability.whenUnreachable = { reachability in
+            DispatchQueue.main.async {
+                let alertController = UIAlertController(title: nil, message: NSLocalizedString("You are unable to connect to retrieve information. The Internet connection seems to be down.", comment: "message to user when network is not present"), preferredStyle: .alert)
+                let okAction: UIAlertAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
+                alertController.addAction(okAction)
+                self.window?.rootViewController?.present(alertController, animated: true, completion: { _ in })
+                
+            }
+        }
+        
+        do {
+            try reachability.startNotifier()
+        } catch {
+            print("Unable to start reachability notifier")
+        }
+
+    }
+    
+    func migrateToSharedAppGroup() {
+        if !UserDefaults.standard.bool(forKey: "didMigrateToAppGroups") {
+            var oldDefaults = UserDefaults.standard.dictionaryRepresentation()
+            
+            for key: String in oldDefaults.keys {
+                AppGroupUtilities.userDefaults()?.set(oldDefaults[key], forKey: key)
+            }
+            if let appDomain = Bundle.main.bundleIdentifier {
+                UserDefaults.standard.removePersistentDomain(forName: appDomain)
+                UserDefaults.standard.set(true, forKey: "didMigrateToAppGroups")
+            }
+        }
+    }
+    
+    func bootstrapMenu() {
+        let slidingViewController = self.window?.rootViewController as? ECSlidingViewController
+        if let slidingViewController = slidingViewController {
+            self.slidingViewController = slidingViewController
+            slidingViewController.anchorRightRevealAmount = 276
+            slidingViewController.anchorLeftRevealAmount = 276
+            slidingViewController.topViewAnchoredGesture = [ECSlidingViewControllerAnchoredGesture.tapping , ECSlidingViewControllerAnchoredGesture.panning]
+            let storyboard = UIStoryboard(name: "HomeStoryboard", bundle: nil)
+            let menu: UIViewController = storyboard.instantiateViewController(withIdentifier: "Menu")
+            
+            
+            let direction: UIUserInterfaceLayoutDirection = UIView.userInterfaceLayoutDirection(for: (self.window?.rootViewController!.view.semanticContentAttribute)!)
+            if direction == .rightToLeft {
+                slidingViewController.underRightViewController = menu
+            } else {
+                slidingViewController.underLeftViewController = menu
+            }
+        }
     }
 }

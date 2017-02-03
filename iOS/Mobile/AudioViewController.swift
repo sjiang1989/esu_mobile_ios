@@ -17,6 +17,8 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
     var sliderTimer : Timer?
     var mpArtwork : MPMediaItemArtwork?
     
+    var hud : MBProgressHUD!
+    
     @IBOutlet var imageView: UIImageView!
     
     @IBOutlet var seeker: UISlider!
@@ -25,9 +27,7 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
     @IBOutlet var forwardButton: UIButton!
     @IBOutlet var textTextView: UITextView!
     
-    @IBOutlet var textLabelBackgroundView: UIView!
-    @IBOutlet var textLabel: UILabel!
-    @IBOutlet var play: UIButton!
+    @IBOutlet var shortDescription: UITextView!
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -47,6 +47,18 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        if let hudView = self.view {
+            hud = MBProgressHUD.showAdded(to: hudView, animated: true)
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
+        }
+        
+        self.shortDescription.accessibilityTraits = UIAccessibilityTraitButton
+        self.shortDescription.accessibilityHint = NSLocalizedString("Expands description.", comment: "VoiceOver hint for button that expands a text description")
+        self.textTextView.accessibilityTraits = UIAccessibilityTraitButton
+        self.textTextView.accessibilityHint = NSLocalizedString("Collapses description.", comment: "VoiceOver hint for button that collapses a text description")
         
         let urlString = module!.property(forKey: "audio")
         let url = URL(string: urlString!)
@@ -68,7 +80,7 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
                
                 if let description = module!.property(forKey: "description") , description.characters.count > 0 {
                     
-                    textLabel.text = description
+                    shortDescription.text = description
                     textTextView.text = description
                     
                     textTextView.textColor = UIColor.white
@@ -76,7 +88,7 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
                     
                     let labelTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(AudioViewController.expandText(_:)))
                     labelTapGestureRecognizer.numberOfTapsRequired = 1
-                    textLabelBackgroundView.addGestureRecognizer(labelTapGestureRecognizer)
+                    shortDescription.addGestureRecognizer(labelTapGestureRecognizer)
                     
                     let textViewTapGestureRecognizer = UITapGestureRecognizer(target:self, action: #selector(AudioViewController.expandText(_:)))
                     textViewTapGestureRecognizer.numberOfTapsRequired = 1
@@ -84,8 +96,7 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
                     
                     
                 } else {
-                    textLabelBackgroundView.isHidden = true
-                    textLabel.isHidden = true
+                    shortDescription.isHidden = true
                 }
 
                 if let imageUrl = self.module?.property(forKey: "image") {
@@ -99,7 +110,7 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
                                     self.updateNowPlaying()
                                 }
                             }
-                        }
+                        } 
                     }.resume()
                 }
                 
@@ -238,6 +249,7 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if let player = SingletonAVPlayer.shared.player {
             if player.currentItem!.status == .readyToPlay {
+                self.hud.hide(animated: true)
                 let _ = player.currentItem?.duration
                 
                 playButton.isEnabled = true
@@ -251,17 +263,24 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
                     currentItem.removeObserver(self, forKeyPath: "status")
                 }
             } else if player.currentItem!.status == .failed {
-                let error = player.currentItem?.error?.localizedDescription
-                let alertController = UIAlertController(title: NSLocalizedString("Error Loading Audio", comment: "title when error loading audio"), message: error, preferredStyle: .alert)
-                
-                let OKAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
-                alertController.addAction(OKAction)
-                
+                if let error = player.currentItem?.error as? NSError, error.code == NSURLErrorTimedOut {
+                    let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment: "title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment: "message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                    let OKAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
+                    alertController.addAction(OKAction)
+                    self.present(alertController, animated: true, completion: nil)
+                } else {
+                    let error = player.currentItem?.error?.localizedDescription
+                    let alertController = UIAlertController(title: NSLocalizedString("Error Loading Audio", comment: "title when error loading audio"), message: error, preferredStyle: .alert)
+                    let OKAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
+                    alertController.addAction(OKAction)
+                    self.present(alertController, animated: true, completion: nil)
+                }
+
                 if let currentItem = player.currentItem {
                     currentItem.removeObserver(self, forKeyPath: "status")
                 }
                 
-                self.present(alertController, animated: true, completion: nil)
+                self.hud.hide(animated: true)
             }
         }
     }
@@ -278,13 +297,11 @@ class AudioViewController: UIViewController, AVAudioPlayerDelegate, EllucianMobi
     override public var canBecomeFirstResponder: Bool { return true }
 
     func expandText(_ sender: AnyObject) {
-        if textLabelBackgroundView.isHidden { //shrink
-            textLabel.isHidden = false
-            textLabelBackgroundView.isHidden = false
+        if shortDescription.isHidden { //shrink
+            shortDescription.isHidden = false
             textTextView.isHidden = true
         } else { //grow
-            textLabel.isHidden = true
-            textLabelBackgroundView.isHidden = true
+            shortDescription.isHidden = true
             textTextView.isHidden = false
         }
     }

@@ -80,6 +80,7 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
 	private SendToSelectionReceiver resetReceiver;
 	private OutdatedReceiver outdatedReceiver;
 	private UnauthenticatedUserReceiver unauthenticatedUserReceiver;
+    private NoConnectivityReceiver noConnectivityReceiver;
 
     private int mPrimaryColor;
     private int mHeaderTextColor;
@@ -414,6 +415,7 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
         lbm.unregisterReceiver(outdatedReceiver);
         lbm.unregisterReceiver(unauthenticatedUserReceiver);
         lbm.unregisterReceiver(notificationUpdateReceiver);
+        lbm.unregisterReceiver(noConnectivityReceiver);
 
         getEllucianApp().startActivityTransitionTimer();
 
@@ -470,6 +472,9 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
 
 		unauthenticatedUserReceiver = new UnauthenticatedUserReceiver(this, moduleId);
 		lbm.registerReceiver(unauthenticatedUserReceiver, new IntentFilter(MobileClient.ACTION_UNAUTHENTICATED_USER));
+
+        noConnectivityReceiver = new NoConnectivityReceiver(this);
+        lbm.registerReceiver(noConnectivityReceiver, new IntentFilter(MobileClient.ACTION_NO_CONNECTIVITY));
 
         if (getEllucianApp().configUsesBeacons()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { permissionsCheck(); }
@@ -530,7 +535,9 @@ public abstract class EllucianActivity extends AppCompatActivity implements Draw
 
         if ((configLastChecked + REFRESH_INTERVAL) < System.currentTimeMillis()) {
             Log.d(TAG, "Go see if config has been updated.");
-            updateCloudConfigIfNecessary(cloudConfigUrl, this);
+            if (!TextUtils.isEmpty(cloudConfigUrl)) {
+                updateCloudConfigIfNecessary(cloudConfigUrl, this);
+            }
             if (!TextUtils.isEmpty(mobileServerConfigUrl)) {
                 updateMobileServerConfigIfNecessary(mobileServerConfigUrl, this);
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.adapter;
@@ -39,7 +39,20 @@ public class SectionedItemHolderRecyclerAdapter extends EllucianRecyclerAdapter 
     }
 
     /**
-     * This constructor allows to use the a custom layout and target views for header and item titles.
+     * This constructor allows to use a custom layout for header.
+     * Extend class and override onCreateHeaderViewHolder, onCreateItemViewHolder, onBindHeaderViewHolder,
+     * and onBindItemViewHolder for more options.
+     */
+    public SectionedItemHolderRecyclerAdapter(Context context, int headerLayoutResId) {
+        this.context = context;
+        this.headerLayoutResId = headerLayoutResId;
+        this.headerResId = R.id.header;
+        this.itemLayoutResId = R.layout.default_single_line_row;
+        this.itemResId = R.id.title;
+    }
+
+    /**
+     * This constructor allows to use a custom layout and target views for header and item titles.
      * Extend class and override onCreateHeaderViewHolder, onCreateItemViewHolder, onBindHeaderViewHolder,
      * and onBindItemViewHolder for more options.
      */

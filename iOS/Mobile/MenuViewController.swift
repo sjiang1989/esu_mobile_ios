@@ -256,6 +256,8 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         let cell: UITableViewCell = tableView.dequeueReusableCell(withIdentifier: "Menu Cell", for: indexPath) as UITableViewCell
         
+        cell.accessibilityTraits = UIAccessibilityTraitButton
+        
         if let nameLabel = cell.viewWithTag(101) as? UILabel, let imageView = cell.viewWithTag(102) as? UIImageView {
             switch ((indexPath as NSIndexPath).row, self.useSwitchSchool) {
             case (0, _):
@@ -297,6 +299,8 @@ class MenuViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func cellForModulesRow(_ indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Menu Cell", for: indexPath) as UITableViewCell
+        
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         
         let menuSectionInfo = self.menuSectionInfo![(indexPath as NSIndexPath).section]
         let module = menuSectionInfo.modules[(indexPath as NSIndexPath).row]

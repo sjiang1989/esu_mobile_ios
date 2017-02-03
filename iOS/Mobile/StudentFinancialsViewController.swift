@@ -127,7 +127,9 @@ class StudentFinancialsViewController: UIViewController, UITableViewDataSource, 
 
     func fetchData() {
         let loadingNotification = MBProgressHUD.showAdded(to: self.view, animated: true)
-        loadingNotification.label.text = NSLocalizedString("Loading", comment: "loading message while fetching recent transactions");
+        let loadingString = NSLocalizedString("Loading", comment: "loading message while fetching recent transactions")
+        loadingNotification.label.text = loadingString
+        UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
         
         DispatchQueue.global(qos: .userInteractive).async {
             self.fetchTransactions()
@@ -175,6 +177,13 @@ class StudentFinancialsViewController: UIViewController, UITableViewDataSource, 
                 let date2 = item2.entryDate as Date
                 return date1.compare(date2) == ComparisonResult.orderedDescending
             }
+        } else {
+            DispatchQueue.main.async {
+                let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                alertController.addAction(alertAction)
+                self.present(alertController, animated: true)
+            }
         }
     }
     
@@ -199,6 +208,13 @@ class StudentFinancialsViewController: UIViewController, UITableViewDataSource, 
                 DispatchQueue.main.async {
                     self.balanceLabel.text = self.currencyFormatter.string(from: NSNumber(value: balance));
                 }
+            }
+        } else {
+            DispatchQueue.main.async {
+                let alertController = UIAlertController(title: NSLocalizedString("Error", comment:""), message: NSLocalizedString("Data could not be reached", comment:""), preferredStyle: .alert)
+                let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:""), style: UIAlertActionStyle.default)
+                alertController.addAction(alertAction)
+                self.present(alertController, animated: true)
             }
         }
     }

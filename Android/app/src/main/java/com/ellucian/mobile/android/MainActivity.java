@@ -38,7 +38,6 @@ import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.schoolselector.ConfigurationLoadingActivity;
 import com.ellucian.mobile.android.schoolselector.SchoolSelectionActivity;
 import com.ellucian.mobile.android.util.Extra;
-import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -124,6 +123,7 @@ public class MainActivity extends EllucianActivity {
 
         if (getIntent().hasExtra(Extra.MODULE_ID)) {
             handleBeaconIntent(getIntent().getStringExtra(Extra.MODULE_ID));
+            getIntent().removeExtra(Extra.MODULE_ID);
         }
     }
 
@@ -177,7 +177,7 @@ public class MainActivity extends EllucianActivity {
 
             if (!getEllucianApp().isUserAuthenticated()) {
                 Utils.showLoginDialog(this, qih.queuedIntent, roles);
-            } else if (UserUtils.getUseFingerprintEnabled(this) && getEllucianApp().isFingerprintUpdateNeeded()) {
+            } else if (getEllucianApp().isFingerprintUpdateNeeded()) {
                 Utils.showFingerprintDialog(this, qih.queuedIntent, roles);
             }
         } else {
@@ -217,9 +217,9 @@ public class MainActivity extends EllucianActivity {
 	}
 	
 	private void showLoginDialog() {
-		LoginDialogFragment loginFragment = new LoginDialogFragment();
-		loginFragment.show(getSupportFragmentManager(), LoginDialogFragment.LOGIN_DIALOG);
-	    
+        LoginDialogFragment loginFragment = LoginDialogFragment.newInstance(getResources().getConfiguration());
+        loginFragment.show(getSupportFragmentManager(), LoginDialogFragment.LOGIN_DIALOG);
+
 	}
 
     private void showFingerprintDialog() {
@@ -367,7 +367,7 @@ public class MainActivity extends EllucianActivity {
                 boolean showGuest = showGuestInt == 1 ? true : false;
 
                 List<String> moduleRoles = ModuleMenuAdapter.getModuleRoles(ellucianApplication.getContentResolver(), moduleId);
-                boolean lock = ellucianApplication.isUserAuthenticated() ? false : ModuleMenuAdapter.showLock(this, type, subType, secure, moduleRoles, moduleId);
+                boolean lock = ellucianApplication.isSignInNeeded() ? ModuleMenuAdapter.showLock(this, type, subType, secure, moduleRoles, moduleId) : false;
 
                 if (ModuleMenuAdapter.doesModuleShowForUser(ellucianApplication, moduleId, showGuest) && display.equals("true")) {
                     ShortcutListFragment.ShortcutItem shortcut = new ShortcutListFragment.ShortcutItem(

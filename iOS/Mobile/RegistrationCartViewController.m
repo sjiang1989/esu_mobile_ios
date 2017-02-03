@@ -112,15 +112,19 @@
     
     UILabel *line1aLabel = (UILabel *)[cell viewWithTag:1];
     line1aLabel.text = [NSString stringWithFormat:NSLocalizedStringWithDefaultValue(@"course name-section number", @"Localizable", [NSBundle mainBundle], @"%@-%@", @"course name-section number"), plannedSection.courseName, plannedSection.courseSectionNumber];
+    NSString *cellLabel = line1aLabel.accessibilityLabel;
+    
     UILabel *line1bLabel = (UILabel *)[cell viewWithTag:6];
     if(plannedSection.instructionalMethod) {
         line1bLabel.text = [NSString stringWithFormat:@"(%@)", plannedSection.instructionalMethod];
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line1bLabel.accessibilityLabel];
     } else
     {
         line1bLabel.text = nil;
     }
     UILabel *line2Label = (UILabel *)[cell viewWithTag:2];
     line2Label.text = plannedSection.sectionTitle;
+    cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line2Label.accessibilityLabel];
     UILabel *line3Label = (UILabel *)[cell viewWithTag:3];
     UILabel *line3bLabel = (UILabel *)[cell viewWithTag:5];
     NSString *faculty = [plannedSection facultyNames];
@@ -138,23 +142,28 @@
     
     if(faculty) {
         line3Label.text = [NSString stringWithFormat:@"%@", faculty];
-        if (credits)
+        cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
+        if (credits) {
             line3bLabel.text = [NSString stringWithFormat:NSLocalizedString(@" | %@ Credits %@", @"| credits and Credits label and grading type for registration"), credits, gradingType ];
-        else if (ceus) {
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3bLabel.accessibilityLabel];
+        } else if (ceus) {
             line3bLabel.text = [NSString stringWithFormat:NSLocalizedString(@" | %@ CEUs %@", @"| ceus and CEUs label and grading type for registration"), ceus, gradingType ];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3bLabel.accessibilityLabel];
         }
     } else {
         if (credits) {
             line3Label.text = [NSString stringWithFormat:NSLocalizedString(@"%@ Credits %@", @"credits and Credits label and grading type for registration"), credits, gradingType];
-        }
-        else if (ceus) {
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
+        } else if (ceus) {
             line3Label.text = [NSString stringWithFormat:NSLocalizedString(@"%@ CEUs %@", @"ceus and CEUs label and grading type for registration"), ceus, gradingType];
+            cellLabel = [NSString stringWithFormat:@"%@, %@,", cellLabel, line3Label.accessibilityLabel];
         }
         line3bLabel.text = nil;
     }
     UILabel *line4Label = (UILabel *)[cell viewWithTag:4];
     if(plannedSection.meetingPatternDescription) {
         line4Label.text = [NSString stringWithFormat:@"%@", plannedSection.meetingPatternDescription];
+        cellLabel = [NSString stringWithFormat:@"%@, %@", cellLabel, line4Label.accessibilityLabel];
     } else {
         line4Label.text = nil;
     }
@@ -168,6 +177,7 @@
 
     UIImage *image = [UIImage imageNamed:@"Registration Detail"];
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+    button.accessibilityLabel = NSLocalizedString(@"Course detail", @"VoiceOver label for button that displays course details");
     CGRect frame = CGRectMake(0.0, 0.0, 44.0f, 44.0f);
     button.frame = frame;
     [button setImage:image forState:UIControlStateNormal];
@@ -184,6 +194,9 @@
     } else {
         cell.backgroundColor = [UIColor clearColor];
     }
+    
+    cellLabel = [cellLabel stringByReplacingOccurrencesOfString:@"|" withString:@""];
+    [cell setAccessibilityLabel:cellLabel];
 
     return cell;
 }
@@ -444,7 +457,9 @@
 {
     [self.navigationController setToolbarHidden:YES animated:YES];
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo: [UIApplication sharedApplication].keyWindow animated:YES];
-    hud.label.text = NSLocalizedString(@"Registering", @"loading message while waiting for registration");
+    NSString *loadingString = NSLocalizedString(@"Registering", @"loading message while waiting for registration");
+    hud.label.text = loadingString;
+    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString);
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.01 * NSEC_PER_SEC);
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void) {
         
@@ -594,6 +609,7 @@
     dispatch_async(dispatch_get_main_queue(), ^{
     if ([self hasAuthorizationCodeRequiredTerms]) {
         UIView *header = [[[NSBundle mainBundle] loadNibNamed:@"RegistrationCartTableHeaderView" owner:self options:nil] objectAtIndex:0];
+        header.autoresizingMask = NO;
         self.tableView.tableHeaderView = header;
         self.tableView.tableHeaderView.subviews[0].backgroundColor = [UIColor colorWithRed:0.98 green:0.68 blue:0.09 alpha:1.0];
 

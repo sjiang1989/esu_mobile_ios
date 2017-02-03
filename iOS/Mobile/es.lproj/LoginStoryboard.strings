@@ -10,9 +10,6 @@
 /* Class = "UILabel"; text = "Use fingerprint to unlock"; ObjectID = "TCG-SB-18W"; */
 "TCG-SB-18W.text" = "Utilizar huella digital para desbloquear";
 
-/* Class = "UILabel"; text = "Please contact your institution’s IT staff for assistance with login."; ObjectID = "c3Q-el-RvU"; */
-"c3Q-el-RvU.text" = "Por favor póngase en contacto con el personal de TI de la institución si requiere apoyo para el acceso.";
-
 /* Class = "UITextField"; placeholder = "Password"; ObjectID = "cb7-zo-SNF"; */
 "cb7-zo-SNF.placeholder" = "Contraseña";
 
@@ -22,11 +19,20 @@
 /* Class = "UITextField"; placeholder = "User Name"; ObjectID = "deE-wm-pJ1"; */
 "deE-wm-pJ1.placeholder" = "Nombre de usuario";
 
+/* Class = "UIButton"; normalTitle = "Button"; ObjectID = "lTf-2H-GuK"; */
+"lTf-2H-GuK.normalTitle" = "Botón";
+
 /* Class = "UINavigationItem"; title = "Sign In"; ObjectID = "rQD-yx-JzM"; */
 "rQD-yx-JzM.title" = "Acceder";
 
+/* Class = "UITextView"; text = "Please contact your institution’s IT staff for assistance with login."; ObjectID = "rjC-kC-UYk"; */
+"rjC-kC-UYk.text" = "Por favor póngase en contacto con el personal de TI de la institución si requiere apoyo para el acceso.";
+
 /* Class = "UILabel"; text = "Stay signed in"; ObjectID = "rqP-WS-xnh"; */
 "rqP-WS-xnh.text" = "Seguir conectado";
+
+/* Class = "UILabel"; text = "Device passcode is required to stay signed in"; ObjectID = "sm7-yB-Dor"; */
+"sm7-yB-Dor.text" = "Se requiere el código de acceso al dispositivo para permanecer en la sesión";
 
 /* Class = "UISwitch"; accessibilityLabel = "Stay signed in"; ObjectID = "t3D-1t-4pB"; */
 "t3D-1t-4pB.accessibilityLabel" = "Seguir conectado";

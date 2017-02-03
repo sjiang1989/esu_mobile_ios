@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -39,7 +39,9 @@
             android:paddingEnd="6dp"
             android:textAlignment="viewStart"
             android:textDirection="locale"
-            android:hint="@string/registration_search_field_hint" />
+            android:hint="@string/registration_search_field_hint"
+            android:inputType="text"
+            android:imeOptions="actionDone|flagNoFullscreen" />
 
     </android.support.design.widget.TextInputLayout>
 

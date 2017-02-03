@@ -35,6 +35,7 @@
 -(void) removeSearchedSection:(NSString *)sectionId term:(NSString *)termId;
 -(RegistrationTerm *) findTermById:(NSString *) termId;
 -(void) reportError:(NSString *)error;
+-(void) reportNetworkError;
 -(void) removeSection:(RegistrationPlannedSection *)section;
 -(void) removeFromCart:(RegistrationPlannedSection *) section;
 -(BOOL) courseIsInCart:(RegistrationPlannedSection *)section;

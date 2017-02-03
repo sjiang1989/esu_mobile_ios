@@ -5,14 +5,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.2"
+    compileSdkVersion 25
+    buildToolsVersion "25.0.1"
 
     defaultConfig {
         minSdkVersion 18
         targetSdkVersion 24
-        versionName "5.0.0" // must be "#.#.#"
-        versionCode 500
+        versionName "5.1.0" // must be "#.#.#"
+        versionCode 510
     }
 
     buildTypes {
@@ -43,6 +43,9 @@ android {
         }
         customer {
             applicationId "edu.school.app"
+            applicationId = getApplicationId(applicationId)
+            versionName = getVersion(versionName)
+            versionCode = getVersionCode(versionCode)
             buildConfigField "String", "contentProvider", '"' + applicationId + '.contentprovider"'
         }
     }
@@ -50,20 +53,20 @@ android {
 
 dependencies {
     compile 'com.google.code.gson:gson:2.4'
-    compile 'com.google.android.gms:play-services-analytics:9.4.0'
-    compile 'com.google.android.gms:play-services-gcm:9.4.0'
-    compile 'com.google.android.gms:play-services-location:9.4.0'
-    compile 'com.google.android.gms:play-services-maps:9.4.0'
+    compile 'com.google.android.gms:play-services-analytics:10.0.1'
+    compile 'com.google.android.gms:play-services-gcm:10.0.1'
+    compile 'com.google.android.gms:play-services-location:10.0.1'
+    compile 'com.google.android.gms:play-services-maps:10.0.1'
     compile 'com.googlecode.android-query:android-query:0.25.9'
     compile 'org.apache.commons:commons-io:1.3.2'
     compile 'org.jsoup:jsoup:1.8.1'
-    compile 'com.android.support:appcompat-v7:24.2.0'
-    compile 'com.android.support:cardview-v7:24.2.0'
-    compile 'com.android.support.constraint:constraint-layout:1.0.0-alpha7'
-    compile 'com.android.support:design:24.2.0'
-    compile 'com.android.support:recyclerview-v7:24.2.0'
-    compile 'com.android.support:support-v4:24.2.0'
-    compile 'com.android.support:support-v13:24.2.0'
+    compile 'com.android.support:appcompat-v7:25.0.1'
+    compile 'com.android.support:cardview-v7:25.0.1'
+    compile 'com.android.support.constraint:constraint-layout:1.0.0-beta4'
+    compile 'com.android.support:design:25.0.1'
+    compile 'com.android.support:recyclerview-v7:25.0.1'
+    compile 'com.android.support:support-v4:25.0.1'
+    compile 'com.android.support:support-v13:25.0.1'
     compile 'de.hdodenhof:circleimageview:2.0.0'
     compile 'io.reactivex:rxandroid:1.1.0'
     compile 'io.reactivex:rxjava:1.1.0'
@@ -82,6 +85,13 @@ def getVersion(version) {
         return version_build
     }
     return version
+}
+
+def getApplicationId(applicationId) {
+    if (hasProperty('application_id')) {
+        return application_id
+    }
+    return applicationId
 }
 
 android.applicationVariants.all { variant ->

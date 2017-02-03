@@ -51,6 +51,12 @@ class AboutViewController : UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        phoneLabel.accessibilityTraits = UIAccessibilityTraitButton
+        emailLabel.accessibilityTraits = UIAccessibilityTraitButton
+        websiteLabel.accessibilityTraits = UIAccessibilityTraitButton
+        privacyPolicyLabel.accessibilityTraits = UIAccessibilityTraitButton
+        
         self.serverVersion.textColor = UIColor.subheaderText
         self.serverVersionLabel.textColor = UIColor.subheaderText
         self.clientVersion.textColor = UIColor.subheaderText
@@ -123,7 +129,8 @@ class AboutViewController : UIViewController {
     func loadImage() {
         let defaults = AppGroupUtilities.userDefaults()
         if let aboutLogoUrl = defaults?.string(forKey: "about-logoUrlPhone") {
-            DispatchQueue.main.async {
+            
+            DispatchQueue.global().async {
                 if let url = URL(string: aboutLogoUrl) {
                     if let imageData = try? Data(contentsOf: url) {
                         var myimage = UIImage(data: imageData)!
@@ -143,9 +150,7 @@ class AboutViewController : UIViewController {
         let defaults = AppGroupUtilities.userDefaults()
         let versionURL = defaults?.string(forKey: "about-version-url")
         
-        DispatchQueue.main.async {
-            
-            
+        DispatchQueue.global().async {
             if let versionResponseData = try? Data(contentsOf: URL(string: versionURL!)!) {
                 let versionJson = JSON(data: versionResponseData)
                 let applicationVersion = versionJson["application"]["version"].stringValue

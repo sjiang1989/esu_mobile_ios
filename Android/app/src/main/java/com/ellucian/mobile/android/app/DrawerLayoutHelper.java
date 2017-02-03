@@ -1,24 +1,19 @@
 /*
- * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.app;
 
-import android.app.Activity;
 import android.app.Application;
-import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -40,12 +35,10 @@ import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.ModuleType;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
-import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
 import com.ellucian.mobile.android.provider.EllucianContract.Modules;
 import com.ellucian.mobile.android.provider.EllucianContract.Notifications;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.PreferencesUtils;
-import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
 
 import java.util.ArrayList;
@@ -55,8 +48,6 @@ import java.util.List;
 public class DrawerLayoutHelper {
 	
 	private static final String TAG = DrawerLayoutHelper.class.getSimpleName();
-	public static final long AUTH_REFRESH_TIME = 30 * Utils.ONE_MINUTE; // 30 Minutes
-
 	
 	private final AppCompatActivity activity;
 	private final DrawerLayout drawerLayout;
@@ -347,45 +338,8 @@ public class DrawerLayoutHelper {
 
             if (!ellucianApp.isUserAuthenticated()) {
                 Utils.showLoginDialog(activity, intent, roles);
-            } else if (UserUtils.getUseFingerprintEnabled(activity) && ellucianApp.isFingerprintUpdateNeeded()) {
+            } else if (ellucianApp.isFingerprintUpdateNeeded()) {
                 Utils.showFingerprintDialog(activity, intent, roles);
-            } else if (type.equals(ModuleType.WEB)) {
-
-                //do if basic authentication only; web login will be handled by cookies
-                String loginType = PreferencesUtils.getStringFromPreferences(activity, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
-                if (loginType.equals(Utils.NATIVE_LOGIN_TYPE) && System.currentTimeMillis() > (ellucianApp
-                        .getLastAuthRefresh() + AUTH_REFRESH_TIME)) {
-                    LocalBroadcastManager lbm = LocalBroadcastManager
-                            .getInstance(activity);
-                    BackgroundAuthenticationReceiver backgroundAuthenticationReceiver = new BackgroundAuthenticationReceiver(activity);
-                    backgroundAuthenticationReceiver.setQueuedIntent(intent);
-                    backgroundAuthenticationReceiver.setBackgroundAuthenticationReceiver(backgroundAuthenticationReceiver);
-                    lbm.registerReceiver(backgroundAuthenticationReceiver,
-                            new IntentFilter(AuthenticateUserIntentService.ACTION_BACKGROUND_AUTH));
-
-                    ((EllucianActivity) activity).sendEvent(
-                                    GoogleAnalyticsConstants.CATEGORY_AUTHENTICATION,
-                                    GoogleAnalyticsConstants.ACTION_LOGIN,
-                                    "Background re-authenticate", null,
-                                    null);
-
-                    Toast signInMessage = Toast.makeText(activity,
-                            R.string.dialog_re_authenticate,
-                            Toast.LENGTH_LONG);
-                    signInMessage.setGravity(Gravity.CENTER, 0, 0);
-                    signInMessage.show();
-
-                    Intent loginIntent = new Intent(activity,
-                            AuthenticateUserIntentService.class);
-                    loginIntent.putExtra(Extra.LOGIN_USERNAME,
-                            ellucianApp.getAppUserName());
-                    loginIntent.putExtra(Extra.LOGIN_PASSWORD,
-                            ellucianApp.getAppUserPassword());
-                    loginIntent.putExtra(Extra.LOGIN_BACKGROUND, true);
-                    activity.startService(loginIntent);
-                } else {
-                    activity.startActivity(intent);
-                }
             } else {
                 activity.startActivity(intent);
             }
@@ -484,45 +438,6 @@ public class DrawerLayoutHelper {
 
 			return true;
 		}																	
-	}
-	
-	public static class BackgroundAuthenticationReceiver extends BroadcastReceiver {
-
-		private Intent queuedIntent;
-        private Activity activity;
-        private BackgroundAuthenticationReceiver backgroundAuthenticationReceiver;
-
-        public BackgroundAuthenticationReceiver(Activity activity) {
-            this.activity = activity;
-        }
-
-        public void setBackgroundAuthenticationReceiver(BackgroundAuthenticationReceiver backgroundAuthenticationReceiver) {
-            this.backgroundAuthenticationReceiver = backgroundAuthenticationReceiver;
-        }
-
-        @Override
-		public void onReceive(Context context, Intent incomingIntent) {
-			String result = incomingIntent.getStringExtra(Extra.LOGIN_SUCCESS);
-
-			if (!TextUtils.isEmpty(result)
-					&& result
-							.equals(AuthenticateUserIntentService.ACTION_SUCCESS)) {
-				activity.startActivity(queuedIntent);
-			} else {
-
-				Toast signInMessage = Toast.makeText(activity,
-						R.string.dialog_sign_in_failed, Toast.LENGTH_LONG);
-				signInMessage.setGravity(Gravity.CENTER, 0, 0);
-				signInMessage.show();
-			}
-			LocalBroadcastManager.getInstance(activity).unregisterReceiver(
-					backgroundAuthenticationReceiver);
-
-		}
-
-		public void setQueuedIntent(Intent intent) {
-			queuedIntent = intent;
-		}
 	}
 	
 	private class NotificationsContentObserver extends ContentObserver {

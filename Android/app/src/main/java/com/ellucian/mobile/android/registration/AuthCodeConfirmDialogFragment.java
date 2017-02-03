@@ -95,7 +95,7 @@ public class AuthCodeConfirmDialogFragment extends EllucianDialogFragment {
 
 			@Override
 			public void onClick(View v) {
-                registrationActivity.onAuthCodeConfirmCancelClicked(position, section.termId, section.sectionId);
+                registrationActivity.onAuthCodeConfirmCancelClicked(position);
 				AuthCodeConfirmDialogFragment.this.dismiss();
 			}
 		});

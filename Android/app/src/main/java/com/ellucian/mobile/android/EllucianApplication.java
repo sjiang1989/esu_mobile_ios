@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android;
@@ -33,7 +33,7 @@ import com.ellucian.mobile.android.login.User;
 import com.ellucian.mobile.android.notifications.DeviceNotifications;
 import com.ellucian.mobile.android.notifications.EllucianNotificationManager;
 import com.ellucian.mobile.android.provider.EllucianContract;
-import com.ellucian.mobile.android.schoolselector.ConfigurationLoadingActivity;
+import com.ellucian.mobile.android.settings.SettingsUtils;
 import com.ellucian.mobile.android.util.ConfigurationProperties;
 import com.ellucian.mobile.android.util.Extra;
 import com.ellucian.mobile.android.util.ModuleConfiguration;
@@ -70,6 +70,7 @@ public class EllucianApplication extends Application {
 	private IdleTimer idleTimer;
 	private final long idleTime = 30 * Utils.ONE_MINUTE; // 30 Minutes
 	private static final long FINGERPRINT_VALID_MILLISECONDS = 5 * Utils.ONE_MINUTE; // 5 Minutes
+    public static final long AUTH_REFRESH_TIME = 30 * Utils.ONE_MINUTE; // 30 Minutes
     private long fingerprintValidTime;
     private DeviceNotifications deviceNotifications;
 	private long lastNotificationsCheck;
@@ -124,40 +125,44 @@ public class EllucianApplication extends Application {
 
         SharedPreferences preferences = getSharedPreferences(Utils.CONFIGURATION, MODE_PRIVATE);
         String cloudConfigUrl = preferences.getString(Utils.CONFIGURATION_URL, null);
-        int lastDeviceVersionCode = preferences.getInt(Utils.LAST_DEVICE_VERSION, 0);
+        int lastDeviceVersionCode = SettingsUtils.getIntFromPreferences(this, Utils.LAST_DEVICE_VERSION, 0);
         int configAppVersionCode = 0;
         try {
             configAppVersionCode = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
         } catch (PackageManager.NameNotFoundException e) {
             Log.e(TAG, "onCreate: errorMessage:" + e.getMessage());
         }
+        Log.d(TAG, "lastVersionCode:" + lastDeviceVersionCode + "  currVersionCode:" + configAppVersionCode);
 
         // If app has been updated, re-fetch the config from the appropriate source.
         // Updated device code might reference vales that were previously ignored.
-        if (configurationProperties.allowSwitchSchool && !TextUtils.isEmpty(cloudConfigUrl)) {
-            // If the user is allowed to switch school, re-fetch the last config they used
-            Log.d(TAG, "lastVersionCode:" + lastDeviceVersionCode + "  currVersionCode:" + configAppVersionCode);
-            if (lastDeviceVersionCode != configAppVersionCode) {
-				if (!isServiceRunning(ConfigurationUpdateService.class)) {
-					Log.d(TAG, "Cloud Config out of date. Begin update.");
-					Intent intent = new Intent(this, ConfigurationUpdateService.class);
-					intent.putExtra(Utils.CONFIGURATION_URL, cloudConfigUrl);
-					intent.putExtra(ConfigurationUpdateService.REFRESH, true);
-					startService(intent);
+        if (lastDeviceVersionCode != configAppVersionCode) {
+            String newDefaultConfigurationUrl = getConfigurationProperties().defaultConfigurationUrl;
+            Log.d(TAG, "Default Config URL: " + newDefaultConfigurationUrl);
+            Log.d(TAG, "Current Config: " + cloudConfigUrl );
 
-					PreferencesUtils.addIntToPreferences(this, Utils.CONFIGURATION,
-							Utils.LAST_DEVICE_VERSION, configAppVersionCode);
-				} else {
-					Log.v(TAG, "Can't start ConfigurationUpdateService because it is already running");
-				}
-            }
-        } else {
-            String defaultConfigurationUrl = getConfigurationProperties().defaultConfigurationUrl;
-            if (!TextUtils.isEmpty(configurationProperties.defaultConfigurationUrl)) {
-                Intent intent = new Intent(this, ConfigurationLoadingActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.putExtra(Utils.CONFIGURATION_URL, defaultConfigurationUrl);
-                startActivity(intent);
+            SettingsUtils.addIntToPreferences(this, Utils.LAST_DEVICE_VERSION, configAppVersionCode);
+            Log.d(TAG, "Update internal device version to " + configAppVersionCode);
+
+            if (configurationProperties.allowSwitchSchool) {
+                // If the user is allowed to switch school, re-fetch the last config they used. If
+                // that is empty (they've never picked one) load the default config.
+                if (!TextUtils.isEmpty(cloudConfigUrl)) {
+                    refreshConfig(cloudConfigUrl);
+                } else {
+                    switchToConfig(newDefaultConfigurationUrl);
+                }
+
+            } else {
+                // For most Platform Clients, user is NOT allowed to switch school.
+                // If the new default URL is the same as what they already have loaded, do a
+                // refresh config, so that they don't lose their cached data and authenticated sessions.
+                // If the default config URL has changed, switch to that new URL.
+                if (TextUtils.equals(cloudConfigUrl, newDefaultConfigurationUrl)) {
+                    refreshConfig(cloudConfigUrl);
+                } else {
+                    switchToConfig(newDefaultConfigurationUrl);
+                }
             }
         }
 
@@ -167,7 +172,30 @@ public class EllucianApplication extends Application {
         }
 	}
 
-	public Object getCachedObject(String key) {
+    private void refreshConfig(String configUrl) {
+        Log.d(TAG, "refreshConfig: " + configUrl );
+        if (!isServiceRunning(ConfigurationUpdateService.class)) {
+            Intent intent = new Intent(this, ConfigurationUpdateService.class);
+            intent.putExtra(Utils.CONFIGURATION_URL, configUrl);
+            intent.putExtra(ConfigurationUpdateService.REFRESH, true);
+            startService(intent);
+        } else {
+            Log.v(TAG, "Can't start ConfigurationUpdateService because it is already running");
+        }
+    }
+
+    private void switchToConfig(String configUrl) {
+        Log.d(TAG, "switchToConfig: " + configUrl);
+        if (!isServiceRunning(ConfigurationUpdateService.class)) {
+            // when switching to a different config, stop any ongoing refreshes
+            // before starting a new one.
+            stopService(new Intent(this, ConfigurationUpdateService.class));
+        }
+        Utils.changeConfiguration(this, this, configUrl, null, null);
+        refreshConfig(configUrl);
+    }
+
+    public Object getCachedObject(String key) {
 		return liveObjects.get(key);
 	}
 
@@ -182,8 +210,6 @@ public class EllucianApplication extends Application {
 		user.setName(username);
 		user.setPassword(password);
 		user.setRoles(roles);
-
-		lastAuthRefresh = System.currentTimeMillis();
 
 		String logString = "App User created:\n" + "userId: " + userId;
 		logString += "\n" + "username:" + username;
@@ -341,9 +367,16 @@ public class EllucianApplication extends Application {
                 fingerprintValidTime + FINGERPRINT_VALID_MILLISECONDS);
     }
 
+    /**
+     *
+     * @return True if fingerprint has been enabled and it has expired.
+     */
     public boolean isFingerprintUpdateNeeded() {
-        boolean fingerprintNeeded = PreferencesUtils.getBooleanFromPreferences(this, UserUtils.USER, UserUtils.USER_FINGERPRINT_NEEDED, true);
-        return fingerprintNeeded;
+        if (UserUtils.getUseFingerprintEnabled(getContext()) && UserUtils.isFingerprintOptionEnabled(getContext())) {
+            boolean fingerprintNeeded = PreferencesUtils.getBooleanFromPreferences(this, UserUtils.USER, UserUtils.USER_FINGERPRINT_NEEDED, true);
+            return fingerprintNeeded;
+        }
+        return false;
     }
 
     /**
@@ -351,6 +384,18 @@ public class EllucianApplication extends Application {
      */
     public void resetFingerprintValidTime() {
         this.fingerprintValidTime = System.currentTimeMillis();
+    }
+
+    public boolean isSignInNeeded() {
+        if (isUserAuthenticated()) {
+            if (isFingerprintUpdateNeeded()) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return true;
+        }
     }
 
 	public void startNotifications() {
@@ -396,6 +441,10 @@ public class EllucianApplication extends Application {
 	public long getLastAuthRefresh() {
 		return lastAuthRefresh;
 	}
+
+    public void setLastAuthRefresh(){
+        lastAuthRefresh = System.currentTimeMillis();
+    }
 
 	public ConfigurationProperties getConfigurationProperties() {
 		return configurationProperties;
@@ -698,6 +747,7 @@ public class EllucianApplication extends Application {
                 return true;
             }
         }
+        modulesInterestCursor.close();
         return false;
     }
 }

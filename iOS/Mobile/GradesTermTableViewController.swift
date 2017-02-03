@@ -61,10 +61,7 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
     }
     
     override func numberOfSections(in tableView: UITableView) -> Int {
-        if term == nil {
-            return 0
-        }
-        if let courses = term!.courses {
+        if let term = term, let courses = term.courses {
             return courses.count + 1
         } else {
             return 1
@@ -74,6 +71,9 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0:
+            if term == nil {
+                return 1
+            }
             if let count = term?.courses?.count , count > 0 {
                 return 1
             } else {
@@ -98,21 +98,33 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        switch ((indexPath as NSIndexPath).section, (indexPath as NSIndexPath).row) {
-        case (0, 0):
+        switch ((indexPath as NSIndexPath).section, (indexPath as NSIndexPath).row, term) {
+        case (_, _, nil):
+            return tableView.dequeueReusableCell(withIdentifier: "No Grades Cell", for: indexPath) as UITableViewCell
+        case (0, 0, _):
             let cell = tableView.dequeueReusableCell(withIdentifier: "Term Name Cell", for: indexPath) as UITableViewCell
             
             let termLabel = cell.viewWithTag(1) as! UILabel
             
             termLabel.text = term!.name
             return cell
-        case (_, 0):
+        case (_, 0, _):
             let cell = tableView.dequeueReusableCell(withIdentifier: "Course Name Cell", for: indexPath) as UITableViewCell
             
             let course = term!.courses[(indexPath as NSIndexPath).section - 1] as! GradeCourse
             let courseLabel = cell.viewWithTag(1) as! UILabel
             let titleLabel = cell.viewWithTag(2) as! UILabel
-            courseLabel.text = String(format: NSLocalizedString("%@-%@", comment: "course name - course section number"), course.courseName, course.courseSectionNumber)
+
+            if let courseName = course.courseName, let courseSectionNumber = course.courseSectionNumber {
+                courseLabel.text = String(format: "%@-%@", courseName, courseSectionNumber)
+            } else if let courseName = course.courseName {
+                courseLabel.text = courseName
+            } else if let courseSectionNumber = course.courseSectionNumber {
+                courseLabel.text = courseSectionNumber
+            } else {
+                courseLabel.text = ""
+            }
+            
             titleLabel.text = course.sectionTitle
             return cell
         
@@ -156,12 +168,9 @@ class GradesTermTableViewController : UITableViewController, GradesTermSelectorD
         
         if self.fetchedResultsController.fetchedObjects!.count <= 0 {
             let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
-            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
-            operation.completionBlock = {
-                DispatchQueue.main.async(execute: {() -> Void in
-                    MBProgressHUD.hide(for: self.view, animated: true)
-                })
-            }
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
         }
         
         OperationQueue.main.addOperation(operation)

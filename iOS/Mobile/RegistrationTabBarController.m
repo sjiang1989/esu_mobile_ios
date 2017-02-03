@@ -61,7 +61,9 @@
     if ( match ) {
         
         MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-        hud.label.text = NSLocalizedString(@"Retrieving terms", @"loading message while fetching terms to use for search");
+        NSString *loadingString = NSLocalizedString(@"Retrieving terms", @"loading message while fetching terms to use for search");
+        hud.label.text = loadingString;
+        UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString);
         
         dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.01 * NSEC_PER_SEC);
         dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
@@ -70,7 +72,9 @@
                 [MBProgressHUD hideHUDForView:self.view animated:YES];
                 
                 MBProgressHUD *hud2 = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-                hud2.label.text = NSLocalizedString(@"Checking Eligibility", @"checking registration eligibility message");
+                NSString *loadingString2 = NSLocalizedString(@"Checking Eligibility", @"checking registration eligibility message");
+                hud2.label.text = loadingString2;
+                UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString2);
                 
                 dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
                     
@@ -78,7 +82,9 @@
                     [MBProgressHUD hideHUDForView:self.view animated:YES];
                     
                     MBProgressHUD *hud3 = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
-                    hud3.label.text = NSLocalizedString(@"Fetching saved course sections", @"Fetching saved course sections message");
+                    NSString *loadingString3 = NSLocalizedString(@"Fetching saved course sections", @"Fetching saved course sections message");
+                    hud3.label.text = loadingString3;
+                    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString3);
                     
                     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
                         [self fetchRegistrationPlans:self];
@@ -178,7 +184,7 @@
         return eligible;
         
     } else {
-        [self reportError:authenticatedRequest.error.localizedDescription];
+        [self reportNetworkError];
         return NO;
     }
 }
@@ -399,7 +405,7 @@
         [[NSNotificationCenter defaultCenter] postNotificationName:kRegistrationPlanDataReloaded object:nil];
         
     } else {
-        [self reportError:authenticatedRequest.error.localizedDescription];
+        [self reportNetworkError];
     }
 }
 
@@ -471,7 +477,7 @@
         self.terms = [terms copy];
         return YES;
     } else {
-        [self reportError:authenticatedRequest.error.localizedDescription];
+        [self reportNetworkError];
         return NO;
     }
     return NO;
@@ -560,6 +566,22 @@
         UIAlertController *alertController = [UIAlertController
                                               alertControllerWithTitle:NSLocalizedString(@"Error", @"Error")
                                               message:error
+                                              preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction *okAction = [UIAlertAction
+                                   actionWithTitle:NSLocalizedString(@"OK", @"OK")
+                                   style:UIAlertActionStyleDefault
+                                   handler:nil];
+        [alertController addAction:okAction];
+        [self presentViewController:alertController animated:YES completion:nil];
+    });
+}
+
+-(void) reportNetworkError
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIAlertController *alertController = [UIAlertController
+                                              alertControllerWithTitle:NSLocalizedString(@"Poor Network Connection", @"title when data cannot load due to a poor netwrok connection")
+                                              message:NSLocalizedString(@"Data could not be retrieved.", @"message when data cannot load due to a poor netwrok connection")
                                               preferredStyle:UIAlertControllerStyleAlert];
         UIAlertAction *okAction = [UIAlertAction
                                    actionWithTitle:NSLocalizedString(@"OK", @"OK")

@@ -76,7 +76,7 @@ public class NotificationsActivity extends EllucianActivity implements LoaderMan
 		if(!app.isUserAuthenticated()) {
 			Log.d(TAG, "User not authenticated. Request authentication.");
             Utils.showLoginForQueuedIntent(this, moduleId, ModuleType.NOTIFICATIONS);
-		} else if (UserUtils.getUseFingerprintEnabled(activity) && app.isFingerprintUpdateNeeded()) {
+		} else if (app.isFingerprintUpdateNeeded()) {
             Log.d(TAG, "Updated Fingerprint needed.");
             Utils.showLoginForQueuedIntent(this, moduleId, ModuleType.NOTIFICATIONS);
         }

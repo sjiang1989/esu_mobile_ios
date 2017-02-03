@@ -11,12 +11,14 @@
 #import "POIListViewController.h"
 #import "POIDetailViewController.h"
 #import "Ellucian_GO-Swift.h"
+#import "MBProgressHUD.h"
 
 @interface MapsViewController ()
 
 @property (strong, nonatomic) NSArray *campuses;
 @property (strong, nonatomic) MapCampus *selectedCampus;
 @property (nonatomic, strong) CLLocationManager *locationManager;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buildingButton;
 
 @end
 
@@ -41,14 +43,11 @@
     
     self.searchBar.delegate = self;
     self.definesPresentationContext = YES;
+    
+    self.buildingButton.accessibilityLabel = @"Points of interest";
 
     [self fetchCachedMaps];
-    if ([self.campuses count] == 0) {
-        [self fetchMaps];
-        [self fetchCachedMaps];
-    } else {
-        [self fetchMapsInBackground];
-    }
+    [self fetchMapsInBackground];
 }
 
 -(void)viewDidAppear:(BOOL)animated
@@ -294,36 +293,35 @@
     }
 }
 
-
-- (void) fetchMaps {
-    
-    [self downloadMaps:self.module.managedObjectContext WithURL:[self.module propertyForKey:@"campuses"]];
-    NSError *error = nil;
-    if(![self.module.managedObjectContext save:&error]) {
-        NSLog(@"Could not save to store after update to maps: %@", [error userInfo]);
-    }
-}
-
 - (void) fetchMapsInBackground {
-
+    UIView *hudView = self.view;
+    MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:hudView animated:YES];
+    NSString *loadingString = NSLocalizedString(@"Loading", @"loading message while waiting for data to load");
+    hud.label.text = loadingString;
+    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString);
+    
     NSManagedObjectContext *importContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     importContext.parentContext = self.module.managedObjectContext;
     NSString *urlString = [self.module propertyForKey:@"campuses"];
     [importContext performBlock: ^{
         NSError *error;
         [self downloadMaps:importContext WithURL:urlString];
-            //save to main context
-            if (![importContext save:&error]) {
-                NSLog(@"Could not save to main context after update to map: %@", [error userInfo]);
-            }
-            
-            [importContext.parentContext performBlock:^{
+        //save to main context
+        if (![importContext save:&error]) {
+            NSLog(@"Could not save to main context after update to map: %@", [error userInfo]);
+        }
+        
+        [importContext.parentContext performBlock:^{
 
             NSError *parentError = nil;
             if(![importContext.parentContext save:&parentError]) {
                 NSLog(@"Could not save to store after update to maps: %@", [parentError userInfo]);
             }
             [self fetchCachedMaps];
+                
+            dispatch_async(dispatch_get_main_queue(), ^(void){
+                [MBProgressHUD hideHUDForView:hudView animated:YES];
+            });
         }];
     }];
 }
@@ -433,6 +431,13 @@
                 
             }
         }
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^(void){
+            UIAlertController* alert = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Poor Network Connection",@"title when data cannot load due to a poor netwrok connection") message:NSLocalizedString(@"Data could not be retrieved.",@"message when data cannot load due to a poor netwrok connection") preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertAction* alertAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"OK",@"OK") style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {}];
+            [alert addAction:alertAction];
+            [self presentViewController:alert animated:YES completion:nil];
+        });
     }
 
 }
@@ -607,6 +612,8 @@
         case kCLAuthorizationStatusAuthorizedWhenInUse:
             [self startTrackingLocation];
             self.zoomWithCurrentLocationButton.enabled = YES;
+            self.zoomWithCurrentLocationButton.accessibilityLabel = NSLocalizedString(@"Locate", @"VoiceOver label for button that locates the user on a map");
+            self.zoomWithCurrentLocationButton.accessibilityHint = NSLocalizedString(@"Displays current location.", @"VoiceOver hint for button that locates the user on a map");
             self.mapView.showsUserLocation = YES;
             break;
         case kCLAuthorizationStatusNotDetermined:

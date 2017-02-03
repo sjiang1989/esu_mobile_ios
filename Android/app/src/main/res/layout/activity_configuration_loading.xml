@@ -18,7 +18,6 @@
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:paddingBottom="150dp"
-        android:text="@string/configuration_loading_message"
-        android:fitsSystemWindows="true" />
+        android:text="@string/configuration_loading_message" />
 
 </RelativeLayout>

@@ -122,6 +122,7 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Event Cell", for: indexPath) as UITableViewCell
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         configureCell(cell, atIndexPath:indexPath)
         return cell
     }
@@ -213,6 +214,7 @@ class EventTableViewDelegate: NSObject, UITableViewDataSource, UITableViewDelega
         if (myDatetimeOutputFormatter == nil) {
             myDatetimeOutputFormatter = DateFormatter()
             myDatetimeOutputFormatter!.timeStyle = .short
+            myDatetimeOutputFormatter!.dateStyle = .short
         }
         return myDatetimeOutputFormatter
     }

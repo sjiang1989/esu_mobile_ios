@@ -61,7 +61,7 @@
 /* Class = "UILabel"; text = "PO Box\nStreet\nCity State Zip\nCountry"; ObjectID = "Ymg-LR-Cb5"; */
 "Ymg-LR-Cb5.text" = "PO Box
 Street
-City State Post Code
+City Region Post Code
 Country";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "cqF-p7-CSY"; */
@@ -81,6 +81,9 @@ Country";
 
 /* Class = "UILabel"; text = "To use directory, search above"; ObjectID = "jMG-wT-17h"; */
 "jMG-wT-17h.text" = "To use directory, search above";
+
+/* Class = "UIButton"; accessibilityLabel = "Message"; ObjectID = "nmM-3Q-NFi"; */
+"nmM-3Q-NFi.accessibilityLabel" = "Message";
 
 /* Class = "UILabel"; text = "Label"; ObjectID = "oeC-Q5-nbg"; */
 "oeC-Q5-nbg.text" = "Label";

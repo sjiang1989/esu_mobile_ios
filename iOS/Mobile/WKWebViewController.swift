@@ -53,6 +53,8 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
         
         addEllucianLibrary(configuration)
         
+        checkIfBackgroundLoginNeeded()
+        
         if let cookies = HTTPCookieStorage.shared.cookies {
             let script = getJSCookiesString(cookies: cookies)
             let cookieInScript = WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: false)
@@ -64,12 +66,14 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
         webView?.autoresizingMask = [UIViewAutoresizing.flexibleWidth , UIViewAutoresizing.flexibleHeight]
         
         self.sendView("Display web frame", moduleName: self.analyticsLabel)
-        checkIfBackgroundLoginNeeded()
+        
         
         if let webView = webView, let webViewToLoadCookies = webViewToLoadCookies, let initialRequest = self.loadRequest  {
 
             let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
-            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
             
             webView.navigationDelegate = self
             webView.uiDelegate = self
@@ -188,8 +192,8 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
     }
     
     @IBAction func didTapShareButton(_ sender: AnyObject) {
-        if let webView = webView {
-            let activityItems = [webView.url]
+        if let webView = webView, let url = webView.url {
+            let activityItems = [url]
             let avc = UIActivityViewController(activityItems: activityItems, applicationActivities: [SafariActivity()])
             avc.completionWithItemsHandler = {
                 (activityType, success, returnedItems, error) in
@@ -198,7 +202,7 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
                     self.sendEventToTracker1(category: Analytics.UI_Action, action: Analytics.Invoke_Native, label: label, value: nil, moduleName: self.analyticsLabel)
                 }
             }
-            let buttonItem: UIBarButtonItem = (sender as! UIBarButtonItem)
+            let buttonItem = sender as? UIBarButtonItem
             avc.popoverPresentationController?.barButtonItem = buttonItem
             self.present(avc, animated: true, completion: { _ in })
         }
@@ -313,7 +317,7 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
             
             let script = "typeof EllucianMobile != 'undefined' && window.EllucianMobile._ellucianMobileInternalReady();"
             webView.evaluateJavaScript(script) { (result, error) in
-                if error != nil {
+                if let error = error {
                     print(error)
                 }
             }
@@ -342,6 +346,10 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
         handleError(error)
     }
     
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        handleError(error)
+    }
+    
     private func handleError(_ swiftError: Error) {
         
         let error = swiftError as NSError
@@ -353,15 +361,25 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
         else if error.code == 101 {
             return
             // this is Error WebKitErrorDomain
-        }
-        else {
+        } else if error.code == NSURLErrorTimedOut {
+            DispatchQueue.main.async {
+                MBProgressHUD.hide(for: self.view, animated: true)
+                let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment: "title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment: "message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                let OKAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
+                alertController.addAction(OKAction)
+                self.present(alertController, animated: true, completion: nil)
+            }
+        } else {
             let titleString: String = NSLocalizedString("Error Loading Page", comment: "title when error loading webpage")
             let messageString = ((error.localizedFailureReason) != nil) ? String(format: NSLocalizedString("WebView loading error", tableName: "Localizable", bundle: Bundle.main, value: "%@ %@", comment: "WebView loading error (description failure)"), (error.localizedDescription), (error.localizedFailureReason!)) : error.localizedDescription
             let alertController: UIAlertController = UIAlertController(title: titleString, message: messageString, preferredStyle: .alert)
-            let okAction: UIAlertAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK action"), style: .default, handler: nil)
+            let okAction: UIAlertAction = UIAlertAction(title: NSLocalizedString("OK", comment: "OK"), style: .default, handler: nil)
             alertController.addAction(okAction)
             DispatchQueue.main.async {
                 self.present(alertController, animated: true, completion: { _ in })
+                
+                UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                MBProgressHUD.hide(for: self.view, animated: true)
             }
         }
         
@@ -411,5 +429,13 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
         DispatchQueue.main.async {
             self.present(alertController, animated: true, completion: { _ in })
         }
+    }
+
+    // if window.open is used in a website, we will instead load that page in the current webview
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        
+        let _ = self.webView?.load(navigationAction.request)
+        return nil
+        
     }
 }

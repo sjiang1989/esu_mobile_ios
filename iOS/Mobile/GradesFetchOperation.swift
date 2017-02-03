@@ -48,7 +48,7 @@ class GradesFetchOperation : Operation {
                     
                     var previousTerms = [GradeTerm]()
                     var existingTerms = [GradeTerm]()
-                    
+                    var updatedPrivateContext = false
                     
                     let termRequest = NSFetchRequest<GradeTerm>(entityName: "GradeTerm")
                     let oldObjects = try privateContext.fetch(termRequest)
@@ -141,8 +141,9 @@ class GradesFetchOperation : Operation {
                                     }
                                 }
                                 for oldObject in previousGrades {
-                                    if !previousGrades.contains(oldObject) {
+                                    if !existingGrades.contains(oldObject) {
                                         privateContext.delete(oldObject)
+                                        updatedPrivateContext = true
                                     }
                                 }
                             }
@@ -150,6 +151,7 @@ class GradesFetchOperation : Operation {
                             for oldObject in previousCourses {
                                 if !existingCourses.contains(oldObject) {
                                     privateContext.delete(oldObject)
+                                    updatedPrivateContext = true
                                 }
                             }
                         }
@@ -157,6 +159,7 @@ class GradesFetchOperation : Operation {
                     for oldObject in previousTerms {
                         if !existingTerms.contains(oldObject) {
                             privateContext.delete(oldObject)
+                            updatedPrivateContext = true
                         }
                     }
                     try privateContext.save()
@@ -164,13 +167,37 @@ class GradesFetchOperation : Operation {
                     privateContext.parent?.perform({
                         do {
                             try privateContext.parent?.save()
+                            if updatedPrivateContext {
+                                DispatchQueue.main.async {
+                                    (self.view as? GradesTermTableViewController)?.tableView.reloadData()
+                                }
+                            }
                         } catch let error {
                             print (error)
                         }
                     })
+                    } else {
+                        if let view = self.view {
+                            DispatchQueue.main.async {
+                                let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"),    preferredStyle: .alert)
+                                let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                                alertController.addAction(alertAction)
+                                view.present(alertController, animated: true)
+                            }
+                        }
+                    }
+                    if let view = self.view {
+                        DispatchQueue.main.async(execute: {() -> Void in
+                            MBProgressHUD.hide(for: view.view, animated: true)
+                        })
                     }
                 } catch let error {
                     print (error)
+                    if let view = self.view {
+                        DispatchQueue.main.async(execute: {() -> Void in
+                            MBProgressHUD.hide(for: view.view, animated: true)
+                        })
+                    }
                 }
                 
             }

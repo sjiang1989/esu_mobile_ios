@@ -27,6 +27,10 @@
     self.nameLabel.textColor = [UIColor subheaderText];
     self.typeLabel.textColor = [UIColor subheaderText];
     
+    [self.phoneLabel setAccessibilityTraits:UIAccessibilityTraitButton];
+    [self.emailLabel setAccessibilityTraits:UIAccessibilityTraitButton];
+    [self.getDirectionsLabel setAccessibilityTraits:UIAccessibilityTraitButton];
+    
     self.nameLabel.text = self.name;
 
     if([self.types count] > 0) {

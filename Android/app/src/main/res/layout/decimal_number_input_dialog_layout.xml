@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -29,6 +29,7 @@
             android:inputType="numberDecimal"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
+            android:imeOptions="flagNoFullscreen"
             android:paddingTop="2dp"/>
 
     </android.support.design.widget.TextInputLayout>

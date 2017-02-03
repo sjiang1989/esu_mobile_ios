@@ -27,14 +27,14 @@ public class UnauthenticatedUserReceiver extends BroadcastReceiver {
         EllucianApplication ellucianApplication = (EllucianApplication) activity.getApplicationContext();
         ellucianApplication.removeAppUser();
 
-        LoginDialogFragment loginFragment = new LoginDialogFragment();
+        LoginDialogFragment loginFragment = LoginDialogFragment.newInstance(activity.getResources().getConfiguration());
 		List<String> roles = null;
 		if(moduleId != null) {
 			roles = ModuleMenuAdapter.getModuleRoles(context.getContentResolver(), moduleId);
 		}
 		loginFragment.queueIntent(activity.getIntent(), roles);
 		loginFragment.forcedLogin(true);
-		loginFragment.show(activity.getSupportFragmentManager(),
-				LoginDialogFragment.LOGIN_DIALOG);
+        loginFragment.show(activity.getSupportFragmentManager(),
+                LoginDialogFragment.LOGIN_DIALOG);
 	}
 }

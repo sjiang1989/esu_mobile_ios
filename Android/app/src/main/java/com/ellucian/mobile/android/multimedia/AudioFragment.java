@@ -217,8 +217,6 @@ public class AudioFragment extends EllucianFragment implements MediaController.M
 
           }
         });
-
-	    mediaPlayer.seekTo(currentPosition);
         if (wasPlaying) {
             start();
         }

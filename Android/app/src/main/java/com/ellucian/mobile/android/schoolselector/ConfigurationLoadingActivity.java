@@ -9,7 +9,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
@@ -22,10 +21,7 @@ import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.client.services.ConfigurationUpdateService;
-import com.ellucian.mobile.android.provider.EllucianContract;
-import com.ellucian.mobile.android.settings.SettingsUtils;
 import com.ellucian.mobile.android.util.PreferencesUtils;
-import com.ellucian.mobile.android.util.UserUtils;
 import com.ellucian.mobile.android.util.Utils;
 import com.ellucian.mobile.android.util.VersionSupportUtils;
 
@@ -90,33 +86,14 @@ public class ConfigurationLoadingActivity extends EllucianActivity {
 		unableToDownloadReceiver = new UnableToDownloadReceiver();
 		lbm.registerReceiver(unableToDownloadReceiver, new IntentFilter(
 				ConfigurationUpdateService.ACTION_UNABLE_TO_DOWNLOAD));
-		
-		// delete before retrieving the new configuration
-		this.getContentResolver().delete(EllucianContract.BASE_CONTENT_URI,
-				null, null);
-
-		getSharedPreferences(
-				Utils.GOOGLE_ANALYTICS, Context.MODE_PRIVATE).edit().clear().apply();
-		
-		final SharedPreferences preferences = getSharedPreferences(
-				Utils.CONFIGURATION, MODE_PRIVATE);
-		final SharedPreferences.Editor editor = preferences.edit();
-		// Clear all Configuration Preferences
-		editor.clear().apply();
-		
-        // Clear all User Preferences
-        SettingsUtils.addBooleanToPreferences(this, UserUtils.USER_FINGERPRINT_OPT_IN, false);
-        getEllucianApp().removeAppUser();
-
-		editor.putString(Utils.CONFIGURATION_URL, configurationUrl);
-		editor.putString(Utils.CONFIGURATION_NAME,
-				getIntent().getStringExtra(Utils.CONFIGURATION_NAME));
-		editor.putString(Utils.ID, getIntent().getStringExtra(Utils.ID));
-		editor.commit();
 
 		EllucianApplication ea = (EllucianApplication) getApplication();
 		if (!ea.isServiceRunning(ConfigurationUpdateService.class)) {
-			Log.d("ConfigurationLoadingActivity",
+            String configurationName = getIntent().getStringExtra(Utils.CONFIGURATION_NAME);
+            String id = getIntent().getStringExtra(Utils.ID);
+            Utils.changeConfiguration(this, getEllucianApp(), configurationUrl, configurationName, id);
+
+            Log.d("ConfigurationLoadingActivity",
 					"Loading configuration using url: " + configurationUrl);
 			Intent intent = new Intent(this, ConfigurationUpdateService.class);
 			intent.putExtra(Utils.CONFIGURATION_URL, configurationUrl);

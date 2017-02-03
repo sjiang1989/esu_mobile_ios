@@ -53,7 +53,7 @@ public class IlpCardActivity extends EllucianActivity {
         if(!app.isUserAuthenticated()) {
             Log.d(TAG, "User not authenticated. Request authentication.");
             Utils.showLoginForQueuedIntent(this, moduleId, ModuleType.ILP);
-        } else if (UserUtils.getUseFingerprintEnabled(activity) && app.isFingerprintUpdateNeeded()) {
+        } else if (app.isFingerprintUpdateNeeded()) {
             Log.d(TAG, "Updated Fingerprint needed.");
             Utils.showLoginForQueuedIntent(this, moduleId, ModuleType.ILP);
         } else if (getIntent().getBooleanExtra(IlpListActivity.SHOW_DETAIL, false)) {

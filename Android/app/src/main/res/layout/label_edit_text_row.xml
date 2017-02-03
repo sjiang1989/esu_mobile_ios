@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2015 Ellucian Company L.P. and its affiliates.
+  ~ Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -26,6 +26,7 @@
         android:inputType="text"
         android:paddingStart="4dp"
         android:paddingTop="2dp"
+        android:imeOptions="flagNoFullscreen"
         tools:ignore="RtlSymmetry" />
 
 </LinearLayout>

@@ -77,20 +77,22 @@
     <string name="label_done">Done</string>
     <string name="content_desc_warning">Warning</string>
     <string name="services_feature_not_supported">Feature is not supported by this device.</string>
+    <string name="no_connectivity">No internet connection</string>
+    <string name="snackbar_dismiss">Dismiss</string>
 
     <string name="label_format">
 	    <xliff:g id="label" example="Name">%1$s</xliff:g>:
 	</string>
-	<string name="label_string_content_format">
+    <string name="label_string_content_format">
 	    <xliff:g id="label" example="Name">%1$s</xliff:g>: <xliff:g id="content" example="John Smith">%2$s</xliff:g>
 	</string>
-	<string name="label_integer_content_format">
+    <string name="label_integer_content_format">
 	    <xliff:g id="label" example="Room">%1$s</xliff:g>: <xliff:g id="content" example="201">%2$d</xliff:g>
 	</string>
-	<string name="label_float_content_format">
+    <string name="label_float_content_format">
 	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="content" example="3.00">%2$.2f</xliff:g>
 	</string>
-	<string name="label_with_count_format">
+    <string name="label_with_count_format">
 	    <xliff:g id="label" example="Cart">%1$s</xliff:g> (<xliff:g id="count" example="5">%2$d</xliff:g>)
 	</string>
 
@@ -99,6 +101,7 @@
     <string name="dialog_use_fingerprint">Use fingerprint to unlock</string>
     <string name="dialog_use_fingerprint_summary">Allow me to sign in with my fingerprint</string>
     <string name="dialog_stay_signed_in">Stay signed in</string>
+    <string name="dialog_stay_signed_in_disabled">Screen lock is required to stay signed in</string>
     <string name="dialog_username">Username</string>
     <string name="dialog_password">Password</string>
     <string name="dialog_sign_in_empty">Username or Password cannot be empty.</string>
@@ -106,24 +109,25 @@
     <string name="dialog_signed_in">You have signed in.</string>
     <string name="dialog_signed_out">You have signed out.</string>
     <string name="dialog_idle_sign_out">You have been idle too long and have been signed Out.</string>
+    <string name="dialog_login_instructions">Please contact your institution’s IT staff for assistance with login.</string>
 
     <!-- Fingerprint Authentication -->
     <string name="fingerprint_cancel">Cancel</string>
     <string name="fingerprint_use_password">Use password</string>
     <string name="fingerprint_description">Confirm fingerprint to continue</string>
     <string name="fingerprint_hint">Touch sensor</string>
-    <string name="fingerprint_not_recognized">Fingerprint not recognized. Try again</string>
-    <string name="fingerprint_success">Fingerprint recognized</string>
+    <string name="fingerprint_not_recognized">Fingerprint not recognised. Try again</string>
+    <string name="fingerprint_success">Fingerprint recognised</string>
 
     <string name="dialog_select_categories">Select Categories</string>
     <!-- Keep &#8230; as is to follow Android best practice of using the horizontal ellipse character -->
     <string name="dialog_re_authenticate">Re-authenticating, please wait&#8230;</string>
-	<string name="dialog_continue">Continue</string>
-	<string name="dialog_go_back">Go Back</string>
-	<string name="dialog_security_warning">Security warning</string>
-	<string name="dialog_cert_warning_statement">"There are problems with the security certificate for this site."</string>
-	<string name="dialog_field_empty">Field cannot be empty</string>
-	<string name="unauthorized_feature">You do not have permission to use this feature.</string>
+    <string name="dialog_continue">Continue</string>
+    <string name="dialog_go_back">Go Back</string>
+    <string name="dialog_security_warning">Security warning</string>
+    <string name="dialog_cert_warning_statement">"There are problems with the security certificate for this site."</string>
+    <string name="dialog_field_empty">Field cannot be empty</string>
+    <string name="unauthorized_feature">You do not have permission to use this feature.</string>
 
     <string name="row_category_label">\u2022</string>  <!-- This is a bullet -->
     <string name="row_contact_label">Contact:</string>
@@ -153,47 +157,47 @@
     <string name="date_to_date_format">
 	    <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> - <xliff:g id="endDate" example="10-12-14">%2$s</xliff:g>
 	</string>
-	<string name="date_all_day_event_format">
+    <string name="date_all_day_event_format">
 	    <xliff:g id="startDate" example="10-8-14">%s</xliff:g> All Day Event
 	</string>
-	<string name="date_time_format">
+    <string name="date_time_format">
 	    <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="time" example="11:00 AM">%2$s</xliff:g>
 	</string>
-	<string name="date_time_to_time_format">
+    <string name="date_time_to_time_format">
 	    <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
 	</string>
-	<string name="date_time_to_date_time_format">
+    <string name="date_time_to_date_time_format">
 	    <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="12:00 PM">%2$s</xliff:g> - <xliff:g id="endDate" example="10-8-15">%3$s</xliff:g> <xliff:g id="endTime" example="12:00 PM">%4$s</xliff:g>
 	</string>
-	<string name="time_to_time_format">
+    <string name="time_to_time_format">
 	    <xliff:g id="startTime" example="11:00 AM">%1$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%2$s</xliff:g>
 	</string>
 
-	<string name="default_first_last_name_format">
+    <string name="default_first_last_name_format">
 	    <xliff:g id="firstName" example="John">%1$s</xliff:g> <xliff:g id="lastName" example="Smith">%2$s</xliff:g>
 	</string>
-	<string name="default_last_name_first_initial_format">
+    <string name="default_last_name_first_initial_format">
 	    <xliff:g id="lastName" example="Smith">%1$s</xliff:g>, <xliff:g id="firstInitial" example="J">%2$s</xliff:g>
 	</string>
-	<string name="default_course_section_format">
+    <string name="default_course_section_format">
 	    <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g>
 	</string>
-	<string name="default_course_section_title_format">
+    <string name="default_course_section_title_format">
 	    <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g> - <xliff:g id="sectionTitle" example="American History">%3$s</xliff:g>
 	</string>
-	<string name="default_building_and_room_format">
+    <string name="default_building_and_room_format">
 	    <xliff:g id="buildingName" example="Main Hall">%1$s</xliff:g>, <xliff:g id="roomNumber" example="122">%2$s</xliff:g>
 	</string>
-	<string name="default_meeting_days_and_times_format">
+    <string name="default_meeting_days_and_times_format">
 	    <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
 	</string>
-	<string name="default_meeting_days_times_and_type_format">
+    <string name="default_meeting_days_times_and_type_format">
 	    <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g> | <xliff:g id="meetingType" example="Lab">%4$s</xliff:g>
 	</string>
-	<string name="default_two_string_separator_format">
+    <string name="default_two_string_separator_format">
 	    <xliff:g id="string" example="stringOne">%1$s</xliff:g> | <xliff:g id="string" example="stringTwo">%2$s</xliff:g>
 	</string>
-	<string name="default_phone_with_extension_format">
+    <string name="default_phone_with_extension_format">
         <xliff:g id="phoneNumber" example="123-123-1234">%1$s</xliff:g> ext. <xliff:g id="phoneExtension" example="7890">%2$s</xliff:g>
     </string>
 
@@ -263,7 +267,7 @@
     <string name="course_assignments_due">Due:</string>
     <string name="course_assignments_none_assigned">None assigned</string>
     <string name="label_left_button">Left Button</string>
-	<string name="label_right_button">Right Button</string>
+    <string name="label_right_button">Right Button</string>
     <string name="course_details_date_time">
         <xliff:g id="dateString" example="12/16/2016 - 12/28/2016">%1$s</xliff:g> <xliff:g id="timeString" example="10:00 AM - 11:30 AM">%2$s</xliff:g>
     </string>
@@ -342,8 +346,9 @@
 
     <!-- Location Awareness -->
     <string name="title_activity_launchModule">Launch Module</string>
-    <string name="location_permissions_title">Location Access Disabled</string>
-    <string name="location_permissions_message">Location services are used at your institution to alert you when you are near location specific information or services. Please allow location access in your device settings.</string>
+    <string name="location_permissions_title">Permission requested</string>
+    <string name="location_permissions_message">Your location information can be used to notify you whenever you are near an area on campus that can provide useful information or services. The app uses energy efficient beacon monitoring to recognise when you are near a point of interest and will not utilize your GPS location.
+    </string>
     <string name="bluetooth_permissions_title">Bluetooth Disabled</string>
     <string name="bluetooth_permissions_message">Bluetooth is used at your institution to alert you when you are near location specific information or services. Please enable Bluetooth in your device settings.</string>
     <string name="location_notification_action_mute">Mute Forever</string>
@@ -407,7 +412,6 @@
     <string name="title_number_detail">Number Detail</string>
     <string name="numbers_no_entries">There are no important numbers</string>
     <string name="searchable_numbers_hint">Search Numbers</string>
-    <string name="searchable_numbers_label">Search Numbers</string>
 
     <!-- Registration -->
 
@@ -473,16 +477,16 @@
     <string name="registration_row_credits_format">
 	    <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g>
 	</string>
-	<string name="registration_row_credits_with_type_format">
+    <string name="registration_row_credits_with_type_format">
 	    <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g> | <xliff:g id="creditType" example="Audit">%3$s</xliff:g>
 	</string>
     <string name="registration_row_credits_min_max_format">
 	    <xliff:g id="minimumCredits" example="1.0">%1$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%3$s</xliff:g>
 	</string>
-	<string name="registration_label_credits_with_ceus_format">
+    <string name="registration_label_credits_with_ceus_format">
 	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="credits" example="3.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="CEUs">%3$s</xliff:g>
 	</string>
-	<string name="registration_label_credits_min_max_format">
+    <string name="registration_label_credits_min_max_format">
 	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="minimumCredits" example="1.0">%2$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%3$.2f</xliff:g>
 	</string>
     <string name="available_seats">Available Seats:</string>
@@ -506,11 +510,11 @@
     <string name="settings_location_disabled_title">Location Access Disabled</string>
     <string name="settings_location_disabled_summary">Tap to enable Location permission</string>
 
-	<!-- Versioning -->
-	<string name="version_upgrade">Upgrade</string>
-	<string name="version_outdated">Outdated</string>
-	<string name="version_outdated_message">A new version is available.</string>
-	<string name="version_force_upgrade_message">The application must be upgraded to the latest version.</string>
+    <!-- Versioning -->
+    <string name="version_upgrade">Upgrade</string>
+    <string name="version_outdated">Outdated</string>
+    <string name="version_outdated_message">A new version is available.</string>
+    <string name="version_force_upgrade_message">The application must be upgraded to the latest version.</string>
 
     <!-- Widget -->
     <string name="widget_no_ilp">Assignments are not available for your institution</string>

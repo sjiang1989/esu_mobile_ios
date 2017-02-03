@@ -48,7 +48,6 @@
 #import "CourseEventsDetailViewController.h"
 #import "CourseAnnouncementDetailViewController.h"
 
-#import "NotificationManager.h"
 #import "MapsFetcher.h"
 #import "CalendarViewDayView.h"
 #import "POIDetailViewController.h"

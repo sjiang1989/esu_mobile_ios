@@ -43,11 +43,10 @@ class NotificationsTableViewController : UITableViewController, NSFetchedResults
     
     // MARK: data retrieval
     func fetchNotifications() {
-
-        let urlBase = self.module!.property(forKey: "notifications")!
-        let userid =  CurrentUser.sharedInstance.userid?.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
-        let urlString = "\(urlBase)/\(userid!)"
-        NotificationsFetcher.fetchNotificationsFromURL(notificationsUrl: urlString, withManagedObjectContext: CoreDataManager.sharedInstance.managedObjectContext, showLocalNotification: false, fromView: self)
+        if let urlBase = self.module!.property(forKey: "notifications"), let userid =  CurrentUser.sharedInstance.userid?.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed) {
+            let urlString = "\(urlBase)/\(userid)"
+            NotificationsFetcher.fetchNotificationsFromURL(notificationsUrl: urlString, withManagedObjectContext: CoreDataManager.sharedInstance.managedObjectContext, showLocalNotification: false, fromView: self)
+        }
     }
     
     //MARK: segue

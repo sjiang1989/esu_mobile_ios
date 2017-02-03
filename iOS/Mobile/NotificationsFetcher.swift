@@ -152,7 +152,7 @@ class NotificationsFetcher : NSObject {
             try! importContext.save()
             //persist to store and update fetched result controllers
             importContext.parent?.perform({() -> Void in
-                try! importContext.parent?.save()
+                try? importContext.parent?.save()
                 if newKeys.count > 0 || unreadNotificationCount > 0 {
                     DispatchQueue.main.async(execute: {() -> Void in
                         NotificationCenter.default.post(name: NotificationsFetcher.NotificationsUpdatedNotification, object: nil)
@@ -177,7 +177,7 @@ class NotificationsFetcher : NSObject {
         let modules = try? managedObjectContext.fetch(fetchRequest)
         for module in modules! {
             let isLoggedIn = CurrentUser.sharedInstance.isLoggedIn
-            if isLoggedIn && (module.type == "notifications") {
+            if let type = module.type, type == "notifications" && isLoggedIn {
                 let userid = CurrentUser.sharedInstance.userid
                 if let notificationsUrl = module.property(forKey: "notifications"), let userid = userid {
                     let urlString = "\(notificationsUrl)/\(userid.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlPathAllowed)!)"

@@ -14,18 +14,13 @@ class WebLoginViewController : UIViewController, UIWebViewDelegate, LoginProtoco
     @IBOutlet weak var webView: UIWebView!
     var dismissed = false
     var completionBlock: (() -> Void)?
-    @IBOutlet var useFingerprintView: UIView!
-    @IBOutlet var useFingerprintSwitch: UISwitch!
-    var allowTouchId = false
     var context : JSContext?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        evaluateTouchID()
-        
-        self.useFingerprintSwitch.isOn = CurrentUser.sharedInstance.useFingerprint
-
+        CurrentUser.sharedInstance.useFingerprint = false
+    
         let urlString = AppGroupUtilities.userDefaults()?.string(forKey: "login-web-url")
         if let urlString = urlString {
             if let url = URL(string: urlString) {
@@ -55,10 +50,6 @@ class WebLoginViewController : UIViewController, UIWebViewDelegate, LoginProtoco
         let title = webView.stringByEvaluatingJavaScript(from: "document.title")!
         if (title == "Authentication Success") {
             self.sendEvent(category: .authentication, action: .login, label: "Authentication using web login", moduleName: nil)
-            CurrentUser.sharedInstance.useFingerprint = self.useFingerprintSwitch.isOn
-            if self.useFingerprintSwitch.isOn {
-                CurrentUser.sharedInstance.fingerprintValid = true
-            }            
             let _ = LoginExecutor.getUserInfo(refreshOnly: false)
             // register the device if needed
             self.dismissed = true
@@ -106,47 +97,6 @@ class WebLoginViewController : UIViewController, UIWebViewDelegate, LoginProtoco
         CurrentUser.sharedInstance.logoutWithoutUpdatingUI()
         NotificationCenter.default.post(name: CurrentUser.SignInReturnToHomeNotification, object: nil)
         self.dismiss(animated: true, completion: { _ in })
-    }
-    
-    func evaluateTouchID() -> Void {
-        
-        // Create the Local Authentication Context
-        let touchIDContext = LAContext()
-        var touchIDError : NSError?
-        
-        // Check if we can access local device authentication
-        if touchIDContext.canEvaluatePolicy(LAPolicy.deviceOwnerAuthenticationWithBiometrics, error:&touchIDError) {
-            self.useFingerprintSwitch.isEnabled = true
-            allowTouchId = true
-        } else {
-            // Unable to access local device authentication
-            switch touchIDError!.code {
-            case LAError.touchIDNotEnrolled.rawValue:
-                self.useFingerprintSwitch.isEnabled = false
-                allowTouchId = false
-                print("Touch ID is not enrolled")
-            case LAError.touchIDNotAvailable.rawValue:
-                self.useFingerprintSwitch.removeFromSuperview()
-                self.useFingerprintView.removeFromSuperview()
-                allowTouchId = false
-                print("Touch ID not available")
-            case LAError.passcodeNotSet.rawValue:
-                self.useFingerprintSwitch.isEnabled = false
-                allowTouchId = false
-                print("Passcode has not been set")
-            case LAError.touchIDLockout.rawValue:
-                self.useFingerprintSwitch.removeFromSuperview()
-                self.useFingerprintSwitch.isOn = false
-                allowTouchId = false
-                print("Touch ID lockout")
-            default:
-                self.useFingerprintSwitch.removeFromSuperview()
-                self.useFingerprintView.removeFromSuperview()
-                allowTouchId = false
-                print("Local Authentication not available")
-            }
-        }
-        
     }
     
     //https://gist.github.com/shuoshi/f1757a7aa7ab8ec67483

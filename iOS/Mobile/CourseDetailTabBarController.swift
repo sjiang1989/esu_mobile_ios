@@ -89,7 +89,9 @@ class CourseDetailTabBarController : UITabBarController, CourseDetailViewControl
             privateContext.undoManager = nil
             
             let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
-            hud.label.text = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+            hud.label.text = loadingString
+            UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
             
             privateContext.perform { () -> Void in
                 
@@ -196,13 +198,13 @@ class CourseDetailTabBarController : UITabBarController, CourseDetailViewControl
                                                     }
                                                     if let sisStartTimeWTz = jsonMeetingPattern["sisStartTimeWTz"].string {
                                                         var components = sisStartTimeWTz.characters.split { $0 == " " }.map(String.init)
-                                                        self.tzTimeFormatter.timeZone = TimeZone(abbreviation: components[1])
+                                                        self.tzTimeFormatter.timeZone = TimeZone(identifier: components[1])
                                                         let time = self.tzTimeFormatter.date(from: components[0])
                                                         mp.startTime = time
                                                     }
                                                     if let sisEndTimeWTz = jsonMeetingPattern["sisEndTimeWTz"].string {
                                                         var components = sisEndTimeWTz.characters.split { $0 == " " }.map(String.init)
-                                                        self.tzTimeFormatter.timeZone = TimeZone(abbreviation: components[1])
+                                                        self.tzTimeFormatter.timeZone = TimeZone(identifier: components[1])
                                                         let time = self.tzTimeFormatter.date(from: components[0])
                                                         mp.endTime = time
                                                     }
@@ -251,6 +253,13 @@ class CourseDetailTabBarController : UITabBarController, CourseDetailViewControl
                             NotificationCenter.default.post(name: CourseDetailViewController.CourseDetailInformationLoadedNotification, object: nil)
                         })
                         
+                    } else {
+                        DispatchQueue.main.async(execute: {
+                            let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                            let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                            alertController.addAction(alertAction)
+                            self.present(alertController, animated: true)
+                        })
                     }
                 } catch let error {
                     print (error)

@@ -201,6 +201,7 @@ class AllAnnouncementsViewController : UIViewController, UITableViewDataSource, 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "Daily Announcement Cell", for: indexPath) as UITableViewCell
+        cell.accessibilityTraits = UIAccessibilityTraitButton
         configureCell(cell, atIndexPath: indexPath)
 
         return cell
@@ -286,6 +287,7 @@ class AllAnnouncementsViewController : UIViewController, UITableViewDataSource, 
         if (myDatetimeOutputFormatter == nil) {
             myDatetimeOutputFormatter = DateFormatter()
             myDatetimeOutputFormatter!.timeStyle = .short
+            myDatetimeOutputFormatter!.dateStyle = .short
         }
         return myDatetimeOutputFormatter
     }

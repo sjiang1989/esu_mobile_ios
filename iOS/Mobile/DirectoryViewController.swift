@@ -81,6 +81,12 @@ class DirectoryViewController : UITableViewController, UISearchBarDelegate, Dire
     }
     
     func doSearch() {
+        MBProgressHUD.hide(for: self.view, animated: true)
+        let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+        let loadingString = NSLocalizedString("Loading", comment: "loading message while waiting for data to load")
+        hud.label.text = loadingString
+        UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, loadingString)
+        
         if !self.legacySearch {
             doModernSearch()
         } else {
@@ -297,7 +303,7 @@ class DirectoryViewController : UITableViewController, UISearchBarDelegate, Dire
             default:
                 return UITableViewCell()
             }
-        } else {
+        } else if (indexPath.section-1) < self.tableData.count && indexPath.row < self.tableData[indexPath.section-1].count {
             let entry = self.tableData[(indexPath as NSIndexPath).section-1][(indexPath as NSIndexPath).row]
             let cell : UITableViewCell
             if let logo = entry.imageUrl , logo != "" {
@@ -311,9 +317,22 @@ class DirectoryViewController : UITableViewController, UISearchBarDelegate, Dire
                         imageView.convertToCircleImage() }, failureHandler:  {
                             DispatchQueue.main.async {
                                 () -> Void in
-                                imageView.isHidden = true
-                                self.badImages.append(logo)
-                                self.tableView.reloadRows(at: [indexPath], with: .none)
+                                //still the image in the cell we care about?
+                                let desiredSection = (indexPath).section-1
+                                if desiredSection < self.tableData.count {
+                                    let sectionData = self.tableData[desiredSection]
+                                    let desiredRow = (indexPath as NSIndexPath).row
+                                    
+                                    if desiredRow < sectionData.count {
+                                        let currentEntry = sectionData[desiredRow]
+                                        if entry == currentEntry {
+                                            
+                                            imageView.isHidden = true
+                                            self.badImages.append(logo)
+                                            self.tableView.reloadRows(at: [indexPath], with: .none)
+                                        }
+                                    }
+                                }
                             }
                             
                             
@@ -330,6 +349,7 @@ class DirectoryViewController : UITableViewController, UISearchBarDelegate, Dire
             typeLabel.text = formatType(entry)
             return cell
         }
+        return UITableViewCell()
     }
     
     func formatType(_ entry: DirectoryEntry) -> String? {
@@ -365,7 +385,7 @@ class DirectoryViewController : UITableViewController, UISearchBarDelegate, Dire
         self.hiddenGroups = filter
         if groups.count == filter.count {
             clear()
-        } else {
+        } else if let searchString = self.searchBar.text, searchString.characters.count > 0 {
             doSearch()
         }
     }
@@ -436,9 +456,19 @@ class DirectoryViewController : UITableViewController, UISearchBarDelegate, Dire
                 if let data = data {
                     self.entries = DirectoryEntry.parseResponse(data)
                     self.buildTableData(self.entries)
+                } else {
+                    DispatchQueue.main.async {
+                        let alertController = UIAlertController(title: NSLocalizedString("Poor Network Connection", comment:"title when data cannot load due to a poor netwrok connection"), message: NSLocalizedString("Data could not be retrieved.", comment:"message when data cannot load due to a poor netwrok connection"), preferredStyle: .alert)
+                        let alertAction = UIAlertAction(title: NSLocalizedString("OK", comment:"OK"), style: UIAlertActionStyle.default)
+                        alertController.addAction(alertAction)
+                        self.present(alertController, animated: true)
+                    }
                 }
             }
             UIApplication.shared.isNetworkActivityIndicatorVisible = false
+            DispatchQueue.main.async(execute: {
+                MBProgressHUD.hide(for: self.view, animated: true)
+            })
         }
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         dataTask?.resume()

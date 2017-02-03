@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2017 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.client.services;
@@ -86,6 +86,8 @@ public class AuthenticateUserIntentService extends IntentService {
 
 					ellucianApp.createAppUser(userId, username, loginPassword,
 							roleList);
+
+                    ellucianApp.setLastAuthRefresh();
 
 					// Save User Info into shared preferences if the user chooses to.
 					if (saveUser || useFingerprint) {

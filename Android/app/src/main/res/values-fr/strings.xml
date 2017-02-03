@@ -77,20 +77,22 @@
     <string name="label_done">Terminé</string>
     <string name="content_desc_warning">Avertissement </string>
     <string name="services_feature_not_supported">Fonctionnalité non prise en charge par cet appareil.</string>
+    <string name="no_connectivity">Pas de connexion internet</string>
+    <string name="snackbar_dismiss">Ignorer</string>
 
     <string name="label_format">
 	    <xliff:g id="label" example="Name">%1$s</xliff:g>:
 	</string>
-	<string name="label_string_content_format">
+    <string name="label_string_content_format">
 	    <xliff:g id="label" example="Name">%1$s</xliff:g>: <xliff:g id="content" example="John Smith">%2$s</xliff:g>
 	</string>
-	<string name="label_integer_content_format">
+    <string name="label_integer_content_format">
 	    <xliff:g id="label" example="Room">%1$s</xliff:g>: <xliff:g id="content" example="201">%2$d</xliff:g>
 	</string>
-	<string name="label_float_content_format">
+    <string name="label_float_content_format">
 	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="content" example="3.00">%2$.2f</xliff:g>
 	</string>
-	<string name="label_with_count_format">
+    <string name="label_with_count_format">
 	    <xliff:g id="label" example="Cart">%1$s</xliff:g> (<xliff:g id="count" example="5">%2$d</xliff:g>)
 	</string>
 
@@ -99,6 +101,7 @@
     <string name="dialog_use_fingerprint">Utiliser empreinte digitale pour déverrouiller</string>
     <string name="dialog_use_fingerprint_summary">Autoriser l\'identification par empreinte digitale</string>
     <string name="dialog_stay_signed_in">Rester connecté</string>
+    <string name="dialog_stay_signed_in_disabled">Verrouillage écran requis pour rester connecté</string>
     <string name="dialog_username">Nom d\'utilisateur</string>
     <string name="dialog_password">Mot de passe</string>
     <string name="dialog_sign_in_empty">Nom d\'utilisateur et mot de passe doivent être renseignés.</string>
@@ -106,6 +109,7 @@
     <string name="dialog_signed_in">Vous êtes connecté.</string>
     <string name="dialog_signed_out">Vous êtes déconnecté.</string>
     <string name="dialog_idle_sign_out">Vous êtes resté trop longtemps inactif et avez été déconnecté.</string>
+    <string name="dialog_login_instructions">Contactez votre département d\'informatique si vous avez besoin d\'aide.</string>
 
     <!-- Fingerprint Authentication -->
     <string name="fingerprint_cancel">Annuler</string>
@@ -118,11 +122,11 @@
     <string name="dialog_select_categories">Sélectionner catégories</string>
     <!-- Keep &#8230; as is to follow Android best practice of using the horizontal ellipse character -->
     <string name="dialog_re_authenticate">Nouvelle authentification en cours, veuillez patienter&#8230;</string>
-	<string name="dialog_continue">Continuer</string>
-	<string name="dialog_go_back">Revenir</string>
-	<string name="dialog_security_warning">Avertissement de sécurité</string>
-	<string name="dialog_cert_warning_statement">"Le certificat de sécurité pour ce site présente des problèmes."</string>
-	<string name="dialog_field_empty">Champ ne peut pas être vide</string>
+    <string name="dialog_continue">Continuer</string>
+    <string name="dialog_go_back">Revenir</string>
+    <string name="dialog_security_warning">Avertissement de sécurité</string>
+    <string name="dialog_cert_warning_statement">"Le certificat de sécurité pour ce site présente des problèmes."</string>
+    <string name="dialog_field_empty">Champ ne peut pas être vide</string>
 	<string name="unauthorized_feature">Vous n\'êtes pas autorisé à utiliser cette fonctionnalité.</string>
 
     <string name="row_category_label">\u2022</string>  <!-- This is a bullet -->
@@ -153,47 +157,47 @@
     <string name="date_to_date_format">
 	    <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> - <xliff:g id="endDate" example="10-12-14">%2$s</xliff:g>
 	</string>
-	<string name="date_all_day_event_format">
+    <string name="date_all_day_event_format">
 	    <xliff:g id="startDate" example="10-8-14">%s</xliff:g> Événement sur toute la journée
 	</string>
-	<string name="date_time_format">
+    <string name="date_time_format">
 	    <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="time" example="11:00 AM">%2$s</xliff:g>
 	</string>
-	<string name="date_time_to_time_format">
+    <string name="date_time_to_time_format">
 	    <xliff:g id="date" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
 	</string>
-	<string name="date_time_to_date_time_format">
+    <string name="date_time_to_date_time_format">
 	    <xliff:g id="startDate" example="10-8-14">%1$s</xliff:g> <xliff:g id="startTime" example="12:00 PM">%2$s</xliff:g> - <xliff:g id="endDate" example="10-8-15">%3$s</xliff:g> <xliff:g id="endTime" example="12:00 PM">%4$s</xliff:g>
 	</string>
-	<string name="time_to_time_format">
+    <string name="time_to_time_format">
 	    <xliff:g id="startTime" example="11:00 AM">%1$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%2$s</xliff:g>
 	</string>
 
-	<string name="default_first_last_name_format">
+    <string name="default_first_last_name_format">
 	    <xliff:g id="firstName" example="John">%1$s</xliff:g> <xliff:g id="lastName" example="Smith">%2$s</xliff:g>
 	</string>
-	<string name="default_last_name_first_initial_format">
+    <string name="default_last_name_first_initial_format">
 	    <xliff:g id="lastName" example="Smith">%1$s</xliff:g>, <xliff:g id="firstInitial" example="J">%2$s</xliff:g>
 	</string>
-	<string name="default_course_section_format">
+    <string name="default_course_section_format">
 	    <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g>
 	</string>
-	<string name="default_course_section_title_format">
+    <string name="default_course_section_title_format">
 	    <xliff:g id="courseName" example="HIST-103">%1$s</xliff:g>-<xliff:g id="sectionNumber" example="01">%2$s</xliff:g> - <xliff:g id="sectionTitle" example="American History">%3$s</xliff:g>
 	</string>
-	<string name="default_building_and_room_format">
+    <string name="default_building_and_room_format">
 	    <xliff:g id="buildingName" example="Main Hall">%1$s</xliff:g>, <xliff:g id="roomNumber" example="122">%2$s</xliff:g>
 	</string>
-	<string name="default_meeting_days_and_times_format">
+    <string name="default_meeting_days_and_times_format">
 	    <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g>
 	</string>
-	<string name="default_meeting_days_times_and_type_format">
+    <string name="default_meeting_days_times_and_type_format">
 	    <xliff:g id="daysOfWeeks" example="Mon, Wed, Fri">%1$s</xliff:g>: <xliff:g id="startTime" example="11:00 AM">%2$s</xliff:g> - <xliff:g id="endTime" example="2:00 PM">%3$s</xliff:g> | <xliff:g id="meetingType" example="Lab">%4$s</xliff:g>
 	</string>
-	<string name="default_two_string_separator_format">
+    <string name="default_two_string_separator_format">
 	    <xliff:g id="string" example="stringOne">%1$s</xliff:g> | <xliff:g id="string" example="stringTwo">%2$s</xliff:g>
 	</string>
-	<string name="default_phone_with_extension_format">
+    <string name="default_phone_with_extension_format">
         <xliff:g id="phoneNumber" example="123-123-1234">%1$s</xliff:g> poste <xliff:g id="phoneExtension" example="7890">%2$s</xliff:g>
     </string>
 
@@ -263,7 +267,7 @@
     <string name="course_assignments_due">Échéance:</string>
     <string name="course_assignments_none_assigned">non définie</string>
     <string name="label_left_button">Bouton gauche</string>
-	<string name="label_right_button">Bouton droit</string>
+    <string name="label_right_button">Bouton droit</string>
     <string name="course_details_date_time">
         <xliff:g id="dateString" example="12/16/2016 - 12/28/2016">%1$s</xliff:g> <xliff:g id="timeString" example="10:00 AM - 11:30 AM">%2$s</xliff:g>
     </string>
@@ -342,8 +346,9 @@
 
     <!-- Location Awareness -->
     <string name="title_activity_launchModule">Lancer module</string>
-    <string name="location_permissions_title">Accès à votre position désactivé</string>
-    <string name="location_permissions_message">Votre établissement utilise les services de localisation pour vous avertir lorsque vous vous trouvez à proximité d\'informations ou services spécifiques.  Veuillez toujours autoriser les services de localisation.</string>
+    <string name="location_permissions_title">Autorisation requise</string>
+    <string name="location_permissions_message">Votre position peut permettre l\'envoi de notifications quand vous êtes proche d\'un lieu sur le campus proposant informations ou services utiles. L\'application s\'appuie sur un suivi de balises écoénergétiques pour identifier votre proximité à un point d\'intérêt et ne recourt pas à votre position GPS.
+    </string>
     <string name="bluetooth_permissions_title">Bluetooth désactivé</string>
     <string name="bluetooth_permissions_message">Votre établissement utilise Bluetooth pour vous prévenir lorsque vous vous trouvez à proximité d\'informations ou services spécifiques.  Veuillez activer Bluetooth dans les paramètres de votre appareil.</string>
     <string name="location_notification_action_mute">Toujours désactiver</string>
@@ -407,7 +412,6 @@
     <string name="title_number_detail">Détail du numéro</string>
     <string name="numbers_no_entries">Aucun numéro important</string>
     <string name="searchable_numbers_hint">Rechercher numéros</string>
-    <string name="searchable_numbers_label">Rechercher numéros</string>
 
     <!-- Registration -->
 
@@ -473,16 +477,16 @@
     <string name="registration_row_credits_format">
 	    <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g>
 	</string>
-	<string name="registration_row_credits_with_type_format">
+    <string name="registration_row_credits_with_type_format">
 	    <xliff:g id="credits" example="3.0">%1$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%2$s</xliff:g> | <xliff:g id="creditType" example="Audit">%3$s</xliff:g>
 	</string>
     <string name="registration_row_credits_min_max_format">
 	    <xliff:g id="minimumCredits" example="1.0">%1$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="Credits">%3$s</xliff:g>
 	</string>
-	<string name="registration_label_credits_with_ceus_format">
+    <string name="registration_label_credits_with_ceus_format">
 	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="credits" example="3.0">%2$.2f</xliff:g> <xliff:g id="creditsOrCEUS" example="CEUs">%3$s</xliff:g>
 	</string>
-	<string name="registration_label_credits_min_max_format">
+    <string name="registration_label_credits_min_max_format">
 	    <xliff:g id="label" example="Credits">%1$s</xliff:g>: <xliff:g id="minimumCredits" example="1.0">%2$.2f</xliff:g>-<xliff:g id="maximumCredits" example="4.0">%3$.2f</xliff:g>
 	</string>
     <string name="available_seats">Places disponibles:</string>
@@ -506,11 +510,11 @@
     <string name="settings_location_disabled_title">Accès à votre position désactivé</string>
     <string name="settings_location_disabled_summary">Appuyer pour activer les services de localisation</string>
 
-	<!-- Versioning -->
-	<string name="version_upgrade">Mise à niveau</string>
-	<string name="version_outdated">Périmé</string>
-	<string name="version_outdated_message">Nouvelle version disponible.</string>
-	<string name="version_force_upgrade_message">L\'application doit être mise à niveau vers la dernière version.</string>
+    <!-- Versioning -->
+    <string name="version_upgrade">Mise à niveau</string>
+    <string name="version_outdated">Périmé</string>
+    <string name="version_outdated_message">Nouvelle version disponible.</string>
+    <string name="version_force_upgrade_message">L\'application doit être mise à niveau vers la dernière version.</string>
 
     <!-- Widget -->
     <string name="widget_no_ilp">Les devoirs ne sont pas disponibles pour votre établissement</string>

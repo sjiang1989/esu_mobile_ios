@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ellucian Company L.P. and its affiliates.
+ * Copyright 2015-2016 Ellucian Company L.P. and its affiliates.
  */
 
 package com.ellucian.mobile.android.app;
@@ -37,7 +37,7 @@ public class EllucianDefaultRecyclerFragment extends EllucianFragment implements
 	private static final String TAG = EllucianDefaultRecyclerFragment.class.getSimpleName();
 	
 	private Activity activity;
-	private View rootView;
+	protected View rootView;
 	protected EllucianRecyclerView recyclerView;
 	protected EllucianRecyclerAdapter adapter;
 	protected Bundle detailBundle;
@@ -127,7 +127,7 @@ public class EllucianDefaultRecyclerFragment extends EllucianFragment implements
      * to extend EllucianRecyclerAdapter.
      * All these classes can be found in the com.ellucian.mobile.android.adapter package.
      */
-	protected void setAdapter(EllucianRecyclerAdapter adapter) {
+	public void setAdapter(EllucianRecyclerAdapter adapter) {
 		this.adapter = adapter;
 		if (adapter != null) {
 			adapter.setOnItemClickListener(this);
@@ -141,6 +141,10 @@ public class EllucianDefaultRecyclerFragment extends EllucianFragment implements
 	public RecyclerView getRecyclerView() {
 		return recyclerView;
 	}
+
+    public int getCurrentSelected() {
+        return recyclerView.getSelectedIndex();
+    }
 
 	@Override
 	public void onItemClicked(View view, int position) {
@@ -198,7 +202,7 @@ public class EllucianDefaultRecyclerFragment extends EllucianFragment implements
      *  See EllucianDefaultDetailFragment.newInstance for more information
      *  If you are only making changes to the class name, override getDetailFragmentClass() instead
      */
-	private EllucianDefaultDetailFragment getDetailFragment(Bundle args, int index) {
+	protected EllucianDefaultDetailFragment getDetailFragment(Bundle args, int index) {
 		
 		return EllucianDefaultDetailFragment.newInstance(getActivity(), 
 				getDetailFragmentClass().getName(), args, index);

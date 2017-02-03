@@ -78,7 +78,9 @@ class CurrentUser : NSObject { //TODO objc interop
         super.init() //todo objc interop
         if let _ = self.userauth {
             if let password = getPassword(), password.characters.count > 0 {
-                self.isLoggedIn = true
+                if self.remember {
+                    self.isLoggedIn = true
+                }
             }
         }
     }
@@ -93,12 +95,14 @@ class CurrentUser : NSObject { //TODO objc interop
     
     func logoutWithNotification(postNotification: Bool, requestedByUser: Bool) {
         let defaults = AppGroupUtilities.userDefaults()!
-        //set the new config for about
-        defaults.removeObject(forKey: kLoginRoles)
-        defaults.removeObject(forKey: kLoginRemember)
-        defaults.removeObject(forKey: kLoginUserid)
+        
         if !self.useFingerprint {
+            
+            defaults.removeObject(forKey: kLoginRoles)
+            defaults.removeObject(forKey: kLoginRemember)
+            defaults.removeObject(forKey: kLoginUserid)
             defaults.removeObject(forKey: kLoginUserauth)
+
             UserDefaults.standard.removeObject(forKey: kLoginUseFingerprint)
             self.useFingerprint = false
             if let userauth = self.userauth {
@@ -110,10 +114,7 @@ class CurrentUser : NSObject { //TODO objc interop
                 self.userauth = nil
             }
         }
-        let appGroupUserDefaults = AppGroupUtilities.userDefaults()
-        appGroupUserDefaults?.removeObject(forKey: kLoginUserauth)
-        appGroupUserDefaults?.removeObject(forKey: kLoginUserid)
-        appGroupUserDefaults?.removeObject(forKey: kLoginRoles)
+
         self.isLoggedIn = false
         self.userid = nil
         self.roles = [String]()
@@ -122,7 +123,7 @@ class CurrentUser : NSObject { //TODO objc interop
         let cookies = HTTPCookieStorage.shared
         if let allCookies = cookies.cookies {
             //remove all cookies persisted in app groups
-            appGroupUserDefaults?.removeObject(forKey: "cookieArray")
+            defaults.removeObject(forKey: "cookieArray")
             for cookie in allCookies {
                 cookies.deleteCookie(cookie)
             }
