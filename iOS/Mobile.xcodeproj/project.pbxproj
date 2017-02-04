@@ -2524,7 +2524,6 @@
 				5439A5321D6CD9AB005C369B /* EventModule.m in Sources */,
 				54945089175E6182008F488C /* CourseAnnouncementsViewController.m in Sources */,
 				54945091175E7C01008F488C /* CourseAnnouncement.m in Sources */,
-				54EA962B1893012100BCCF24 /* NotificationManager.m in Sources */,
 				54F3DD4C176112D000CEDE57 /* CourseEventsDetailViewController.m in Sources */,
 				0D45C24E1D4D396B00DA0B0C /* MonitoredBeacon.swift in Sources */,
 				54E6D4331B41DFE50025C651 /* OpenModuleFindModulesOperation.swift in Sources */,
