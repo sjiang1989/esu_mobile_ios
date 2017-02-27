@@ -133,7 +133,6 @@ class CurrentUser : NSObject { //TODO objc interop
         let websiteDataTypes = Set<String>( [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache, WKWebsiteDataTypeCookies])
         let date = Date(timeIntervalSince1970: 0)
         WKWebsiteDataStore.default().removeData(ofTypes: websiteDataTypes, modifiedSince: date, completionHandler:{ })
-        WKWebViewController.moduleHasBeenLoadedPreviously = [String]()
         
         self.removeSensitiveData(requestedByUser: requestedByUser)
         UIApplication.shared.cancelAllLocalNotifications()

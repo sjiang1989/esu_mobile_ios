@@ -400,6 +400,7 @@ class ConfigurationManager: NSObject {
                             defaults.set(true, forKey: "login-native-cas")
                         } else {
                             defaults.set("native", forKey: "login-authenticationType")
+                            defaults.set(false, forKey: "login-native-cas")
                         }
                     }
                     

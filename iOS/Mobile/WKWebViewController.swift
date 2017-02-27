@@ -9,7 +9,7 @@
 import UIKit
 import WebKit
 
-class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, EllucianMobileLaunchableControllerProtocol {
+class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, EllucianMobileLaunchableControllerProtocol, WebViewControllerProtocol {
     
     var module : Module?
     
@@ -28,7 +28,6 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
     
     //true while we start this view.  Once we load the secure page, then we set this to false and load the page we really want.
     var booting = true
-    static var moduleHasBeenLoadedPreviously = [String]()
     
     // MARK: view loading
     override func viewDidLoad() {
@@ -83,26 +82,21 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
             //This is to give it time to copy over the cookies before the page we really want gets loaded
             
             if let module = self.module, let property = module.property(forKey: "secure"), property == "true" {
-                
-                if !WKWebViewController.moduleHasBeenLoadedPreviously.contains(module.name) {
-                    WKWebViewController.moduleHasBeenLoadedPreviously.append(module.name)
-                    let urlString = AppGroupUtilities.userDefaults()?.string(forKey: "login-web-url")
-                    if let urlString = urlString, let url = URL(string: urlString) {
-                        //web-based CAS/SAML authentication
-                        let request = URLRequest(url: url)
-                        webViewToLoadCookies.load(request)
-                    } else if !LoginExecutor.isUsingBasicAuthentication() {
-                        //cas "native" 
-                        webViewToLoadCookies.load(initialRequest)
-                    } else {
-                        //basic authentication
-                        webView.load(initialRequest)
-                        booting = false
-                    }
+
+                let urlString = AppGroupUtilities.userDefaults()?.string(forKey: "login-web-url")
+                if let urlString = urlString, let url = URL(string: urlString) {
+                    //web-based CAS/SAML authentication
+                    let request = URLRequest(url: url)
+                    webViewToLoadCookies.load(request)
+                } else if !LoginExecutor.isUsingBasicAuthentication() {
+                    //cas "native" 
+                    webViewToLoadCookies.load(initialRequest)
                 } else {
+                    //basic authentication
                     webView.load(initialRequest)
                     booting = false
                 }
+
             } else {
                 webView.load(initialRequest)
                 booting = false
@@ -307,16 +301,38 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
     
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        handleResponse()
+    }
+    
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         
+        if(booting) {
+            handleResponse()
+        } else {
+            self.webView(self.webView!, didFinish: navigation)
+            handleError(error)
+        }
+    }
+    
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        if(booting) {
+            handleResponse()
+        } else {
+            self.webView(self.webView!, didFinish: navigation)
+            handleError(error)
+        }
+    }
+    
+    func handleResponse() {
         if(booting) {
             booting = false
             if let loadRequest = self.loadRequest {
                 let _ = self.webView?.load(loadRequest)
             }
         } else {
-            
+        
             let script = "typeof EllucianMobile != 'undefined' && window.EllucianMobile._ellucianMobileInternalReady();"
-            webView.evaluateJavaScript(script) { (result, error) in
+            self.webView?.evaluateJavaScript(script) { (result, error) in
                 if let error = error {
                     print(error)
                 }
@@ -338,16 +354,7 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
             self.backButton.isEnabled = self.webView!.canGoBack
             self.forwardButton.isEnabled = self.webView!.canGoForward
         }
-    }
-    
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        
-        self.webView(self.webView!, didFinish: navigation)
-        handleError(error)
-    }
-    
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        handleError(error)
+
     }
     
     private func handleError(_ swiftError: Error) {

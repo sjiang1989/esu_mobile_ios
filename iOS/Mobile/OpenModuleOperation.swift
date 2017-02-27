@@ -187,8 +187,14 @@ class OpenModuleOperation: OpenModuleAbstractOperation {
                 })
             } else {
                 let storyboard = UIStoryboard(name: "WebStoryboard", bundle: nil)
-                if let webController = storyboard.instantiateViewController(withIdentifier: "Web") as? WKWebViewController {
-                    let controller = UINavigationController(rootViewController: webController)
+                var webController : WebViewControllerProtocol?
+                if LoginExecutor.isUsingBasicAuthentication() {
+                    webController = storyboard.instantiateViewController(withIdentifier: "Web") as? WKWebViewController
+                } else {
+                    webController = storyboard.instantiateViewController(withIdentifier: "UIWeb") as? WebViewController
+                }
+                if var webController = webController {
+                    let controller = UINavigationController(rootViewController: webController as! UIViewController)
                     if let url = URL(string: module.property(forKey: "url")!) {
                         webController.loadRequest = URLRequest(url: url)
                         webController.title = module.name

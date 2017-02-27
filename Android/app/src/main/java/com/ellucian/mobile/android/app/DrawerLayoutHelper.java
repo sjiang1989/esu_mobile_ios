@@ -4,6 +4,7 @@
 
 package com.ellucian.mobile.android.app;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
@@ -181,7 +182,7 @@ public class DrawerLayoutHelper {
 		((ModuleMenuAdapter) drawerList.getExpandableListAdapter()).notifyDataSetChanged();
 	}
 
-    private static void showInstallAppDialog(final String appStoreUrl, final AppCompatActivity activity) {
+    private static void showInstallAppDialog(final String appStoreUrl, final Activity activity) {
         int title;
         int message;
         boolean showCancelButton;
@@ -335,13 +336,16 @@ public class DrawerLayoutHelper {
 			Log.v(TAG, "trying to open a secure module");
             Intent intent = ModuleMenuAdapter.getIntent(activity, type, subType,
                     label, moduleId);
+            if (TextUtils.equals(type, ModuleType.APP_LAUNCHER)) {
+                intent.putExtra(Extra.APP_LAUNCHER_TYPE, true);
+            }
 
             if (!ellucianApp.isUserAuthenticated()) {
                 Utils.showLoginDialog(activity, intent, roles);
             } else if (ellucianApp.isFingerprintUpdateNeeded()) {
                 Utils.showFingerprintDialog(activity, intent, roles);
             } else {
-                activity.startActivity(intent);
+                launchIntent(activity, intent);
             }
         } else if (type.equals(ModuleType._SIGN_IN)) {
 			Log.v(TAG, "trying to open the logon module");
@@ -387,21 +391,29 @@ public class DrawerLayoutHelper {
 
             Intent intent = ModuleMenuAdapter.getIntent(activity, type, subType,
                     label, moduleId);
+            if (TextUtils.equals(type, ModuleType.APP_LAUNCHER)) {
+                intent.putExtra(Extra.APP_LAUNCHER_TYPE, true);
+            }
             if (intent != null) {
-                try {
-                    activity.startActivity(intent);
-                } catch (Exception e) {
-                    Log.e(TAG, "Unable to launch intent. " + e);
-                    // For failed app launcher intents, display a dialog to download app
-                    if (TextUtils.equals(type, ModuleType.APP_LAUNCHER)) {
-                        String appStoreUrl = null;
-                        if (intent.hasExtra(Extra.APP_LAUNCHER_STORE_URL)) {
-                            appStoreUrl = intent.getStringExtra(Extra.APP_LAUNCHER_STORE_URL);
-                            intent.removeExtra(Extra.APP_LAUNCHER_STORE_URL);
-                        }
-                        showInstallAppDialog(appStoreUrl, activity);
-                    }
+                launchIntent(activity, intent);
+            }
+        }
+    }
+
+    public static void launchIntent(Activity mActivity, Intent mIntent) {
+        try {
+            mActivity.startActivity(mIntent);
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to launch intent. " + e);
+            // For failed app launcher intents, display a dialog to download app
+            if (mIntent.getBooleanExtra(Extra.APP_LAUNCHER_TYPE, false)) {
+                String appStoreUrl = null;
+                mIntent.removeExtra(Extra.APP_LAUNCHER_TYPE);
+                if (mIntent.hasExtra(Extra.APP_LAUNCHER_STORE_URL)) {
+                    appStoreUrl = mIntent.getStringExtra(Extra.APP_LAUNCHER_STORE_URL);
+                    mIntent.removeExtra(Extra.APP_LAUNCHER_STORE_URL);
                 }
+                showInstallAppDialog(appStoreUrl, mActivity);
             }
         }
     }

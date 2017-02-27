@@ -226,6 +226,7 @@
 		54B34DD01B852C4B0011E2B1 /* NotificationsEmptyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B34DCF1B852C4B0011E2B1 /* NotificationsEmptyViewController.swift */; };
 		54B7AEAF1B3CB89F0075473A /* OpenModuleAbstractOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B7AEAE1B3CB89F0075473A /* OpenModuleAbstractOperation.swift */; };
 		54B7AEB11B3CBA730075473A /* OpenModuleHomeOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B7AEB01B3CBA730075473A /* OpenModuleHomeOperation.swift */; };
+		54BA10871E608702005E70D2 /* WebViewControllerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BA10861E608702005E70D2 /* WebViewControllerProtocol.swift */; };
 		54C14728177B6C0D00C6CCBD /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 54C14726177B6BB000C6CCBD /* SystemConfiguration.framework */; };
 		54C14732177DDEDB00C6CCBD /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 54C14730177DDED400C6CCBD /* MediaPlayer.framework */; };
 		54C1FEE41D8316C8001F0BD5 /* SingletonAVPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C1FEE31D8316C8001F0BD5 /* SingletonAVPlayer.swift */; };
@@ -806,6 +807,7 @@
 		54B8612016CAFBC100F56B52 /* EllucianSectionedUITableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EllucianSectionedUITableViewController.m; sourceTree = "<group>"; };
 		54B96B6516D2CCB30055EDCE /* CourseDetailInstructor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CourseDetailInstructor.h; sourceTree = "<group>"; };
 		54B96B6616D2CCB30055EDCE /* CourseDetailInstructor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CourseDetailInstructor.m; sourceTree = "<group>"; };
+		54BA10861E608702005E70D2 /* WebViewControllerProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebViewControllerProtocol.swift; sourceTree = "<group>"; };
 		54BC2C0716F65300004891BF /* ModuleProperty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ModuleProperty.h; sourceTree = "<group>"; };
 		54BC2C0816F65300004891BF /* ModuleProperty.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ModuleProperty.m; sourceTree = "<group>"; };
 		54BE303716E0152C0015B0A9 /* en-GB */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = "en-GB"; path = "en-GB.lproj/Localizable.strings"; sourceTree = "<group>"; };
@@ -1768,6 +1770,7 @@
 				54639E051D42968B00A77F78 /* WebViewController.swift */,
 				54639E081D4298B000A77F78 /* WebViewJavascriptInterface.swift */,
 				545E1CBD1D7F3318003921B5 /* WKWebViewController.swift */,
+				54BA10861E608702005E70D2 /* WebViewControllerProtocol.swift */,
 			);
 			name = Web;
 			sourceTree = "<group>";
@@ -2457,6 +2460,7 @@
 				54E40B821728552E00F661A5 /* GradeCourse.m in Sources */,
 				54AC0ECC1CEA5AB300E5971D /* LoginViewController.swift in Sources */,
 				54E40B831728552E00F661A5 /* CourseTerm.m in Sources */,
+				54BA10871E608702005E70D2 /* WebViewControllerProtocol.swift in Sources */,
 				54E40B841728552E00F661A5 /* ModuleRole.m in Sources */,
 				5419C6321B79401F00827DF2 /* EventsViewController.swift in Sources */,
 				54E40B871728552E00F661A5 /* EmptyTableViewCell.m in Sources */,

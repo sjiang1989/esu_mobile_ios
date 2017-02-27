@@ -206,12 +206,12 @@
     class func isUsingBasicAuthentication() -> Bool {
         let defaults = AppGroupUtilities.userDefaults()!
         let authenticationMode = defaults.string(forKey: "login-authenticationType")
-        if authenticationMode == nil {
+        if authenticationMode == nil { //old configuration that didn't report this
             return true
         }
         if authenticationMode! == "native" {
             if defaults.bool(forKey: "login-native-cas") {
-                return false
+                return false //native login with cas backend
             } else {
                 return true
             }

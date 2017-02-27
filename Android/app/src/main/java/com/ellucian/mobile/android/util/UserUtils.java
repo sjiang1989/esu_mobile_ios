@@ -19,6 +19,7 @@ import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.app.EllucianActivity;
 import com.ellucian.mobile.android.client.notifications.Notification;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
+import com.ellucian.mobile.android.login.LoginDialogFragment;
 import com.ellucian.mobile.android.provider.EllucianContract;
 import com.ellucian.mobile.android.settings.SettingsUtils;
 
@@ -266,12 +267,19 @@ public class UserUtils {
         activity.startService(intent);
     }
 
+    public static boolean isFingerprintAuthAvailable(FingerprintManagerCompat mFingerprintManager) {
+        return mFingerprintManager.isHardwareDetected()
+                && mFingerprintManager.hasEnrolledFingerprints();
+    }
+
     public static boolean isFingerprintOptionEnabled(Context context) {
 
         if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Utils.FINGERPRINT_SENSOR_PRESENT, false)) {
             FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(context);
 
-            if (fingerprintManager.hasEnrolledFingerprints()) {
+            boolean fingerprintAuthAvailable = isFingerprintAuthAvailable(fingerprintManager)
+                    && LoginDialogFragment.doesDeviceHaveScreenLockOn(context);
+            if (fingerprintAuthAvailable) {
                 String loginType = PreferencesUtils.getStringFromPreferences(context, Utils.SECURITY, Utils.LOGIN_TYPE, Utils.NATIVE_LOGIN_TYPE);
                 if(loginType.equals(Utils.NATIVE_LOGIN_TYPE)) {
                     return true;
@@ -284,7 +292,7 @@ public class UserUtils {
                     return false;
                 }
             } else {
-                Log.d(TAG, "User hasn't enrolled any fingerprints to authenticate with");
+                Log.d(TAG, "User hasn't enrolled fingerprints OR has not screen lock.");
                 SettingsUtils.addBooleanToPreferences(context, UserUtils.USER_FINGERPRINT_OPT_IN, false);
                 return false;
             }

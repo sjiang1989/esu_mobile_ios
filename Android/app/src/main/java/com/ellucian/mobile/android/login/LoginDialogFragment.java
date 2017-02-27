@@ -48,6 +48,7 @@ import com.ellucian.elluciango.R;
 import com.ellucian.mobile.android.EllucianApplication;
 import com.ellucian.mobile.android.MainActivity;
 import com.ellucian.mobile.android.adapter.ModuleMenuAdapter;
+import com.ellucian.mobile.android.app.DrawerLayoutHelper;
 import com.ellucian.mobile.android.app.EllucianDialogFragment;
 import com.ellucian.mobile.android.app.GoogleAnalyticsConstants;
 import com.ellucian.mobile.android.client.services.AuthenticateUserIntentService;
@@ -424,7 +425,7 @@ public class LoginDialogFragment extends EllucianDialogFragment {
 			}
 			
 			if(authorized) {
-				activity.startActivity(queuedIntent);
+                DrawerLayoutHelper.launchIntent(activity, queuedIntent);
 				if(forcedLogin) {
 					activity.finish();
 				}
@@ -551,20 +552,20 @@ public class LoginDialogFragment extends EllucianDialogFragment {
         inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
-    private boolean doesDeviceHaveScreenLockOn() {
+    public static boolean doesDeviceHaveScreenLockOn(Context context) {
 
-        KeyguardManager keyguardManager = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+        KeyguardManager keyguardManager = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //true if a PIN, pattern or password was set.
             return keyguardManager.isDeviceSecure();
         } else {
-            return VersionSupportUtils.doesDeviceHaveScreenLockOn(getContext(), keyguardManager);
+            return VersionSupportUtils.doesDeviceHaveScreenLockOn(context, keyguardManager);
         }
 
     }
 
     private void enableStaySignedIn(CheckBox staySignedIn, ColorStateList enabledTextColor) {
-        if (doesDeviceHaveScreenLockOn()) {
+        if (doesDeviceHaveScreenLockOn(getContext())) {
             staySignedIn.setEnabled(true);
             staySignedIn.setTextColor(enabledTextColor);
         } else {

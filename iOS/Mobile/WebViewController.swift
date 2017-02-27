@@ -9,7 +9,7 @@
 import Foundation
 import JavaScriptCore
 
-class WebViewController : UIViewController, UIWebViewDelegate {
+class WebViewController : UIViewController, UIWebViewDelegate, WebViewControllerProtocol {
     var module : Module?
     var loadRequest : URLRequest?
     @IBOutlet var backButton: UIBarButtonItem!

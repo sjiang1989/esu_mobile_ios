@@ -304,13 +304,13 @@ public class MobileClient {
 	        for (String cookieString : cookieList) {
 	        	
 	        	String url = "";
-	        	if (cookieString.contains("Domain")) {
-					String[] domainSplit = cookieString.split("Domain=");
-					String domainHalf = domainSplit[1]; 
-					String[] valueSplit = domainHalf.split(";");
-					url = valueSplit[0];
-					
-				} 
+
+                String[] domainSplit = cookieString.split("[dD][oO][mM][aA][iI][nN]=");
+                if (domainSplit.length > 1) {
+                    String domainHalf = domainSplit[1];
+                    String[] valueSplit = domainHalf.split(";");
+                    url = valueSplit[0];
+                }
 
 	        	Log.d(TAG, "Storing cookie...");
 	        	Log.d(TAG, "url : "  + url);

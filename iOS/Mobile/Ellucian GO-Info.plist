@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>com.ellucian.go.open.module</string>
-	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en_US</string>
 	<key>CFBundleDisplayName</key>
@@ -25,7 +21,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>5.1</string>
+	<string>5.1.1</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -40,7 +36,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>5.1.0.0</string>
+	<string>5.1.1.0</string>
 	<key>LSApplicationCategoryType</key>
 	<string></string>
 	<key>LSRequiresIPhoneOS</key>
@@ -50,6 +46,22 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Bluetooth is used at your institution to alert you when you are near location specific information or services.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Your calendar is used when you add a calendar item from events or courses.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Your contacts are used when you add a contact from the directory.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Even when not using the app your location information can be used to notify you whenever you are near an area on campus that can provide useful information or services. The app uses energy efficient beacon monitoring to recognize when you are near a point of interest and will not utilize your GPS location.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>While in the app your location information is used to display your location on campus maps and to notify you whenever you are near an area on campus that can provide useful information or services.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Your reminders are used when you add a reminder for an assignment.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.ellucian.go.open.module</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
@@ -86,17 +98,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>While in the app your location information is used to display your location on campus maps and to notify you whenever you are near an area on campus that can provide useful information or services.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Even when not using the app your location information can be used to notify you whenever you are near an area on campus that can provide useful information or services. The app uses energy efficient beacon monitoring to recognize when you are near a point of interest and will not utilize your GPS location.</string>
-	<key>NSCalendarsUsageDescription</key>
-	<string>Your calendar is used when you add a calendar item from events or courses.</string>
-	<key>NSContactsUsageDescription</key>
-	<string>Your contacts are used when you add a contact from the directory.</string>
-	<key>NSRemindersUsageDescription</key>
-	<string>Your reminders are used when you add a reminder for an assignment.</string>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>Bluetooth is used at your institution to alert you when you are near location specific information or services.</string>
 </dict>
 </plist>

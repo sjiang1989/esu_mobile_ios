@@ -84,5 +84,6 @@ public class Extra {
 
     /** 3rd party App Launcher Extras */
     public static final String APP_LAUNCHER_STORE_URL = "appLauncherStoreUrl";
+    public static final String APP_LAUNCHER_TYPE = "appLauncherType";
 
 }

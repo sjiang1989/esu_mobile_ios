@@ -66,6 +66,7 @@ public class WebframeActivity extends EllucianActivity {
         super.onCreate(savedInstanceState);
         this.savedInstanceState = savedInstanceState;
 
+        boolean reAuthNeeded = false;
         // If moduleId is null, this isn't a WebModule. It's just a URL opening inside the app.
         if (moduleId != null) {
             boolean secure = Boolean.parseBoolean(isModuleSecure());
@@ -73,10 +74,16 @@ public class WebframeActivity extends EllucianActivity {
 
             if (loginType.equals(Utils.NATIVE_LOGIN_TYPE) && secure) {
                 //do if basic authentication only; web login will be handled by cookies
-                reauthenticate();
+                reAuthNeeded = reAuthenticationNeeded();
             }
         }
-        loadpage();
+
+        if (reAuthNeeded) {
+            Log.i(TAG, "onCreate: Closing activity. Waiting for Re-Authentication.");
+            finish(); // close the activity, it will be re-launched by successful Authentication
+        } else {
+            loadpage();
+        }
 
 	}
 
@@ -107,7 +114,7 @@ public class WebframeActivity extends EllucianActivity {
 
     }
 
-    private void reauthenticate() {
+    private boolean reAuthenticationNeeded() {
         EllucianApplication ellucianApp = (EllucianApplication) getApplication();
 
         long lastAuthRefresh = ellucianApp.getLastAuthRefresh();
@@ -141,9 +148,10 @@ public class WebframeActivity extends EllucianActivity {
             loginIntent.putExtra(Extra.LOGIN_PASSWORD, ellucianApp.getAppUserPassword());
             loginIntent.putExtra(Extra.LOGIN_BACKGROUND, true);
             startService(loginIntent);
-            finish();
+            return true;
         } else {
-            loadpage();
+            Log.i(TAG, "Re-authentication NOT needed");
+            return false;
         }
 
     }
