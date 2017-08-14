@@ -994,6 +994,7 @@
 		A9ADAEBB1A811D3C008869C9 /* AllAnnouncementsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AllAnnouncementsViewController.swift; sourceTree = "<group>"; };
 		A9E6A3EA1680BE9500AAEBBF /* Social.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Social.framework; path = System/Library/Frameworks/Social.framework; sourceTree = SDKROOT; };
 		A9F498021A93923600E71CC1 /* SwiftyJSON.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftyJSON.swift; sourceTree = "<group>"; };
+		CE9493A21F1F8E9A004790D9 /* Ellucian GO WatchKit App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Ellucian GO WatchKit App.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1283,6 +1284,7 @@
 		5494D81F1AEAD8E20030EE4A /* Ellucian GO WatchKit App */ = {
 			isa = PBXGroup;
 			children = (
+				CE9493A21F1F8E9A004790D9 /* Ellucian GO WatchKit App.entitlements */,
 				5494D8221AEAD8E20030EE4A /* Interface.storyboard */,
 				5494D8251AEAD8E20030EE4A /* Images.xcassets */,
 				5494D8201AEAD8E20030EE4A /* Supporting Files */,
@@ -2075,13 +2077,13 @@
 				TargetAttributes = {
 					5444D0081CB2E33100403AA6 = {
 						CreatedOnToolsVersion = 7.3;
-						DevelopmentTeam = CU629ZRRW3;
+						DevelopmentTeam = WK3REX99QJ;
 						LastSwiftMigration = 0800;
 						TestTargetID = 54E40B3A1728552E00F661A5;
 					};
 					544E64961A715CBD00220746 = {
 						CreatedOnToolsVersion = 6.1.1;
-						DevelopmentTeam = CU629ZRRW3;
+						DevelopmentTeam = WK3REX99QJ;
 						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
@@ -2098,7 +2100,7 @@
 					};
 					5494D80B1AEAD8E20030EE4A = {
 						CreatedOnToolsVersion = 6.3.1;
-						DevelopmentTeam = CU629ZRRW3;
+						DevelopmentTeam = WK3REX99QJ;
 						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
@@ -2115,11 +2117,16 @@
 					};
 					5494D81A1AEAD8E20030EE4A = {
 						CreatedOnToolsVersion = 6.3.1;
-						DevelopmentTeam = CU629ZRRW3;
+						DevelopmentTeam = WK3REX99QJ;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 0;
+							};
+						};
 					};
 					54E40B3A1728552E00F661A5 = {
-						DevelopmentTeam = CU629ZRRW3;
+						DevelopmentTeam = WK3REX99QJ;
 						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
@@ -2136,6 +2143,9 @@
 								enabled = 0;
 							};
 							com.apple.Keychain = {
+								enabled = 1;
+							};
+							com.apple.Maps.iOS = {
 								enabled = 1;
 							};
 							com.apple.Push = {
@@ -3008,7 +3018,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -3043,7 +3053,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -3080,7 +3090,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Assignments Today/Assignments Today.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_BITCODE = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3096,7 +3106,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MTL_ENABLE_DEBUG_INFO = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.ellucian.elluciango.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.esu.esutest.Assignments-Today";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				SKIP_INSTALL = YES;
@@ -3122,7 +3132,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Assignments Today/Assignments Today.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Distribution: Ellucian Inc. (CU629ZRRW3)";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_BITCODE = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -3135,7 +3145,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.ellucian.elluciango.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.esu.esutest.Assignments-Today";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
@@ -3163,7 +3173,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -3180,7 +3190,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MTL_ENABLE_DEBUG_INFO = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ellucian.elluciango.watchkitapp.watchkitextension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esu.esutest.watchkitapp.watchkitextension;
 				PRODUCT_NAME = "${TARGET_NAME}";
 				PROVISIONING_PROFILE = "";
 				SDKROOT = watchos;
@@ -3212,7 +3222,7 @@
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -3226,7 +3236,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ellucian.elluciango.watchkitapp.watchkitextension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esu.esutest.watchkitapp.watchkitextension;
 				PRODUCT_NAME = "${TARGET_NAME}";
 				PROVISIONING_PROFILE = "";
 				"PROVISIONING_PROFILE[sdk=*]" = "";
@@ -3260,7 +3270,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3275,7 +3285,7 @@
 				IBSC_MODULE = Ellucian_GO_WatchKit_Extension;
 				INFOPLIST_FILE = "Ellucian GO WatchKit App/Info.plist";
 				MTL_ENABLE_DEBUG_INFO = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ellucian.elluciango.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esu.esutest.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				SDKROOT = watchos;
@@ -3304,7 +3314,7 @@
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -3316,7 +3326,7 @@
 				IBSC_MODULE = Ellucian_GO_WatchKit_Extension;
 				INFOPLIST_FILE = "Ellucian GO WatchKit App/Info.plist";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ellucian.elluciango.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esu.esutest.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				SDKROOT = watchos;
@@ -3338,7 +3348,7 @@
 				"CODE_SIGN_IDENTITY[sdk=*]" = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_BITCODE = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Mobile/Mobile-Prefix.pch";
@@ -3352,7 +3362,7 @@
 				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ellucian.elluciango;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esu.esutest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
@@ -3379,7 +3389,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 4.1.1.6;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = CU629ZRRW3;
+				DEVELOPMENT_TEAM = WK3REX99QJ;
 				ENABLE_BITCODE = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Mobile/Mobile-Prefix.pch";
@@ -3392,7 +3402,7 @@
 					"$(PROJECT_DIR)/Mobile",
 				);
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ellucian.elluciango;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esu.esutest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";

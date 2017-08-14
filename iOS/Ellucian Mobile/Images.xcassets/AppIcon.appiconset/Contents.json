@@ -3,49 +3,49 @@
     {
       "size" : "20x20",
       "idiom" : "iphone",
-      "filename" : "app-icon-20pt-@2x.png",
+      "filename" : "esuicon.png",
       "scale" : "2x"
     },
     {
       "size" : "20x20",
       "idiom" : "iphone",
-      "filename" : "app-icon-20pt-@3x.png",
+      "filename" : "esuicon-1.png",
       "scale" : "3x"
     },
     {
       "size" : "29x29",
       "idiom" : "iphone",
-      "filename" : "app-iphone-settings-58px.png",
+      "filename" : "app-icon-20pt-@2x-3.png",
       "scale" : "2x"
     },
     {
       "size" : "29x29",
       "idiom" : "iphone",
-      "filename" : "app-iphone-settings-87px.png",
+      "filename" : "app-icon-20pt-@3x-1.png",
       "scale" : "3x"
     },
     {
       "size" : "40x40",
       "idiom" : "iphone",
-      "filename" : "app-spotlight-80px.png",
+      "filename" : "esuicon-2.png",
       "scale" : "2x"
     },
     {
       "size" : "40x40",
       "idiom" : "iphone",
-      "filename" : "app-spotlight-120px.png",
+      "filename" : "esuicon-3.png",
       "scale" : "3x"
     },
     {
       "size" : "60x60",
       "idiom" : "iphone",
-      "filename" : "app-iphone-120px.png",
+      "filename" : "esuicon-4.png",
       "scale" : "2x"
     },
     {
       "size" : "60x60",
       "idiom" : "iphone",
-      "filename" : "app-iphone-180px.png",
+      "filename" : "esuicon-5.png",
       "scale" : "3x"
     },
     {
