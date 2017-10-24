@@ -211,6 +211,34 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
                 self.forwardButton.isEnabled = webView.canGoForward
             }
         }
+  //Added at oct 24, 2017
+        // START: CUSTOM CODE ADDED BY ADAM TO MANAGE EMAIL AND TELEPHONE LINKS IN THE WKWEBVIEW
+        let url = navigationAction.request.url?.absoluteString // grabs the url string
+        
+        // checks to see if it starts with mailto: (aka email link)
+        if url!.range(of:"mailto:") != nil {
+            // print("This is an email address.")
+            openCustomApp(urlScheme: "",additional_info: url!)
+            decisionHandler(.cancel)
+        }
+        
+        // checks to see if it starts with tel: (aka phone link for mobile devices)
+        if url!.range(of:"tel:") != nil {
+            // print("This is a phone number.")
+            openCustomApp(urlScheme: "",additional_info: url!)
+            decisionHandler(.cancel)
+        }
+    
+        // END: CUSTOM CODE ADDED BY ADAM TO MANAGE EMAIL AND TELEPHONE LINKS IN THE WKWEBVIEW
+        // Added at Oct 24, 2017
+        //Added by Siying Jiang  Manage sms links in WKWebView
+        //checks to see if it stars with sms:
+        if url!.range(of:"sms:") != nil{
+            openCustomApp(urlScheme: "", additional_info: url!)
+            decisionHandler(.cancel)
+            
+        }
+        
         
         switch navigationAction.navigationType {
         case .linkActivated:
@@ -445,4 +473,18 @@ class WKWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate,
         return nil
         
     }
+    //Added at Oct 24, 2017
+    // START: CUSTOM CODE ADDED BY ADAM TO MANAGE EMAIL AND TELEPHONE LINKS IN THE WKWEBVIEW
+    // OTHERWISE UNSUPPORTED URL ERROR POPS UP
+    func openCustomApp(urlScheme:String, additional_info:String){
+        
+        if let requestUrl:NSURL = NSURL(string:"\(urlScheme)"+"\(additional_info)") {
+            let application:UIApplication = UIApplication.shared
+            if application.canOpenURL(requestUrl as URL) {
+                application.openURL(requestUrl as URL)
+            }
+        }
+    }
+    // END: CUSTOM CODE ADDED BY ADAM TO MANAGE EMAIL AND TELEPHONE LINKS IN THE WKWEBVIEW
+    
 }

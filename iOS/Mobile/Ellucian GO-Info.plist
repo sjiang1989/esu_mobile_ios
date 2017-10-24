@@ -28,9 +28,9 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
+			<string>None</string>
 			<key>CFBundleURLName</key>
-			<string>com.esu.mobile</string>
+			<string>edu.esu.mobile</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>esumobile</string>
